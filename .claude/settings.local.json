@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m py_compile:*)",
+      "Bash(python -c:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\\venv\\Scripts\\python.exe -m pytest:*)",
+      "Bash(cmd.exe /c \"cd /d c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code && venv\\Scripts\\python.exe -m pytest tests\\test_cache.py -v\")",
+      "Bash(cmd.exe /c \"c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\\venv\\Scripts\\python.exe -m pytest c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\\tests\\test_cache.py -v\")",
+      "Bash(powershell.exe -Command \"Set-Location 'c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code'; .\\venv\\Scripts\\python.exe -m pytest tests\\test_cache.py -v\":*)",
+      "Bash(powershell.exe -Command \"Set-Location ''c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code''; .\\venv\\Scripts\\pip.exe list\")",
+      "Bash(powershell.exe -Command \"Set-Location ''c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code''; .\\venv\\Scripts\\pip.exe install -r requirements.txt -r requirements-dev.txt\")",
+      "Bash(powershell.exe -Command \"Set-Location ''c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code''; .\\venv\\Scripts\\pip.exe list | Select-String ''pytest''\")",
+      "Bash(powershell.exe -Command \"Set-Location ''c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code''; .\\venv\\Scripts\\python.exe -m pytest tests/test_cache.py -v\")",
+      "Bash(powershell.exe -Command \"Set-Location ''c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code''; .\\venv\\Scripts\\python.exe -m mypy src/services/cache_service/ --ignore-missing-imports\")",
+      "Bash(powershell.exe -Command \"Set-Location ''c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code''; .\\venv\\Scripts\\python.exe -m ruff check src/services/cache_service/\")",
+      "Bash(powershell.exe -Command \"Set-Location ''c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code''; .\\venv\\Scripts\\python.exe -m pytest tests/test_cache.py -v --tb=short\")",
+      "Bash(powershell.exe -Command:*)"
+    ]
+  }
+}

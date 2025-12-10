@@ -20,9 +20,12 @@ Transform a job posting and user profile into tailored CV and cover letter throu
 
 Before implementing anything, read these files in order:
 
-1. **`docs/Scout_PoC_Scope_Document.md`** - Authoritative scope reference
-2. **`docs/Claude_Code_Development_Guide.md`** - Development workflow
-3. **Relevant specification file** for the component being implemented
+1. **`docs/guides/Scout_PoC_Scope_Document.md`** - Authoritative scope reference
+2. **`LL-LI.md`** - Lessons Learned & Lessons Identified from previous implementations
+3. **`docs/guides/Scout_Claude_Code_Development_Guide.md`** - Development workflow
+4. **Relevant specification file** for the component being implemented
+
+> **Important:** Always check `LL-LI.md` before starting new work. It contains validated patterns and pitfalls from S2/S3 implementations.
 
 ---
 
@@ -32,6 +35,9 @@ Every implementation follows the **RAVE** cycle:
 
 ### R - Review Context
 ```bash
+# Check lessons learned first
+cat LL-LI.md
+
 # Check what exists
 ls -la src/services/
 cat src/services/existing_service/service.py
@@ -42,6 +48,12 @@ cat docs/services/S[N]_[Service]_-_Claude_Code_Instructions.md
 # Check scope constraints
 grep -A5 "Service Name" docs/architecture/Scout_PoC_-_Complete_Project_Structure___Configuration.md
 ```
+
+**Key patterns from LL-LI.md to apply:**
+- LL-002: Three-file service structure (models.py, exceptions.py, service.py)
+- LL-003: Async initialization pattern
+- LL-004: Singleton with dependency injection
+- LL-006: Avoid variable type shadowing (use different names)
 
 ### A - Analyze Step
 - Break the work into small increments (50-150 lines each)
@@ -54,13 +66,19 @@ grep -A5 "Service Name" docs/architecture/Scout_PoC_-_Complete_Project_Structure
 # After each change:
 python -m py_compile src/path/file.py  # Syntax
 mypy src/path/file.py                   # Types
-pytest tests/unit/path/ -v              # Tests
+ruff check src/path/file.py            # Linting (see LL-007 for common issues)
+pytest tests/test_<service>.py -v       # Tests (flat structure)
 ```
+
+**Common issues from LL-LI.md:**
+- LL-007: Remove unnecessary `"r"` mode from `open()` calls
+- See "Common Mypy Issues & Fixes" and "Common Ruff Issues & Fixes" tables in LL-LI.md
 
 ### E - Execute Incrementally
 - Implement ONE step at a time
 - Complete the full RAVE cycle before next step
 - Never skip verification
+- **After completion:** Update LL-LI.md with new lessons learned
 
 ---
 
@@ -115,7 +133,7 @@ These decisions are **locked** - do not implement deferred features:
 | **Web** | Polling updates | WebSocket |
 | **Services** | Core 4 services | Content Optimizer (S7) |
 
-If you're unsure whether something is in scope, check `docs/Scout_PoC_Scope_Document.md`.
+If you're unsure whether something is in scope, check `docs/guides/Scout_PoC_Scope_Document.md`.
 
 ---
 
@@ -320,7 +338,7 @@ make run                    # Run dev server (uvicorn on port 8000)
 # Testing
 make test                   # Run all tests
 make test-cov               # Run tests with coverage
-pytest tests/unit/services/test_cache.py -v  # Run specific tests
+pytest tests/test_cache.py -v  # Run specific tests
 
 # Code Quality
 make format                 # Apply black formatter
@@ -331,7 +349,7 @@ make clean                  # Remove cache files
 # Verification (run after each change)
 python -m py_compile src/path/file.py
 mypy src/path/file.py --ignore-missing-imports
-pytest tests/unit/path/test_file.py -v
+pytest tests/test_<service>.py -v
 ```
 
 ---
@@ -392,17 +410,22 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 | What | Where |
 |------|-------|
-| Module Specifications | `docs/modules/Module_[N]_*_Instructions.md` |
-| Service Specifications | `docs/services/S[N]_*_Instructions.md` |
-| PoC Scope & Architecture | `docs/architecture/` |
+| **Lessons Learned** | `LL-LI.md` (read first!) |
+| **Session Handover** | `HANDOVER.md` |
+| **PoC Scope** | `docs/guides/Scout_PoC_Scope_Document.md` |
+| Module Specifications | `docs/modules/` (mixed naming: spaces or underscores) |
+| Service Specifications | `docs/services/` (mixed naming: spaces or underscores) |
+| Architecture Docs | `docs/architecture/` |
 | Development Guides | `docs/guides/` |
 | Specification Index | `docs/SPECIFICATIONS.md` |
 | Services | `src/services/[service_name]/` |
 | Core Modules | `src/modules/[module_name]/` |
 | Web Interface | `src/web/` |
-| Tests | `tests/` (to be organized into unit/integration) |
+| Tests | `tests/test_[service].py` (flat structure for PoC) |
 | Project Config | `pyproject.toml`, `.env.example` |
 | Dependencies | `requirements.txt`, `requirements-dev.txt` |
+
+> **Note on Spec Filenames:** Specification files use mixed naming (some with spaces, some with underscores). Use glob patterns like `docs/services/S4*` to find files reliably.
 
 ### Service Dependencies
 
@@ -433,11 +456,12 @@ Vector Store Service ─────────────┤
 
 ## When Stuck
 
-1. **Re-read the specification** - answers are usually there
-2. **Check the scope document** - feature might be deferred
-3. **Review adjacent implementations** - patterns are consistent
-4. **Run existing tests** - understand expected behavior
-5. **Check imports work** - many issues are import-related
+1. **Check LL-LI.md first** - similar issues may have been solved before
+2. **Re-read the specification** - answers are usually there
+3. **Check the scope document** - feature might be deferred
+4. **Review adjacent implementations** - patterns are consistent
+5. **Run existing tests** - understand expected behavior
+6. **Check imports work** - many issues are import-related
 
 ---
 
@@ -445,22 +469,31 @@ Vector Store Service ─────────────┤
 
 ## Current Project Status
 
-**Phase:** Phase 1 - Foundation Services (In Progress)
+**Phase:** Phase 1 - Foundation Services (COMPLETE)
 
 - ✅ Project structure created (`src/modules/`, `src/services/`, `src/web/`)
 - ✅ Virtual environment set up (Python 3.13.7)
 - ✅ Dependencies configured (pyproject.toml, requirements.txt)
 - ✅ Comprehensive documentation (21 specification files)
 - ✅ Development tools configured (Makefile, black, ruff, mypy, pytest)
-- ✅ **S2 Cost Tracker Service** - Complete with simplified PoC implementation
-- 🔄 **Next:** S3 Cache Service
+- ✅ **S2 Cost Tracker Service** - Complete (27/27 tests)
+- ✅ **S3 Cache Service** - Complete (46/46 tests)
+- ✅ **S4 Vector Store Service** - Complete (55/55 tests)
+- ✅ **S1 LLM Service** - Complete (50/50 tests)
+- 🔄 **Next:** Phase 2 - Core Modules (M1 Collector)
 
 **Implementation status:**
 - **S2 Cost Tracker**: ✅ Complete (27/27 tests passing)
-- **S3 Cache Service**: Not started
-- **S4 Vector Store**: Not started
-- **S1 LLM Service**: Not started
+- **S3 Cache Service**: ✅ Complete (46/46 tests passing)
+- **S4 Vector Store**: ✅ Complete (55/55 tests passing)
+- **S1 LLM Service**: ✅ Complete (50/50 tests passing)
+
+**Total Foundation Tests:** 178/178 passing
+
+**Learning Documentation:**
+- See `LL-LI.md` for validated patterns and lessons from S1/S2/S3/S4 implementations
+- See `HANDOVER.md` for session continuity context
 
 ---
 
-*Last updated: December 9, 2025*
+*Last updated: December 10, 2025*
