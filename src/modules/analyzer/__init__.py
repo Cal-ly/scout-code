@@ -31,6 +31,7 @@ from src.modules.analyzer.exceptions import (
 from src.modules.analyzer.models import (
     AnalysisInput,
     AnalysisResult,
+    AnalyzerConfig,
     ApplicationStrategy,
     CompatibilityScore,
     ExperienceMatchResult,
@@ -48,6 +49,7 @@ __all__ = [
     # Models
     "AnalysisResult",
     "AnalysisInput",
+    "AnalyzerConfig",
     "CompatibilityScore",
     "MatchLevel",
     "SkillMatchResult",

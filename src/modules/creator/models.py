@@ -152,3 +152,75 @@ class CreatedContent(BaseModel):
 
     # Metadata
     created_at: datetime = Field(default_factory=datetime.now)
+
+
+# Default soft skills keywords for categorization
+DEFAULT_SOFT_SKILLS = frozenset({
+    # Communication
+    "communication",
+    "presentation",
+    "public speaking",
+    "writing",
+    "active listening",
+    "verbal communication",
+    "written communication",
+    # Leadership & Management
+    "leadership",
+    "management",
+    "mentoring",
+    "coaching",
+    "delegation",
+    "strategic thinking",
+    "decision making",
+    "conflict resolution",
+    # Teamwork & Collaboration
+    "teamwork",
+    "collaboration",
+    "cross-functional",
+    "stakeholder management",
+    "relationship building",
+    # Problem Solving
+    "problem-solving",
+    "problem solving",
+    "critical thinking",
+    "analytical thinking",
+    "troubleshooting",
+    "root cause analysis",
+    # Personal Qualities
+    "adaptability",
+    "flexibility",
+    "creativity",
+    "innovation",
+    "attention to detail",
+    "self-motivated",
+    "initiative",
+    "resilience",
+    # Time & Organization
+    "time management",
+    "prioritization",
+    "organization",
+    "multitasking",
+    "project coordination",
+    # Interpersonal
+    "negotiation",
+    "emotional intelligence",
+    "empathy",
+    "customer service",
+    "client relations",
+})
+
+
+class CreatorConfig(BaseModel):
+    """
+    Configuration for the Creator module.
+
+    Allows customization of soft skills categorization.
+
+    Attributes:
+        soft_skill_keywords: Set of keywords that identify soft skills.
+    """
+
+    soft_skill_keywords: frozenset[str] = Field(
+        default=DEFAULT_SOFT_SKILLS,
+        description="Keywords to identify soft skills during categorization",
+    )

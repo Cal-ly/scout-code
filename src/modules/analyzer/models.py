@@ -158,3 +158,34 @@ class AnalysisInput(BaseModel):
 
     job_id: str  # ID of ProcessedJob from Rinser
     generate_strategy: bool = True  # Whether to generate LLM strategy
+
+
+class AnalyzerConfig(BaseModel):
+    """
+    Configuration for the Analyzer module.
+
+    Allows customization of matching thresholds and scoring weights.
+
+    Attributes:
+        skill_match_threshold: Minimum similarity score for skill match (0-1).
+        experience_match_threshold: Minimum similarity score for experience match (0-1).
+        weight_must_have: Weight for must-have requirements in scoring.
+        weight_nice_to_have: Weight for nice-to-have requirements in scoring.
+        weight_experience: Weight for experience relevance in scoring.
+    """
+
+    skill_match_threshold: float = Field(
+        default=0.5, ge=0, le=1, description="Minimum similarity for skill match"
+    )
+    experience_match_threshold: float = Field(
+        default=0.4, ge=0, le=1, description="Minimum similarity for experience match"
+    )
+    weight_must_have: float = Field(
+        default=0.5, ge=0, le=1, description="Weight for must-have requirements"
+    )
+    weight_nice_to_have: float = Field(
+        default=0.2, ge=0, le=1, description="Weight for nice-to-have requirements"
+    )
+    weight_experience: float = Field(
+        default=0.3, ge=0, le=1, description="Weight for experience relevance"
+    )

@@ -31,7 +31,9 @@ from src.modules.creator.exceptions import (
 )
 from src.modules.creator.models import (
     CreatedContent,
+    CreatorConfig,
     CVSection,
+    DEFAULT_SOFT_SKILLS,
     GeneratedCoverLetter,
     GeneratedCV,
 )
@@ -44,9 +46,11 @@ __all__ = [
     "reset_creator",
     # Models
     "CreatedContent",
+    "CreatorConfig",
     "GeneratedCV",
     "GeneratedCoverLetter",
     "CVSection",
+    "DEFAULT_SOFT_SKILLS",
     # Exceptions
     "CreatorError",
     "GenerationError",

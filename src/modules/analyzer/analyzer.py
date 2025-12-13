@@ -26,6 +26,7 @@ from src.modules.analyzer.exceptions import (
 )
 from src.modules.analyzer.models import (
     AnalysisResult,
+    AnalyzerConfig,
     ApplicationStrategy,
     CompatibilityScore,
     ExperienceMatchResult,
@@ -70,19 +71,14 @@ class Analyzer:
         "Position yourself as an experienced Python developer..."
     """
 
-    # Thresholds for matching
-    SKILL_MATCH_THRESHOLD = 0.5  # Minimum similarity for skill match
-    EXPERIENCE_MATCH_THRESHOLD = 0.4  # Minimum for experience match
-
-    # Weights for compatibility calculation
-    WEIGHT_MUST_HAVE = 0.5
-    WEIGHT_NICE_TO_HAVE = 0.2
-    WEIGHT_EXPERIENCE = 0.3
+    # Default thresholds (can be overridden via config)
+    DEFAULT_CONFIG = AnalyzerConfig()
 
     def __init__(
         self,
         collector: Collector,
         llm_service: LLMService,
+        config: AnalyzerConfig | None = None,
     ):
         """
         Initialize Analyzer.
@@ -90,9 +86,11 @@ class Analyzer:
         Args:
             collector: Collector with loaded profile.
             llm_service: LLM Service for strategy generation.
+            config: Optional configuration for thresholds and weights.
         """
         self._collector = collector
         self._llm = llm_service
+        self._config = config or self.DEFAULT_CONFIG
         self._initialized = False
 
         # Stats
@@ -161,7 +159,7 @@ class Analyzer:
 
                 # Filter by threshold
                 matched_results = [
-                    s for s in skill_results if s.score >= self.SKILL_MATCH_THRESHOLD
+                    s for s in skill_results if s.score >= self._config.skill_match_threshold
                 ]
 
                 # Build match result
@@ -266,7 +264,7 @@ class Analyzer:
                 matched_results = [
                     e
                     for e in exp_results
-                    if e.score >= self.EXPERIENCE_MATCH_THRESHOLD
+                    if e.score >= self._config.experience_match_threshold
                 ]
 
                 if matched_results:
@@ -429,9 +427,9 @@ class Analyzer:
 
         # Weighted overall score
         overall = (
-            must_have_score * self.WEIGHT_MUST_HAVE
-            + nice_to_have_score * self.WEIGHT_NICE_TO_HAVE
-            + experience_score * self.WEIGHT_EXPERIENCE
+            must_have_score * self._config.weight_must_have
+            + nice_to_have_score * self._config.weight_nice_to_have
+            + experience_score * self._config.weight_experience
         )
 
         # Determine level

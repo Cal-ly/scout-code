@@ -31,7 +31,9 @@ from src.modules.creator.exceptions import (
 )
 from src.modules.creator.models import (
     CreatedContent,
+    CreatorConfig,
     CVSection,
+    DEFAULT_SOFT_SKILLS,
     GeneratedCoverLetter,
     GeneratedCV,
 )
@@ -45,25 +47,6 @@ from src.modules.creator.prompts import (
 from src.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
-
-# Soft skills keywords for categorization (PoC simplification)
-SOFT_SKILL_KEYWORDS = {
-    "leadership",
-    "communication",
-    "teamwork",
-    "problem-solving",
-    "problem solving",
-    "collaboration",
-    "mentoring",
-    "management",
-    "presentation",
-    "negotiation",
-    "critical thinking",
-    "time management",
-    "adaptability",
-    "creativity",
-    "emotional intelligence",
-}
 
 
 class Creator:
@@ -87,10 +70,14 @@ class Creator:
         "Senior Python developer with 6+ years..."
     """
 
+    # Default configuration
+    DEFAULT_CONFIG = CreatorConfig()
+
     def __init__(
         self,
         collector: Collector,
         llm_service: LLMService,
+        config: CreatorConfig | None = None,
     ):
         """
         Initialize Creator.
@@ -98,9 +85,11 @@ class Creator:
         Args:
             collector: Collector with loaded profile.
             llm_service: LLM Service for generation.
+            config: Optional configuration for soft skills keywords.
         """
         self._collector = collector
         self._llm = llm_service
+        self._config = config or self.DEFAULT_CONFIG
         self._initialized = False
 
     async def initialize(self) -> None:
@@ -176,8 +165,8 @@ class Creator:
         return max(profile.experiences, key=lambda e: e.start_date)
 
     def _is_soft_skill(self, skill_name: str) -> bool:
-        """Check if a skill is a soft skill based on name."""
-        return skill_name.lower() in SOFT_SKILL_KEYWORDS
+        """Check if a skill is a soft skill based on configured keywords."""
+        return skill_name.lower() in self._config.soft_skill_keywords
 
     # =========================================================================
     # CV GENERATION
