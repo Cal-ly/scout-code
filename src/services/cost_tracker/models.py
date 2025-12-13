@@ -16,8 +16,8 @@ class CostEntry(BaseModel):
 
     Attributes:
         timestamp: When the cost was incurred.
-        service_name: Name of the service (e.g., "anthropic").
-        model: Model used (e.g., "claude-3-5-haiku-20241022").
+        service_name: Name of the service (e.g., "ollama").
+        model: Model used (e.g., "qwen2.5:3b").
         input_tokens: Number of input tokens.
         output_tokens: Number of output tokens.
         cost: Cost in USD.

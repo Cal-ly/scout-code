@@ -15,7 +15,7 @@ Usage:
     result = await cache.get("my_key")
 
     # For LLM responses, use request hash as key
-    key = cache.generate_key(prompt, model="haiku", temperature=0.3)
+    key = cache.generate_key(prompt, model="qwen2.5:3b", temperature=0.3)
     cached = await cache.get(key)
     if cached is None:
         response = await llm.generate(...)
@@ -146,7 +146,7 @@ class CacheService:
             32-character hexadecimal hash string.
 
         Example:
-            >>> key = cache.generate_key("prompt text", model="haiku", temp=0.3)
+            >>> key = cache.generate_key("prompt text", model="qwen2.5:3b", temp=0.3)
             >>> print(key)
             "a1b2c3d4e5f6..."
         """

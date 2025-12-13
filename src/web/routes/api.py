@@ -10,6 +10,7 @@ Endpoints:
     GET /api/jobs - List all jobs
 """
 
+import asyncio
 import logging
 from pathlib import Path
 from typing import Literal
@@ -36,6 +37,10 @@ from src.web.schemas import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["api"])
+
+# Pipeline timeout in seconds (15 minutes for local LLM inference)
+# Local inference on Raspberry Pi 5 can take 15-30 min for full pipeline
+PIPELINE_TIMEOUT_SECONDS = 900
 
 
 # =============================================================================
@@ -93,7 +98,10 @@ async def execute_pipeline(
     job_id: str,
 ) -> None:
     """
-    Execute pipeline in background and store result.
+    Execute pipeline in background with timeout and store result.
+
+    Uses asyncio.wait_for() to enforce a timeout on pipeline execution.
+    This is critical for local LLM inference which can be slow.
 
     Args:
         orchestrator: Pipeline orchestrator instance.
@@ -101,18 +109,38 @@ async def execute_pipeline(
         input_data: Pipeline input data.
         job_id: Pre-generated job ID for tracking.
     """
+    from datetime import datetime
+
+    from src.services.pipeline import PipelineResult, PipelineStatus
+
     try:
-        logger.info(f"Starting pipeline execution for job {job_id}")
-        result = await orchestrator.execute(input_data)
+        logger.info(
+            f"Starting pipeline execution for job {job_id} "
+            f"(timeout: {PIPELINE_TIMEOUT_SECONDS}s)"
+        )
+        result = await asyncio.wait_for(
+            orchestrator.execute(input_data),
+            timeout=PIPELINE_TIMEOUT_SECONDS,
+        )
         store.store(result)
         logger.info(f"Pipeline completed for job {job_id}: {result.status.value}")
+
+    except TimeoutError:
+        logger.error(
+            f"Pipeline timed out for job {job_id} "
+            f"after {PIPELINE_TIMEOUT_SECONDS}s"
+        )
+        error_result = PipelineResult(
+            pipeline_id=job_id,
+            status=PipelineStatus.FAILED,
+            started_at=datetime.now(),
+            error=f"Pipeline timed out after {PIPELINE_TIMEOUT_SECONDS} seconds. "
+            "Local LLM inference may be taking longer than expected.",
+        )
+        store.store(error_result)
+
     except Exception as e:
         logger.error(f"Pipeline execution failed for job {job_id}: {e}")
-        # Store error result
-        from datetime import datetime
-
-        from src.services.pipeline import PipelineResult, PipelineStatus
-
         error_result = PipelineResult(
             pipeline_id=job_id,
             status=PipelineStatus.FAILED,

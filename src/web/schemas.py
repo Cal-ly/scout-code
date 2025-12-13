@@ -17,12 +17,21 @@ class ApplyRequest(BaseModel):
     """Request body for starting a job application.
 
     Attributes:
-        job_text: Raw job posting text (min 100 chars).
-        source: Optional source identifier (e.g., "linkedin").
+        job_text: Raw job posting text (min 100, max 50000 chars).
+        source: Optional source identifier (e.g., "linkedin", max 100 chars).
     """
 
-    job_text: str = Field(..., min_length=100, description="Raw job posting text")
-    source: str | None = Field(None, description="Source of job posting")
+    job_text: str = Field(
+        ...,
+        min_length=100,
+        max_length=50000,
+        description="Raw job posting text (100-50000 chars)",
+    )
+    source: str | None = Field(
+        None,
+        max_length=100,
+        description="Source of job posting",
+    )
 
 
 # =============================================================================

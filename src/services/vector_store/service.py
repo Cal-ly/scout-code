@@ -89,7 +89,7 @@ class VectorStoreService:
         self._initialized = False
         self._persist_dir = persist_directory or DEFAULT_PERSIST_DIR
         self._embedding_model_name = embedding_model
-        self._client: "ClientAPI | None" = None
+        self._client: ClientAPI | None = None
         self._embedding_model: SentenceTransformer | None = None
         self._collections: dict[str, Any] = {}  # chromadb.Collection
 

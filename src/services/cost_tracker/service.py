@@ -153,7 +153,7 @@ class CostTrackerService:
         Record a cost entry.
 
         Args:
-            service_name: Name of the service (e.g., "anthropic").
+            service_name: Name of the service (e.g., "ollama").
             model: Model identifier.
             input_tokens: Number of input tokens.
             output_tokens: Number of output tokens.

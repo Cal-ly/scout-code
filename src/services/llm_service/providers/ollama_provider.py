@@ -6,7 +6,7 @@ Provides local LLM inference using Ollama with Qwen 2.5 3B and Gemma 2 2B models
 
 import logging
 import time
-from typing import Any
+from typing import Any, Literal
 
 import ollama
 from ollama import ResponseError
@@ -161,7 +161,8 @@ class OllamaProvider(LLMProvider):
 
         try:
             # Determine format based on request purpose
-            format_param: str | None = None
+            # Ollama accepts Literal['', 'json'] for format param
+            format_param: Literal["", "json"] | None = None
             if request.purpose == "json_extraction":
                 format_param = "json"
 
