@@ -23,6 +23,7 @@ from src.modules.analyzer.models import AnalysisResult, ApplicationStrategy
 from src.modules.collector import Collector
 from src.modules.collector.models import Experience, UserProfile
 from src.modules.creator.exceptions import (
+    AnalysisNotAvailableError,
     CoverLetterGenerationError,
     CreatorError,
     CVGenerationError,
@@ -545,7 +546,7 @@ class Creator:
 
     async def create_content(
         self,
-        analysis: AnalysisResult,
+        analysis: AnalysisResult | None,
     ) -> CreatedContent:
         """
         Create complete application content.
@@ -559,6 +560,7 @@ class Creator:
             CreatedContent with CV and cover letter.
 
         Raises:
+            AnalysisNotAvailableError: If analysis is None or missing required data.
             CreatorError: If content generation fails.
 
         Example:
@@ -567,6 +569,22 @@ class Creator:
             >>> print(content.cover_letter.full_text)
         """
         self._ensure_initialized()
+
+        # Validate analysis is available
+        if analysis is None:
+            raise AnalysisNotAvailableError(
+                "Analysis result is required for content generation"
+            )
+
+        if not analysis.job_title:
+            raise AnalysisNotAvailableError(
+                "Analysis is missing job title - cannot generate content"
+            )
+
+        if not analysis.compatibility:
+            raise AnalysisNotAvailableError(
+                "Analysis is missing compatibility data - cannot tailor content"
+            )
 
         logger.info(
             f"Creating application content for {analysis.job_title} "

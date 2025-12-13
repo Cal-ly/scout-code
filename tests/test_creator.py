@@ -26,6 +26,7 @@ from src.modules.collector.models import (
     UserProfile,
 )
 from src.modules.creator import (
+    AnalysisNotAvailableError,
     CreatedContent,
     Creator,
     CreatorError,
@@ -906,6 +907,15 @@ class TestCreateContent:
         """Should raise error if not initialized."""
         with pytest.raises(CreatorError, match="not initialized"):
             await creator.create_content(sample_analysis)
+
+    @pytest.mark.asyncio
+    async def test_create_content_none_analysis_raises(
+        self,
+        initialized_creator: Creator,
+    ) -> None:
+        """Should raise AnalysisNotAvailableError if analysis is None."""
+        with pytest.raises(AnalysisNotAvailableError, match="required"):
+            await initialized_creator.create_content(None)
 
 
 # =============================================================================

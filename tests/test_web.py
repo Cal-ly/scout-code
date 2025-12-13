@@ -443,12 +443,18 @@ class TestAPIRoutes:
         assert data["status"] == "ready"
 
     def test_health_endpoint(self, client: TestClient) -> None:
-        """Should return health status."""
+        """Should return health status with service checks."""
         response = client.get("/health")
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "healthy"
+        # Status can be "healthy" or "degraded" depending on service state
+        assert data["status"] in ("healthy", "degraded")
         assert "version" in data
+        assert "services" in data
+        # Verify services are checked (may be "ok" or have error states)
+        assert "pipeline" in data["services"]
+        assert "job_store" in data["services"]
+        assert "notifications" in data["services"]
 
     def test_apply_endpoint(
         self, client: TestClient, sample_job_text: str

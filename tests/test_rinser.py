@@ -12,6 +12,7 @@ from src.modules.rinser import (
     RinserError,
     ExtractionError,
     IndexingError,
+    SanitizationError,
     ProcessedJob,
     Requirement,
     RequirementPriority,
@@ -421,7 +422,7 @@ class TestSanitization:
 
     def test_sanitize_removes_html(self, rinser: Rinser) -> None:
         """Should remove HTML tags."""
-        text = "<div><p>Job <b>Title</b></p></div>"
+        text = "<div><p>Job <b>Title</b> - Senior Software Engineer Position at Company</p></div>"
 
         result = rinser.sanitize_text(text)
 
@@ -431,7 +432,7 @@ class TestSanitization:
 
     def test_sanitize_removes_scripts(self, rinser: Rinser) -> None:
         """Should remove script tags and content."""
-        text = "Job Title<script>alert('xss')</script>End"
+        text = "Senior Software Engineer Job Title at Company<script>alert('xss')</script>End of description"
 
         result = rinser.sanitize_text(text)
 
@@ -443,7 +444,7 @@ class TestSanitization:
 
     def test_sanitize_removes_styles(self, rinser: Rinser) -> None:
         """Should remove style tags."""
-        text = "Job Title<style>body{color:red}</style>Description"
+        text = "Senior Software Engineer Job Title<style>body{color:red}</style>Full job description here"
 
         result = rinser.sanitize_text(text)
 
@@ -452,7 +453,7 @@ class TestSanitization:
 
     def test_sanitize_normalizes_whitespace(self, rinser: Rinser) -> None:
         """Should normalize excessive whitespace."""
-        text = "Job    Title\n\n\n\nDescription"
+        text = "Senior Software Engineer Job    Title\n\n\n\nFull Description of the position"
 
         result = rinser.sanitize_text(text)
 
@@ -460,7 +461,7 @@ class TestSanitization:
 
     def test_sanitize_handles_html_entities(self, rinser: Rinser) -> None:
         """Should convert HTML entities."""
-        text = "Python &amp; Django &lt;test&gt;"
+        text = "Senior Software Engineer - Python &amp; Django Developer &lt;test&gt; position"
 
         result = rinser.sanitize_text(text)
 
@@ -469,7 +470,7 @@ class TestSanitization:
 
     def test_sanitize_handles_nbsp(self, rinser: Rinser) -> None:
         """Should convert &nbsp; to space."""
-        text = "Python&nbsp;Developer"
+        text = "Senior Software Engineer - Python&nbsp;Developer position available now"
 
         result = rinser.sanitize_text(text)
 
@@ -477,7 +478,7 @@ class TestSanitization:
 
     def test_sanitize_handles_quotes(self, rinser: Rinser) -> None:
         """Should convert quote entities."""
-        text = "Use &quot;Python&quot; and &#39;Django&#39;"
+        text = "Senior Software Engineer - Use &quot;Python&quot; and &#39;Django&#39; framework experience"
 
         result = rinser.sanitize_text(text)
 
@@ -486,15 +487,15 @@ class TestSanitization:
 
     def test_sanitize_strips_whitespace(self, rinser: Rinser) -> None:
         """Should strip leading/trailing whitespace."""
-        text = "   Job Title   "
+        text = "   Senior Software Engineer Job Title at Acme Corporation   "
 
         result = rinser.sanitize_text(text)
 
-        assert result == "Job Title"
+        assert result == "Senior Software Engineer Job Title at Acme Corporation"
 
     def test_sanitize_preserves_newlines(self, rinser: Rinser) -> None:
         """Should preserve reasonable newlines."""
-        text = "Title\n\nDescription\n\nRequirements"
+        text = "Senior Software Engineer Job Title\n\nFull job description here with requirements\n\nRequirements section"
 
         result = rinser.sanitize_text(text)
 
@@ -1132,18 +1133,16 @@ class TestEdgeCases:
         assert len(job.requirements) == 1
 
     @pytest.mark.asyncio
-    async def test_sanitize_empty_string(self, rinser: Rinser) -> None:
-        """Should handle empty string."""
-        result = rinser.sanitize_text("")
-
-        assert result == ""
+    async def test_sanitize_empty_string_raises(self, rinser: Rinser) -> None:
+        """Should raise SanitizationError for empty string."""
+        with pytest.raises(SanitizationError, match="empty or contains only whitespace"):
+            rinser.sanitize_text("")
 
     @pytest.mark.asyncio
-    async def test_sanitize_only_html(self, rinser: Rinser) -> None:
-        """Should handle text that is only HTML tags."""
-        result = rinser.sanitize_text("<div><span></span></div>")
-
-        assert result == ""
+    async def test_sanitize_only_html_raises(self, rinser: Rinser) -> None:
+        """Should raise SanitizationError for text that is only HTML tags."""
+        with pytest.raises(SanitizationError, match="insufficient content"):
+            rinser.sanitize_text("<div><span></span></div>")
 
     @pytest.mark.asyncio
     async def test_process_with_special_characters(

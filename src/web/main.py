@@ -116,14 +116,49 @@ async def health() -> HealthResponse:
     """
     Health check endpoint.
 
-    Returns application health status.
+    Returns application health status with actual service checks.
     """
+    services: dict[str, str] = {}
+    overall_healthy = True
+
+    # Check pipeline orchestrator
+    try:
+        orchestrator = await get_pipeline_orchestrator()
+        if orchestrator._initialized:
+            services["pipeline"] = "ok"
+        else:
+            services["pipeline"] = "not_initialized"
+            overall_healthy = False
+    except Exception as e:
+        services["pipeline"] = f"error: {e}"
+        overall_healthy = False
+
+    # Check job store
+    try:
+        store = get_job_store()
+        if store is not None:
+            services["job_store"] = "ok"
+        else:
+            services["job_store"] = "not_available"
+            overall_healthy = False
+    except Exception as e:
+        services["job_store"] = f"error: {e}"
+        overall_healthy = False
+
+    # Check notification service
+    try:
+        notification_service = get_notification_service()
+        if notification_service is not None:
+            services["notifications"] = "ok"
+        else:
+            services["notifications"] = "not_available"
+            overall_healthy = False
+    except Exception as e:
+        services["notifications"] = f"error: {e}"
+        overall_healthy = False
+
     return HealthResponse(
-        status="healthy",
+        status="healthy" if overall_healthy else "degraded",
         version=APP_VERSION,
-        services={
-            "pipeline": "ok",
-            "job_store": "ok",
-            "notifications": "ok",
-        },
+        services=services,
     )

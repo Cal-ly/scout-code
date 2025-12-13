@@ -26,6 +26,7 @@ from src.modules.rinser.exceptions import (
     ExtractionError,
     IndexingError,
     RinserError,
+    SanitizationError,
 )
 from src.modules.rinser.models import (
     CompanyInfo,
@@ -149,7 +150,14 @@ class Rinser:
 
         Returns:
             Cleaned plain text.
+
+        Raises:
+            SanitizationError: If input is empty or sanitization produces no content.
         """
+        # Validate input
+        if not raw_text or not raw_text.strip():
+            raise SanitizationError("Input text is empty or contains only whitespace")
+
         # Remove script/style content BEFORE bleach (which only strips tags)
         text = re.sub(
             r"<script[^>]*>.*?</script>", "", raw_text, flags=re.DOTALL | re.IGNORECASE
@@ -178,7 +186,16 @@ class Rinser:
         text = text.replace("&quot;", '"')
         text = text.replace("&#39;", "'")
 
-        return text.strip()
+        result = text.strip()
+
+        # Validate output - ensure we have meaningful content
+        if not result or len(result) < 50:
+            raise SanitizationError(
+                f"Sanitization produced insufficient content ({len(result)} chars). "
+                "Input may be mostly HTML/scripts with no readable text."
+            )
+
+        return result
 
     # =========================================================================
     # LLM EXTRACTION

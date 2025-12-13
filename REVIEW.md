@@ -2,21 +2,21 @@
 
 **Review Date:** December 13, 2025
 **Reviewer:** Claude Code
-**Codebase Version:** 609 tests passing, Phase 3 Complete, Ollama Architecture
+**Codebase Version:** 610 tests passing, Phase 3 Complete, Ollama Architecture
 
 ---
 
 ## Executive Summary
 
-The Scout project demonstrates **excellent overall quality** for a PoC implementation. Following the Local LLM Transition (Anthropic → Ollama), the codebase maintains its clean architecture with a well-implemented provider abstraction pattern. All 609 tests pass, with strong separation of concerns across services and modules.
+The Scout project demonstrates **excellent overall quality** for a PoC implementation. Following the Local LLM Transition (Anthropic → Ollama), the codebase maintains its clean architecture with a well-implemented provider abstraction pattern. All 610 tests pass, with strong separation of concerns across services and modules.
 
-**Overall Assessment: 91/100** (improved from 89/100 after fixes)
+**Overall Assessment: 92/100** (improved from 91/100 after additional fixes)
 
 | Category | Rating | Summary |
 |----------|--------|---------|
 | Architecture | 92/100 | Clean separation, excellent provider abstraction |
-| Code Quality | 90/100 | Well-structured, linting issues fixed |
-| Test Coverage | 94/100 | 609 tests, >90% coverage |
+| Code Quality | 91/100 | Well-structured, exceptions properly used |
+| Test Coverage | 94/100 | 610 tests, >90% coverage |
 | Documentation | 90/100 | Excellent, Ollama transition documented |
 | Security | 80/100 | Input validation added, DoS prevention |
 | Performance | 87/100 | Pipeline timeout for local LLM added |
@@ -44,7 +44,7 @@ The Scout project demonstrates **excellent overall quality** for a PoC implement
 - Proper exception chaining with `from e` throughout
 
 ### 4. Comprehensive Test Suite
-- 609 tests with 94% code coverage
+- 610 tests with 94% code coverage
 - 52 tests specifically for LLM Service with Ollama mocking
 - All major paths tested (happy paths and error cases)
 - Proper use of fixtures and mocking for Ollama AsyncClient
@@ -92,7 +92,7 @@ src/services/llm_service/
 
 ---
 
-## Issues Fixed (This Session)
+## Issues Fixed (All Sessions)
 
 ### Critical - FIXED
 
@@ -105,21 +105,24 @@ src/services/llm_service/
 | ID | Issue | Status | Change |
 |----|-------|--------|--------|
 | H-01 | Pipeline lacks timeout | ✅ Fixed | Added 900s timeout via `asyncio.wait_for()` |
+| H-03 | Health endpoint static | ✅ Fixed | Now checks actual service status |
+| H-05 | SanitizationError unused | ✅ Fixed | Now raised for empty/insufficient content |
+| H-06 | AnalysisNotAvailableError unused | ✅ Fixed | Now raised when analysis is None |
 
 ### Medium Priority - FIXED
 
 | ID | Issue | Status | Change |
 |----|-------|--------|--------|
-| M-01 | Unused dependencies | ✅ Fixed | Removed redis, weasyprint, python-docx from requirements.txt |
+| M-01 | Unused dependencies | ✅ Fixed | Removed redis, weasyprint, python-docx |
 | M-06 | Legacy "haiku" examples | ✅ Fixed | Updated to "qwen2.5:3b" and "ollama" |
 
 ### Code Quality - FIXED
 
 | ID | Issue | Status | Change |
 |----|-------|--------|--------|
-| - | Ruff UP037 warning | ✅ Fixed | Removed quotes from type annotation in vector_store |
+| - | Ruff UP037 warning | ✅ Fixed | Removed quotes from type annotation |
 | - | Ruff UP041 warning | ✅ Fixed | Changed `asyncio.TimeoutError` to `TimeoutError` |
-| - | Mypy arg-type error | ✅ Fixed | Added `Literal["", "json"]` type for Ollama format param |
+| - | Mypy arg-type error | ✅ Fixed | Added `Literal["", "json"]` type |
 
 ---
 
@@ -138,10 +141,7 @@ src/services/llm_service/
 | ID | Issue | Location | Recommendation |
 |----|-------|----------|----------------|
 | H-02 | No concurrent access safety | Multiple services | Add threading.Lock for shared state |
-| H-03 | Health endpoint doesn't verify | main.py | Make health checks functional |
 | H-04 | Experience matching uses top 1 | analyzer.py | Use `n_results=3` and best match |
-| H-05 | SanitizationError never raised | rinser.py | Raise from `sanitize_text()` |
-| H-06 | AnalysisNotAvailableError unused | creator.py | Raise when analysis is None |
 
 ### Medium Priority (Future Work)
 
@@ -183,14 +183,14 @@ src/services/llm_service/
 - Good date/month boundary handling
 - Comprehensive BudgetStatus model
 - Works with Ollama (costs recorded as 0.0)
-- ✅ Documentation updated to reference "ollama" instead of "anthropic"
+- ✅ Documentation updated to reference "ollama"
 
 #### S3 Cache Service (46 tests)
 **Quality: Very Good**
 - Two-tier LRU cache (memory + file) well-implemented
 - File corruption handling graceful
 - Good health checking
-- ✅ Examples updated to use "qwen2.5:3b" instead of "haiku"
+- ✅ Examples updated to use "qwen2.5:3b"
 
 #### S4 Vector Store (55 tests)
 **Quality: Very Good**
@@ -211,23 +211,35 @@ src/services/llm_service/
 - Simple deque-based implementation appropriate for PoC
 - Good notification type helpers
 
+### Modules Review
+
+#### M2 Rinser (71 tests)
+**Quality: Excellent**
+- ✅ `SanitizationError` now properly raised for:
+  - Empty or whitespace-only input
+  - Sanitization producing <50 chars (insufficient content)
+- Good HTML/script removal
+- LLM-based extraction working well
+
+#### M4 Creator (49 tests)
+**Quality: Excellent**
+- ✅ `AnalysisNotAvailableError` now properly raised when:
+  - Analysis is None
+  - Analysis missing job_title
+  - Analysis missing compatibility data
+- Clean CV/cover letter generation
+- Skills categorization working well
+
 ---
 
-### Ollama Transition Verification
+### Web Application Review
 
-✅ **No Anthropic SDK in dependencies** - `requirements.txt` uses `ollama>=0.4.0`
-
-✅ **Provider abstraction implemented** - `LLMProvider` ABC with `OllamaProvider`
-
-✅ **Configuration updated** - `LLMConfig` has Ollama-specific fields
-
-✅ **Health status reflects Ollama** - `ollama_connected`, `model_loaded`, `total_tokens`
-
-✅ **Tests mock Ollama client** - 52 tests use `AsyncMock` for `ollama.AsyncClient`
-
-✅ **Documentation updated** - CLAUDE.md, LL-LI.md, specs reference Ollama
-
-✅ **Legacy references cleaned up** - All "haiku"/"anthropic" examples updated
+#### Health Endpoint
+**Status: ✅ Now Functional**
+- Checks pipeline orchestrator initialization
+- Checks job store availability
+- Checks notification service availability
+- Returns "healthy" or "degraded" based on actual status
 
 ---
 
@@ -235,17 +247,17 @@ src/services/llm_service/
 
 #### Coverage Summary
 ```
-Total Tests: 609
+Total Tests: 610
 Coverage: 94%
 
 Per-Component Tests:
-- test_llm_service.py: 52 tests (Ollama mocking)
-- test_vector_store.py: 55 tests
-- test_rinser.py: 71 tests
+- test_rinser.py: 71 tests (includes SanitizationError tests)
 - test_analyzer.py: 62 tests
+- test_vector_store.py: 55 tests
 - test_pipeline.py: 52 tests
+- test_llm_service.py: 52 tests (Ollama mocking)
 - test_collector.py: 49 tests
-- test_creator.py: 48 tests
+- test_creator.py: 49 tests (includes AnalysisNotAvailableError test)
 - test_cache.py: 46 tests
 - test_web.py: 43 tests
 - test_notification.py: 40 tests
@@ -255,7 +267,7 @@ Per-Component Tests:
 ```
 
 #### Verification Results
-- ✅ **609 tests passing**
+- ✅ **610 tests passing**
 - ✅ **Mypy: No type errors** in 61 source files
 - ✅ **Ruff: All checks passed**
 
@@ -281,7 +293,7 @@ Per-Component Tests:
 
 ## Recommendations Summary
 
-### Completed This Session ✅
+### Completed ✅
 
 1. ✅ **Input validation** - Added `max_length=50000` to job_text
 2. ✅ **Pipeline timeout** - Added 900s timeout for local LLM
@@ -289,38 +301,43 @@ Per-Component Tests:
 4. ✅ **Legacy examples** - Updated "haiku"→"qwen2.5:3b", "anthropic"→"ollama"
 5. ✅ **Ruff warnings** - Fixed quoted type annotation and TimeoutError alias
 6. ✅ **Mypy errors** - Fixed Ollama format parameter type
+7. ✅ **Health endpoint** - Now checks actual service status
+8. ✅ **SanitizationError** - Now raised for empty/insufficient input
+9. ✅ **AnalysisNotAvailableError** - Now raised when analysis is None
 
 ### Future Work (Post-PoC)
 
-7. **Security Hardening** (C-01, C-02)
-   - Add CSRF protection
-   - Add rate limiting
+10. **Security Hardening** (C-01, C-02)
+    - Add CSRF protection
+    - Add rate limiting
 
-8. **Code Improvements** (H-02 to H-06)
-   - Concurrent access safety
-   - Functional health checks
-   - Raise defined exceptions
+11. **Code Improvements** (H-02, H-04)
+    - Concurrent access safety
+    - Better experience matching
 
-9. **Documentation** (L-03 to L-05)
-   - Add LICENSE file
-   - Create deployment docs
-   - Add test markers
+12. **Documentation** (L-03 to L-05)
+    - Add LICENSE file
+    - Create deployment docs
+    - Add test markers
 
 ---
 
 ## Conclusion
 
-The Scout project is a **well-executed PoC** demonstrating strong software engineering practices. The Local LLM Transition from Anthropic to Ollama was implemented cleanly using a provider abstraction pattern, maintaining 100% test compatibility with 609 tests passing.
+The Scout project is a **well-executed PoC** demonstrating strong software engineering practices. The Local LLM Transition from Anthropic to Ollama was implemented cleanly using a provider abstraction pattern, maintaining 100% test compatibility with 610 tests passing.
 
-**Session Improvements:**
+**All Session Improvements:**
 - Input validation to prevent DoS (max_length on job_text)
 - Pipeline timeout (900s) for local LLM reliability
 - Dependency cleanup (removed 3 unused packages)
 - Legacy reference cleanup (all Anthropic examples updated)
 - All linting and type errors resolved
+- Health endpoint now functional with real service checks
+- SanitizationError properly raised in rinser
+- AnalysisNotAvailableError properly raised in creator
 
 **Verification:**
-- 609 tests passing
+- 610 tests passing
 - Mypy: No errors in 61 files
 - Ruff: All checks passed
 
