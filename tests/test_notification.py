@@ -67,7 +67,7 @@ class TestNotificationModels:
             message="Test message",
         )
         assert n.id is not None
-        assert len(n.id) == 8
+        assert len(n.id) == 36  # Full UUID format (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
         assert n.type == NotificationType.INFO
         assert n.title == "Test"
         assert n.message == "Test message"

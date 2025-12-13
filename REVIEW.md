@@ -10,16 +10,16 @@
 
 The Scout project demonstrates **excellent overall quality** for a PoC implementation. Following the Local LLM Transition (Anthropic → Ollama), the codebase maintains its clean architecture with a well-implemented provider abstraction pattern. All 610 tests pass, with strong separation of concerns across services and modules.
 
-**Overall Assessment: 92/100** (improved from 91/100 after additional fixes)
+**Overall Assessment: 94/100** (improved from 92/100 after H-02, H-04, M-02 to M-05 fixes)
 
 | Category | Rating | Summary |
 |----------|--------|---------|
-| Architecture | 92/100 | Clean separation, excellent provider abstraction |
-| Code Quality | 91/100 | Well-structured, exceptions properly used |
+| Architecture | 94/100 | Clean separation, thread-safe services |
+| Code Quality | 93/100 | Well-structured, robust error handling |
 | Test Coverage | 94/100 | 610 tests, >90% coverage |
 | Documentation | 90/100 | Excellent, Ollama transition documented |
-| Security | 80/100 | Input validation added, DoS prevention |
-| Performance | 87/100 | Pipeline timeout for local LLM added |
+| Security | 82/100 | Input validation, thread safety added |
+| Performance | 88/100 | Pipeline timeout, improved experience matching |
 
 ---
 
@@ -123,6 +123,12 @@ src/services/llm_service/
 | - | Ruff UP037 warning | ✅ Fixed | Removed quotes from type annotation |
 | - | Ruff UP041 warning | ✅ Fixed | Changed `asyncio.TimeoutError` to `TimeoutError` |
 | - | Mypy arg-type error | ✅ Fixed | Added `Literal["", "json"]` type |
+| H-02 | No concurrent access safety | ✅ Fixed | Added `threading.Lock` to JobStore and NotificationService |
+| H-04 | Experience matching uses top 1 | ✅ Fixed | Changed to `n_results=3` with best match selection |
+| M-02 | Notification ID collision risk | ✅ Fixed | Changed from 8-char to full UUID (36-char) |
+| M-03 | No pagination for /api/jobs | ✅ Fixed | Added `skip` and `limit` query parameters |
+| M-04 | Template path is relative | ✅ Fixed | Used `__file__` for absolute path resolution |
+| M-05 | Progress callback not protected | ✅ Fixed | Wrapped callback in try-except with logging |
 
 ---
 
@@ -135,22 +141,6 @@ src/services/llm_service/
 | C-01 | No CSRF protection | Web routes | Add fastapi-csrf-protect middleware |
 | C-02 | No rate limiting | API endpoints | Add SlowAPI middleware |
 | C-04 | Inline JS/CSS violates CSP | index.html | Move to separate files with nonce |
-
-### High Priority (Future Work)
-
-| ID | Issue | Location | Recommendation |
-|----|-------|----------|----------------|
-| H-02 | No concurrent access safety | Multiple services | Add threading.Lock for shared state |
-| H-04 | Experience matching uses top 1 | analyzer.py | Use `n_results=3` and best match |
-
-### Medium Priority (Future Work)
-
-| ID | Issue | Location | Recommendation |
-|----|-------|----------|----------------|
-| M-02 | Notification ID collision risk | notification.py | Use full UUID instead of 8-char |
-| M-03 | No pagination for /api/jobs | api.py | Add skip/limit parameters |
-| M-04 | Template path is relative | formatter.py | Use `__file__` for absolute path |
-| M-05 | Progress callback not protected | pipeline.py | Wrap in try-except |
 
 ### Low Priority (Enhancements)
 
@@ -304,18 +294,20 @@ Per-Component Tests:
 7. ✅ **Health endpoint** - Now checks actual service status
 8. ✅ **SanitizationError** - Now raised for empty/insufficient input
 9. ✅ **AnalysisNotAvailableError** - Now raised when analysis is None
+10. ✅ **Thread safety (H-02)** - Added `threading.Lock` to JobStore and NotificationService
+11. ✅ **Experience matching (H-04)** - Changed to `n_results=3` with best match selection
+12. ✅ **Notification ID (M-02)** - Changed from 8-char to full UUID (36-char)
+13. ✅ **Pagination (M-03)** - Added `skip`/`limit` params to `/api/jobs`
+14. ✅ **Template paths (M-04)** - Used `__file__` for absolute path resolution
+15. ✅ **Progress callback (M-05)** - Protected with try-except to prevent pipeline crashes
 
 ### Future Work (Post-PoC)
 
-10. **Security Hardening** (C-01, C-02)
+16. **Security Hardening** (C-01, C-02)
     - Add CSRF protection
     - Add rate limiting
 
-11. **Code Improvements** (H-02, H-04)
-    - Concurrent access safety
-    - Better experience matching
-
-12. **Documentation** (L-03 to L-05)
+17. **Documentation** (L-03 to L-05)
     - Add LICENSE file
     - Create deployment docs
     - Add test markers
@@ -335,6 +327,12 @@ The Scout project is a **well-executed PoC** demonstrating strong software engin
 - Health endpoint now functional with real service checks
 - SanitizationError properly raised in rinser
 - AnalysisNotAvailableError properly raised in creator
+- Thread safety with `threading.Lock` for JobStore and NotificationService
+- Improved experience matching (n_results=3 with best match)
+- Full UUID for notification IDs (collision-safe)
+- Pagination support for /api/jobs endpoint
+- Absolute template paths via `__file__`
+- Protected progress callback with try-except
 
 **Verification:**
 - 610 tests passing
@@ -348,3 +346,4 @@ The project is ready for thesis review and potential deployment on Raspberry Pi 
 *Review completed: December 13, 2025*
 *Reviewer: Claude Code (claude-opus-4-5-20251101)*
 *Architecture: Local Ollama LLM (Qwen 2.5 3B / Gemma 2 2B)*
+*Overall Score: 94/100*

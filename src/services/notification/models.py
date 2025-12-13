@@ -37,7 +37,7 @@ class Notification(BaseModel):
         dismiss_after_seconds: Seconds before auto-dismiss.
     """
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4())[:8])
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     type: NotificationType
     title: str
     message: str

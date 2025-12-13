@@ -12,6 +12,7 @@ Usage:
 """
 
 import logging
+import threading
 from collections import deque
 
 from src.services.notification.models import (
@@ -30,8 +31,12 @@ class NotificationService:
     Uses an in-memory deque with configurable max size.
     Notifications are polled by the frontend.
 
+    Thread-safe: All operations protected by a lock for concurrent access
+    from background tasks and API requests.
+
     Attributes:
         max_notifications: Maximum notifications to keep in memory.
+        _lock: Threading lock for concurrent access safety.
 
     Example:
         >>> service = NotificationService()
@@ -50,6 +55,7 @@ class NotificationService:
         """
         self._max = max_notifications
         self._notifications: deque[Notification] = deque(maxlen=max_notifications)
+        self._lock = threading.Lock()
 
         logger.debug(f"NotificationService initialized (max: {max_notifications})")
 
@@ -59,7 +65,8 @@ class NotificationService:
 
     def _add_notification(self, notification: Notification) -> Notification:
         """Add notification to queue."""
-        self._notifications.append(notification)
+        with self._lock:
+            self._notifications.append(notification)
         logger.debug(
             f"Notification added: [{notification.type.value}] {notification.title}"
         )
@@ -235,14 +242,15 @@ class NotificationService:
         Returns:
             NotificationList with notifications (newest first).
         """
-        notifications = list(self._notifications)[-limit:]
+        with self._lock:
+            notifications = list(self._notifications)[-limit:]
+            unread = sum(1 for n in self._notifications if not n.read)
+            total = len(self._notifications)
         notifications.reverse()  # Newest first
-
-        unread = sum(1 for n in self._notifications if not n.read)
 
         return NotificationList(
             notifications=notifications,
-            total=len(self._notifications),
+            total=total,
             unread_count=unread,
         )
 
@@ -253,7 +261,8 @@ class NotificationService:
         Returns:
             NotificationList with unread notifications (newest first).
         """
-        unread = [n for n in self._notifications if not n.read]
+        with self._lock:
+            unread = [n for n in self._notifications if not n.read]
         unread.reverse()  # Newest first
 
         return NotificationList(
@@ -272,10 +281,11 @@ class NotificationService:
         Returns:
             Notification if found, None otherwise.
         """
-        for n in self._notifications:
-            if n.id == notification_id:
-                return n
-        return None
+        with self._lock:
+            for n in self._notifications:
+                if n.id == notification_id:
+                    return n
+            return None
 
     # =========================================================================
     # MANAGEMENT
@@ -291,11 +301,12 @@ class NotificationService:
         Returns:
             True if found and marked, False otherwise.
         """
-        notification = self.get_by_id(notification_id)
-        if notification:
-            notification.read = True
-            return True
-        return False
+        with self._lock:
+            for n in self._notifications:
+                if n.id == notification_id:
+                    n.read = True
+                    return True
+            return False
 
     def mark_all_read(self) -> int:
         """
@@ -305,10 +316,11 @@ class NotificationService:
             Number marked as read.
         """
         count = 0
-        for n in self._notifications:
-            if not n.read:
-                n.read = True
-                count += 1
+        with self._lock:
+            for n in self._notifications:
+                if not n.read:
+                    n.read = True
+                    count += 1
         return count
 
     def clear_all(self) -> int:
@@ -318,17 +330,20 @@ class NotificationService:
         Returns:
             Number cleared.
         """
-        count = len(self._notifications)
-        self._notifications.clear()
+        with self._lock:
+            count = len(self._notifications)
+            self._notifications.clear()
         return count
 
     def count(self) -> int:
         """Get total notification count."""
-        return len(self._notifications)
+        with self._lock:
+            return len(self._notifications)
 
     def unread_count(self) -> int:
         """Get unread notification count."""
-        return sum(1 for n in self._notifications if not n.read)
+        with self._lock:
+            return sum(1 for n in self._notifications if not n.read)
 
 
 # =============================================================================

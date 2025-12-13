@@ -6,6 +6,7 @@ Provides singleton access to services and in-memory job storage.
 """
 
 import logging
+import threading
 
 from src.services.pipeline import (
     PipelineOrchestrator,
@@ -28,13 +29,18 @@ class JobStore:
     Simple dict-based storage for PoC scope.
     Production would use a database.
 
+    Thread-safe: All operations protected by a lock for concurrent access
+    from background tasks and API requests.
+
     Attributes:
         _jobs: Dict mapping job_id to PipelineResult.
+        _lock: Threading lock for concurrent access safety.
     """
 
     def __init__(self) -> None:
         """Initialize empty job store."""
         self._jobs: dict[str, PipelineResult] = {}
+        self._lock = threading.Lock()
 
     def store(self, result: PipelineResult) -> str:
         """
@@ -48,8 +54,10 @@ class JobStore:
         """
         # Use job_id if available, else pipeline_id
         job_id = result.job_id or result.pipeline_id
-        self._jobs[job_id] = result
-        logger.debug(f"Stored job {job_id}, total jobs: {len(self._jobs)}")
+        with self._lock:
+            self._jobs[job_id] = result
+            job_count = len(self._jobs)
+        logger.debug(f"Stored job {job_id}, total jobs: {job_count}")
         return job_id
 
     def get(self, job_id: str) -> PipelineResult | None:
@@ -62,7 +70,8 @@ class JobStore:
         Returns:
             Pipeline result if found, None otherwise.
         """
-        return self._jobs.get(job_id)
+        with self._lock:
+            return self._jobs.get(job_id)
 
     def list_all(self) -> list[PipelineResult]:
         """
@@ -71,20 +80,25 @@ class JobStore:
         Returns:
             List of all pipeline results, newest first.
         """
+        with self._lock:
+            # Copy values under lock, then sort outside
+            jobs = list(self._jobs.values())
         # Sort by started_at descending
         return sorted(
-            self._jobs.values(),
+            jobs,
             key=lambda r: r.started_at,
             reverse=True,
         )
 
     def count(self) -> int:
         """Get total number of stored jobs."""
-        return len(self._jobs)
+        with self._lock:
+            return len(self._jobs)
 
     def clear(self) -> None:
         """Clear all stored jobs (for testing)."""
-        self._jobs.clear()
+        with self._lock:
+            self._jobs.clear()
 
 
 # =============================================================================

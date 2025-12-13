@@ -320,11 +320,15 @@ class TestFormatterInitialization:
         assert not formatter._initialized
 
     def test_create_formatter_default_paths(self) -> None:
-        """Should use default paths when not specified."""
+        """Should use absolute default paths when not specified."""
         formatter = Formatter()
 
-        assert formatter._templates_dir == Path("src/templates")
-        assert formatter._output_dir == Path("output")
+        # Paths should be absolute (using __file__ to determine project root)
+        assert formatter._templates_dir.is_absolute()
+        assert formatter._output_dir.is_absolute()
+        # Should end with the expected path segments
+        assert formatter._templates_dir.parts[-2:] == ("src", "templates")
+        assert formatter._output_dir.parts[-1] == "output"
 
     @pytest.mark.asyncio
     async def test_initialize(self, formatter: Formatter) -> None:

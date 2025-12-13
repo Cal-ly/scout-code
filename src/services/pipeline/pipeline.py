@@ -140,7 +140,11 @@ class PipelineOrchestrator:
         steps_completed: int,
         message: str,
     ) -> None:
-        """Report progress via callback if set."""
+        """Report progress via callback if set.
+
+        Callback errors are logged but not raised to prevent
+        callback failures from crashing the pipeline.
+        """
         if self._progress_callback:
             progress = PipelineProgress(
                 pipeline_id=pipeline_id,
@@ -151,7 +155,12 @@ class PipelineOrchestrator:
                 progress_percent=(steps_completed / len(self.STEPS)) * 100,
                 message=message,
             )
-            await self._progress_callback(progress)
+            try:
+                await self._progress_callback(progress)
+            except Exception as e:
+                logger.warning(
+                    f"Progress callback failed for pipeline {pipeline_id}: {e}"
+                )
 
     def _create_step_result(
         self,

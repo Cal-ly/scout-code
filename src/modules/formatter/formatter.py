@@ -40,9 +40,11 @@ from src.modules.formatter.models import FormattedApplication, FormattedDocument
 
 logger = logging.getLogger(__name__)
 
-# Default paths
-DEFAULT_TEMPLATES_DIR = Path("src/templates")
-DEFAULT_OUTPUT_DIR = Path("output")
+# Default paths (relative to project root via __file__)
+_MODULE_DIR = Path(__file__).parent
+_PROJECT_ROOT = _MODULE_DIR.parent.parent.parent  # src/modules/formatter -> project root
+DEFAULT_TEMPLATES_DIR = _PROJECT_ROOT / "src" / "templates"
+DEFAULT_OUTPUT_DIR = _PROJECT_ROOT / "output"
 
 
 class Formatter:

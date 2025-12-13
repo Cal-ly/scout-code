@@ -321,24 +321,35 @@ async def download(
     "/jobs",
     response_model=JobListResponse,
     summary="List all jobs",
-    description="Get a list of all submitted job applications.",
+    description="Get a paginated list of submitted job applications.",
 )
 async def list_jobs(
+    skip: int = 0,
+    limit: int = 20,
     store: JobStore = Depends(get_store),
 ) -> JobListResponse:
     """
-    List all job applications.
+    List all job applications with pagination.
 
     Args:
+        skip: Number of jobs to skip (offset).
+        limit: Maximum number of jobs to return.
         store: Job storage.
 
     Returns:
-        JobListResponse with list of job summaries.
+        JobListResponse with paginated list of job summaries.
     """
-    results = store.list_all()
-    summaries = [result_to_job_summary(r) for r in results]
+    # Get all results (already sorted by date descending)
+    all_results = store.list_all()
+    total = len(all_results)
+
+    # Apply pagination
+    paginated_results = all_results[skip : skip + limit]
+    summaries = [result_to_job_summary(r) for r in paginated_results]
 
     return JobListResponse(
         jobs=summaries,
-        total=len(summaries),
+        total=total,
+        skip=skip,
+        limit=limit,
     )

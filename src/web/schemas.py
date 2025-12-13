@@ -78,11 +78,15 @@ class JobListResponse(BaseModel):
 
     Attributes:
         jobs: List of job summaries.
-        total: Total number of jobs.
+        total: Total number of jobs in store.
+        skip: Number of jobs skipped (offset).
+        limit: Maximum number of jobs returned.
     """
 
     jobs: list[JobSummary]
     total: int
+    skip: int = 0
+    limit: int = 20
 
 
 class StepInfo(BaseModel):

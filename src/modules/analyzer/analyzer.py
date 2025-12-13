@@ -256,13 +256,13 @@ class Analyzer:
 
         try:
             for resp in job.responsibilities:
-                # Search for relevant experiences
+                # Search for relevant experiences (get multiple candidates)
                 exp_results = await self._collector.search_experiences(
                     query=resp.text,
-                    n_results=1,
+                    n_results=3,
                 )
 
-                # Filter by threshold
+                # Filter by threshold and get best match
                 matched_results = [
                     e
                     for e in exp_results
@@ -270,7 +270,8 @@ class Analyzer:
                 ]
 
                 if matched_results:
-                    exp = matched_results[0]
+                    # Use the best scoring match
+                    exp = max(matched_results, key=lambda x: x.score)
                     # Extract matching keywords
                     keywords = self._extract_matching_keywords(resp.text, exp)
 
