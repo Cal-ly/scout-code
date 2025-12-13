@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cover Letter - {{ letter.job_title }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #333;
+            padding: 60px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .sender-info {
+            margin-bottom: 20px;
+        }
+
+        .sender-name {
+            font-weight: 700;
+            font-size: 14pt;
+        }
+
+        .sender-contact {
+            font-size: 10pt;
+            color: #555;
+        }
+
+        .date {
+            margin-bottom: 20px;
+            font-size: 10pt;
+            color: #555;
+        }
+
+        .recipient {
+            margin-bottom: 20px;
+        }
+
+        .salutation {
+            margin-bottom: 20px;
+        }
+
+        .body {
+            margin-bottom: 30px;
+        }
+
+        .body p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        .closing {
+            margin-bottom: 40px;
+        }
+
+        .signature {
+            font-style: italic;
+        }
+
+        @media print {
+            body {
+                padding: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <!-- Sender Info -->
+        <div class="sender-info">
+            <div class="sender-name">{{ sender.full_name }}</div>
+            <div class="sender-contact">
+                {{ sender.email }}<br>
+                {% if sender.phone %}{{ sender.phone }}<br>{% endif %}
+                {% if sender.location %}{{ sender.location }}{% endif %}
+            </div>
+        </div>
+
+        <!-- Date -->
+        <div class="date">{{ date }}</div>
+
+        <!-- Recipient -->
+        <div class="recipient">
+            {{ letter.recipient_name or "Hiring Manager" }}<br>
+            {{ letter.company_name }}
+        </div>
+    </div>
+
+    <!-- Salutation -->
+    <div class="salutation">
+        Dear {{ letter.recipient_name or "Hiring Manager" }},
+    </div>
+
+    <!-- Body -->
+    <div class="body">
+        {% if letter.opening %}
+        <p>{{ letter.opening }}</p>
+        {% endif %}
+        {% for paragraph in letter.body_paragraphs %}
+        <p>{{ paragraph }}</p>
+        {% endfor %}
+        {% if letter.closing %}
+        <p>{{ letter.closing }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Signature -->
+    <div class="closing">
+        Sincerely,
+    </div>
+
+    <div class="signature">
+        {{ sender.full_name }}
+    </div>
+</body>
+</html>

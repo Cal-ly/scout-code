@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ cv.full_name }} - CV</title>
+    <style>
+        /* Reset and base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #333;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #2c3e50;
+        }
+
+        .name {
+            font-size: 24pt;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .contact {
+            font-size: 9pt;
+            color: #555;
+        }
+
+        .contact a {
+            color: #2980b9;
+            text-decoration: none;
+        }
+
+        /* Sections */
+        .section {
+            margin-bottom: 18px;
+        }
+
+        .section-title {
+            font-size: 12pt;
+            font-weight: 700;
+            color: #2c3e50;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #bdc3c7;
+        }
+
+        /* Summary */
+        .summary {
+            font-size: 10pt;
+            color: #444;
+            text-align: justify;
+        }
+
+        /* Experience */
+        .experience-item {
+            margin-bottom: 14px;
+        }
+
+        .experience-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 4px;
+        }
+
+        .experience-title {
+            font-weight: 700;
+            font-size: 11pt;
+            color: #2c3e50;
+        }
+
+        .experience-duration {
+            font-size: 9pt;
+            color: #777;
+        }
+
+        .experience-bullets {
+            list-style-type: disc;
+            margin-left: 20px;
+            margin-top: 4px;
+        }
+
+        .experience-bullets li {
+            margin-bottom: 3px;
+            font-size: 10pt;
+        }
+
+        /* Skills */
+        .skills-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .skill-tag {
+            background: #ecf0f1;
+            padding: 3px 10px;
+            border-radius: 3px;
+            font-size: 9pt;
+            color: #2c3e50;
+        }
+
+        /* Education */
+        .education-item {
+            margin-bottom: 8px;
+        }
+
+        .education-degree {
+            font-weight: 700;
+            font-size: 10pt;
+        }
+
+        .education-school {
+            font-size: 9pt;
+            color: #555;
+        }
+
+        /* Print optimization */
+        @media print {
+            body {
+                padding: 20px;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="name">{{ cv.full_name }}</div>
+        <div class="contact">
+            {{ cv.email }}
+            {% if cv.phone %} &bull; {{ cv.phone }}{% endif %}
+            {% if cv.location %} &bull; {{ cv.location }}{% endif %}
+            {% if cv.linkedin_url %} &bull; <a href="{{ cv.linkedin_url }}">LinkedIn</a>{% endif %}
+            {% if cv.github_url %} &bull; <a href="{{ cv.github_url }}">GitHub</a>{% endif %}
+        </div>
+    </div>
+
+    <!-- Professional Summary -->
+    {% if cv.professional_summary %}
+    <div class="section">
+        <div class="section-title">Professional Summary</div>
+        <div class="summary">{{ cv.professional_summary }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Experience -->
+    {% set experience_sections = cv.sections | selectattr('section_type', 'equalto', 'experience') | list %}
+    {% if experience_sections %}
+    <div class="section">
+        <div class="section-title">Experience</div>
+        {% for section in experience_sections %}
+        <div class="experience-item">
+            <div class="experience-header">
+                <span class="experience-title">{{ section.title }}</span>
+                {% if section.content %}
+                <span class="experience-duration">{{ section.content }}</span>
+                {% endif %}
+            </div>
+            {% if section.bullet_points %}
+            <ul class="experience-bullets">
+                {% for bullet in section.bullet_points %}
+                <li>{{ bullet }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Technical Skills -->
+    {% if cv.technical_skills %}
+    <div class="section">
+        <div class="section-title">Technical Skills</div>
+        <div class="skills-container">
+            {% for skill in cv.technical_skills %}
+            <span class="skill-tag">{{ skill }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Soft Skills -->
+    {% if cv.soft_skills %}
+    <div class="section">
+        <div class="section-title">Soft Skills</div>
+        <div class="skills-container">
+            {% for skill in cv.soft_skills %}
+            <span class="skill-tag">{{ skill }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Education -->
+    {% set education_sections = cv.sections | selectattr('section_type', 'equalto', 'education') | list %}
+    {% if education_sections %}
+    <div class="section">
+        <div class="section-title">Education</div>
+        {% for section in education_sections %}
+        <div class="education-item">
+            <div class="education-degree">{{ section.title }}</div>
+            {% if section.content %}
+            <div class="education-school">{{ section.content }}</div>
+            {% endif %}
+            {% if section.bullet_points %}
+            <ul class="experience-bullets">
+                {% for bullet in section.bullet_points %}
+                <li>{{ bullet }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</body>
+</html>

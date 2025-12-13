@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scout - Job Application Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .header {
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1rem 2rem;
+        }
+        .header h1 {
+            font-size: 1.5rem;
+            color: #1a1a1a;
+        }
+        .header p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .card h2 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        textarea {
+            width: 100%;
+            min-height: 250px;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            resize: vertical;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+        .char-count {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        .char-count.warning {
+            color: #d97706;
+        }
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-primary {
+            background: #2563eb;
+            color: #fff;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: #1d4ed8;
+        }
+        .btn-primary:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: #2563eb;
+            transition: width 0.5s ease;
+        }
+        .steps {
+            margin-top: 1.5rem;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+        }
+        .step-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .step-pending { background: #e5e7eb; color: #6b7280; }
+        .step-running { background: #2563eb; color: #fff; }
+        .step-completed { background: #10b981; color: #fff; }
+        .step-failed { background: #ef4444; color: #fff; }
+        .step-label { color: #374151; }
+        .step-label.inactive { color: #9ca3af; }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        .result-header h3 {
+            font-size: 1.25rem;
+            color: #1a1a1a;
+        }
+        .result-header p {
+            color: #666;
+        }
+        .score-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .score-excellent { background: #d1fae5; color: #065f46; }
+        .score-strong { background: #dbeafe; color: #1e40af; }
+        .score-moderate { background: #fef3c7; color: #92400e; }
+        .score-weak { background: #fee2e2; color: #991b1b; }
+        .match-message {
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+        .match-excellent { background: #d1fae5; color: #065f46; }
+        .match-strong { background: #dbeafe; color: #1e40af; }
+        .match-moderate { background: #fef3c7; color: #92400e; }
+        .match-weak { background: #fee2e2; color: #991b1b; }
+        .download-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        .btn-download {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .btn-cv {
+            background: #2563eb;
+            color: #fff;
+        }
+        .btn-cv:hover {
+            background: #1d4ed8;
+        }
+        .btn-cover {
+            background: #10b981;
+            color: #fff;
+        }
+        .btn-cover:hover {
+            background: #059669;
+        }
+        .error-card {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+        }
+        .error-card h3 {
+            color: #991b1b;
+        }
+        .error-card p {
+            color: #b91c1c;
+            margin-top: 0.5rem;
+        }
+        .toast-container {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .toast {
+            min-width: 300px;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-info { background: #2563eb; color: #fff; }
+        .toast-success { background: #10b981; color: #fff; }
+        .toast-warning { background: #f59e0b; color: #1a1a1a; }
+        .toast-error { background: #ef4444; color: #fff; }
+        .toast-content { flex: 1; }
+        .toast-title { font-weight: 600; }
+        .toast-message { font-size: 0.9rem; opacity: 0.9; margin-top: 0.25rem; }
+        .toast-close {
+            background: none;
+            border: none;
+            color: inherit;
+            opacity: 0.7;
+            cursor: pointer;
+            font-size: 1.25rem;
+            line-height: 1;
+        }
+        .toast-close:hover { opacity: 1; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Scout</h1>
+        <p>Intelligent Job Application Generator</p>
+    </header>
+
+    <main class="container">
+        <!-- Input Section -->
+        <section id="input-section" class="card">
+            <h2>Paste Job Posting</h2>
+            <textarea
+                id="job-text"
+                placeholder="Paste the full job posting text here...
+
+Include:
+- Job title
+- Company name
+- Requirements
+- Responsibilities
+- Qualifications"
+            ></textarea>
+            <p class="char-count" id="char-count">0 characters</p>
+            <div style="margin-top: 1rem;">
+                <button id="submit-btn" class="btn btn-primary" disabled>
+                    Generate Application
+                </button>
+            </div>
+        </section>
+
+        <!-- Progress Section -->
+        <section id="progress-section" class="card hidden">
+            <h2>Processing Your Application</h2>
+            <div class="progress-bar">
+                <div class="progress-bar-fill" id="progress-fill" style="width: 0%"></div>
+            </div>
+            <div class="steps" id="steps-container">
+                <div class="step" data-step="rinser">
+                    <div class="step-icon step-pending" id="step-icon-rinser">1</div>
+                    <span class="step-label inactive" id="step-label-rinser">Processing job posting...</span>
+                </div>
+                <div class="step" data-step="analyzer">
+                    <div class="step-icon step-pending" id="step-icon-analyzer">2</div>
+                    <span class="step-label inactive" id="step-label-analyzer">Analyzing compatibility...</span>
+                </div>
+                <div class="step" data-step="creator">
+                    <div class="step-icon step-pending" id="step-icon-creator">3</div>
+                    <span class="step-label inactive" id="step-label-creator">Generating content...</span>
+                </div>
+                <div class="step" data-step="formatter">
+                    <div class="step-icon step-pending" id="step-icon-formatter">4</div>
+                    <span class="step-label inactive" id="step-label-formatter">Creating PDFs...</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="result-section" class="card hidden">
+            <div class="result-header">
+                <div>
+                    <h3 id="result-title">Software Engineer</h3>
+                    <p id="result-company">Company Name</p>
+                </div>
+                <div class="score-badge" id="score-badge">85%</div>
+            </div>
+            <div class="match-message" id="match-message">
+                Match analysis message here
+            </div>
+            <div class="download-buttons">
+                <a href="#" class="btn-download btn-cv" id="download-cv">
+                    <span>Download CV</span>
+                </a>
+                <a href="#" class="btn-download btn-cover" id="download-cover">
+                    <span>Download Cover Letter</span>
+                </a>
+            </div>
+            <button id="reset-btn" class="btn btn-secondary">
+                Process Another Job
+            </button>
+        </section>
+
+        <!-- Error Section -->
+        <section id="error-section" class="card error-card hidden">
+            <h3>Processing Failed</h3>
+            <p id="error-message">Error details here</p>
+            <div style="margin-top: 1rem;">
+                <button id="retry-btn" class="btn btn-secondary">
+                    Try Again
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        // State
+        let currentJobId = null;
+        let pollInterval = null;
+        let notificationPollInterval = null;
+        let seenNotifications = new Set();
+
+        // DOM Elements
+        const jobTextArea = document.getElementById('job-text');
+        const charCount = document.getElementById('char-count');
+        const submitBtn = document.getElementById('submit-btn');
+        const inputSection = document.getElementById('input-section');
+        const progressSection = document.getElementById('progress-section');
+        const resultSection = document.getElementById('result-section');
+        const errorSection = document.getElementById('error-section');
+        const progressFill = document.getElementById('progress-fill');
+        const toastContainer = document.getElementById('toast-container');
+
+        // Step mapping
+        const stepOrder = ['rinser', 'analyzer', 'creator', 'formatter'];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Character counter
+            jobTextArea.addEventListener('input', updateCharCount);
+
+            // Submit button
+            submitBtn.addEventListener('click', startProcessing);
+
+            // Reset/retry buttons
+            document.getElementById('reset-btn').addEventListener('click', resetForm);
+            document.getElementById('retry-btn').addEventListener('click', resetForm);
+
+            // Start notification polling
+            startNotificationPolling();
+        });
+
+        function updateCharCount() {
+            const len = jobTextArea.value.length;
+            charCount.textContent = `${len} characters`;
+
+            if (len < 100) {
+                charCount.classList.add('warning');
+                charCount.textContent += ' (minimum 100 required)';
+                submitBtn.disabled = true;
+            } else {
+                charCount.classList.remove('warning');
+                submitBtn.disabled = false;
+            }
+        }
+
+        async function startProcessing() {
+            const jobText = jobTextArea.value.trim();
+            if (jobText.length < 100) return;
+
+            // Show progress section
+            inputSection.classList.add('hidden');
+            progressSection.classList.remove('hidden');
+            resultSection.classList.add('hidden');
+            errorSection.classList.add('hidden');
+
+            // Reset progress UI
+            resetProgressUI();
+
+            try {
+                // Submit job
+                const response = await fetch('/api/apply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ job_text: jobText })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to start processing');
+                }
+
+                const data = await response.json();
+                currentJobId = data.job_id;
+
+                // Start polling
+                startPolling();
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function resetProgressUI() {
+            progressFill.style.width = '0%';
+            stepOrder.forEach((step, index) => {
+                const icon = document.getElementById(`step-icon-${step}`);
+                const label = document.getElementById(`step-label-${step}`);
+                icon.className = 'step-icon step-pending';
+                icon.textContent = index + 1;
+                label.classList.add('inactive');
+            });
+        }
+
+        function startPolling() {
+            if (pollInterval) clearInterval(pollInterval);
+
+            pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/status/${currentJobId}`);
+                    if (!response.ok) {
+                        throw new Error('Failed to get status');
+                    }
+
+                    const status = await response.json();
+                    updateProgress(status);
+
+                    if (status.status === 'completed' || status.status === 'failed') {
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+
+                        if (status.status === 'completed') {
+                            showResults(status);
+                        } else {
+                            showError(status.error || 'Processing failed');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Poll error:', error);
+                }
+            }, 1000);
+        }
+
+        function updateProgress(status) {
+            // Count completed steps
+            const completedSteps = status.steps ?
+                status.steps.filter(s => s.status === 'completed').length : 0;
+            const progress = (completedSteps / stepOrder.length) * 100;
+            progressFill.style.width = `${progress}%`;
+
+            // Update step icons
+            stepOrder.forEach((stepName, index) => {
+                const icon = document.getElementById(`step-icon-${stepName}`);
+                const label = document.getElementById(`step-label-${stepName}`);
+                const stepData = status.steps?.find(s => s.step === stepName);
+
+                if (stepData) {
+                    if (stepData.status === 'completed') {
+                        icon.className = 'step-icon step-completed';
+                        icon.innerHTML = '&#10003;';
+                        label.classList.remove('inactive');
+                    } else if (stepData.status === 'running') {
+                        icon.className = 'step-icon step-running spinner';
+                        icon.innerHTML = '&#8635;';
+                        label.classList.remove('inactive');
+                    } else if (stepData.status === 'failed') {
+                        icon.className = 'step-icon step-failed';
+                        icon.innerHTML = '&#10007;';
+                        label.classList.remove('inactive');
+                    }
+                } else if (status.current_step === stepName) {
+                    icon.className = 'step-icon step-running spinner';
+                    icon.innerHTML = '&#8635;';
+                    label.classList.remove('inactive');
+                }
+            });
+        }
+
+        function showResults(status) {
+            progressSection.classList.add('hidden');
+            resultSection.classList.remove('hidden');
+
+            // Update content
+            document.getElementById('result-title').textContent =
+                status.job_title || 'Job Application';
+            document.getElementById('result-company').textContent =
+                status.company_name || '';
+
+            // Score badge
+            const score = Math.round(status.compatibility_score || 0);
+            const scoreBadge = document.getElementById('score-badge');
+            scoreBadge.textContent = `${score}%`;
+
+            // Score styling
+            let scoreClass, matchClass, matchText;
+            if (score >= 85) {
+                scoreClass = 'score-excellent';
+                matchClass = 'match-excellent';
+                matchText = 'Excellent Match! Strongly recommended to apply.';
+            } else if (score >= 70) {
+                scoreClass = 'score-strong';
+                matchClass = 'match-strong';
+                matchText = 'Strong Match! Good candidate for this role.';
+            } else if (score >= 50) {
+                scoreClass = 'score-moderate';
+                matchClass = 'match-moderate';
+                matchText = 'Moderate Match. Consider highlighting transferable skills.';
+            } else {
+                scoreClass = 'score-weak';
+                matchClass = 'match-weak';
+                matchText = 'Weak Match. May want to focus on other opportunities.';
+            }
+
+            scoreBadge.className = `score-badge ${scoreClass}`;
+            const matchMessage = document.getElementById('match-message');
+            matchMessage.className = `match-message ${matchClass}`;
+            matchMessage.textContent = matchText;
+
+            // Download links
+            document.getElementById('download-cv').href =
+                `/api/download/${currentJobId}/cv`;
+            document.getElementById('download-cover').href =
+                `/api/download/${currentJobId}/cover_letter`;
+        }
+
+        function showError(message) {
+            progressSection.classList.add('hidden');
+            errorSection.classList.remove('hidden');
+            document.getElementById('error-message').textContent = message;
+        }
+
+        function resetForm() {
+            currentJobId = null;
+            inputSection.classList.remove('hidden');
+            progressSection.classList.add('hidden');
+            resultSection.classList.add('hidden');
+            errorSection.classList.add('hidden');
+            jobTextArea.value = '';
+            updateCharCount();
+        }
+
+        // Notification polling
+        function startNotificationPolling() {
+            notificationPollInterval = setInterval(fetchNotifications, 3000);
+            fetchNotifications(); // Initial fetch
+        }
+
+        async function fetchNotifications() {
+            try {
+                const response = await fetch('/api/notifications?unread_only=true');
+                if (!response.ok) return;
+
+                const data = await response.json();
+
+                data.notifications.forEach(notification => {
+                    if (!seenNotifications.has(notification.id)) {
+                        seenNotifications.add(notification.id);
+                        showToast(notification);
+                    }
+                });
+            } catch (error) {
+                console.error('Notification fetch error:', error);
+            }
+        }
+
+        function showToast(notification) {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${notification.type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <div class="toast-title">${escapeHtml(notification.title)}</div>
+                    <div class="toast-message">${escapeHtml(notification.message)}</div>
+                </div>
+                <button class="toast-close" onclick="dismissToast(this, '${notification.id}')">&times;</button>
+            `;
+            toastContainer.appendChild(toast);
+
+            // Auto dismiss
+            if (notification.auto_dismiss) {
+                setTimeout(() => {
+                    toast.remove();
+                    markNotificationRead(notification.id);
+                }, (notification.dismiss_after_seconds || 5) * 1000);
+            }
+        }
+
+        async function dismissToast(button, notificationId) {
+            button.closest('.toast').remove();
+            await markNotificationRead(notificationId);
+        }
+
+        async function markNotificationRead(notificationId) {
+            try {
+                await fetch(`/api/notifications/${notificationId}/read`, {
+                    method: 'POST'
+                });
+            } catch (error) {
+                console.error('Failed to mark notification as read:', error);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

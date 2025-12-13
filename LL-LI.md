@@ -411,6 +411,400 @@ def set_current_from_end_date(self) -> "Experience":
 
 ---
 
+### M2 Rinser Module (Complete)
+
+#### Lessons Learned
+
+**LL-025: Install Type Stubs for bleach**
+- mypy requires `types-bleach` for bleach type hints
+- Install with: `pip install types-bleach`
+- **Apply to:** Any module using bleach library for HTML sanitization
+
+**LL-026: Order of Sanitization Matters**
+- Run regex to remove script/style content BEFORE bleach.clean()
+- bleach.clean() strips tags but leaves content inside them
+- If you run bleach first, regex can't find `<script>...</script>` pattern
+```python
+# Correct order:
+text = re.sub(r"<script[^>]*>.*?</script>", "", raw_text, flags=re.DOTALL | re.IGNORECASE)
+text = bleach.clean(text, tags=[], strip=True)
+
+# Wrong order - script content remains:
+text = bleach.clean(raw_text, tags=[], strip=True)  # Tags stripped, content remains
+text = re.sub(r"<script[^>]*>.*?</script>", "", text)  # Won't match - no tags left!
+```
+- **Apply to:** Any HTML sanitization with multiple steps
+
+**LL-027: Rinser Uses job_requirements Collection**
+- PoC scope limits VectorStoreService to 2 collections
+- M1 Collector uses `user_profiles` collection
+- M2 Rinser uses `job_requirements` collection
+- Use metadata-based filtering for type-specific searches:
+```python
+await vector_store.add(
+    collection_name="job_requirements",
+    document_id=f"job_{job.id}_req_{i}",
+    content=req.to_searchable_text(),
+    metadata={"type": "requirement", "priority": "must_have"}
+)
+```
+- **Apply to:** M3 Analyzer will search both collections
+
+**LL-028: Four-File Module Structure for Modules with Prompts**
+```
+module_name/
+  __init__.py      # Package exports
+  models.py        # Pydantic data models
+  exceptions.py    # Module-specific exceptions
+  prompts.py       # LLM prompt templates (if using LLM)
+  <module>.py      # Main implementation
+```
+- Add prompts.py for modules that use LLM (M2, M3, M4)
+- **Apply to:** M3 Analyzer, M4 Creator
+
+---
+
+### M3 Analyzer Module (Complete)
+
+#### Lessons Learned
+
+**LL-029: Avoid @computed_field Decorator with mypy**
+- mypy doesn't fully support Pydantic v2's `@computed_field` decorator
+- Error: "Decorators on top of @property are not supported"
+- Use plain `@property` instead - it won't serialize but works for convenience methods:
+```python
+# Causes mypy error
+@computed_field
+@property
+def is_good_match(self) -> bool:
+    return self.compatibility.overall >= 70
+
+# Works without mypy error
+@property
+def is_good_match(self) -> bool:
+    return self.compatibility.overall >= 70
+```
+- **Apply to:** Any Pydantic model with computed properties
+
+**LL-030: Safe Metadata Type Coercion**
+- Collector's SearchMatch.metadata values are `str | float | int | bool | None`
+- `float()` doesn't accept `bool` or `None` directly with strict type checking
+- Use `or 0` pattern for safe conversion:
+```python
+# May cause mypy error with strict typing
+years = float(metadata.get("years", 0))
+
+# Safe pattern - falsy values become 0
+years = float(metadata.get("years") or 0)
+```
+- **Apply to:** Any code reading numeric values from mixed-type metadata
+
+**LL-031: Analyzer Uses Both Collections**
+- M3 Analyzer is the integration point for PoC's 2 collections
+- Uses Collector's `search_skills()` which queries `user_profiles` collection
+- Uses Collector's `search_experiences()` which also queries `user_profiles` collection
+- Job data comes from ProcessedJob (from M2 Rinser, indexed in `job_requirements`)
+- **Apply to:** Understanding data flow in Scout pipeline
+
+---
+
+### M4 Creator Module (Complete)
+
+#### Lessons Learned
+
+**LL-032: Cast dict.get() Results for Typed Returns**
+- When returning `str` from a function, `dict.get("key", "")` returns `Any`
+- mypy will flag "Returning Any from function declared to return str"
+- Cast explicitly with `str()`:
+```python
+# Causes mypy error
+def get_summary(result: dict) -> str:
+    return result.get("summary", "").strip()
+
+# Correct - cast to str
+def get_summary(result: dict) -> str:
+    summary_value = result.get("summary", "")
+    return str(summary_value).strip()
+```
+- **Apply to:** Any function returning typed values from dict.get()
+
+**LL-033: Soft Skill Categorization Without Model Field**
+- PoC scope simplified Skill model without `category` field
+- Use keyword-based categorization instead:
+```python
+SOFT_SKILL_KEYWORDS = {
+    "leadership", "communication", "teamwork", "problem-solving",
+    "collaboration", "mentoring", "management", "presentation",
+}
+
+def _is_soft_skill(self, skill_name: str) -> bool:
+    return skill_name.lower() in SOFT_SKILL_KEYWORDS
+```
+- **Apply to:** Any categorization without explicit model fields
+
+**LL-034: Helper Methods for Profile Navigation**
+- UserProfile may not have convenience methods from spec
+- Implement helpers in module rather than modifying models:
+```python
+def _get_current_experience(self, profile: UserProfile) -> Experience | None:
+    # Find current=True, or most recent by start_date
+    for exp in profile.experiences:
+        if exp.current:
+            return exp
+    if profile.experiences:
+        return max(profile.experiences, key=lambda e: e.start_date)
+    return None
+```
+- **Apply to:** Any module needing profile navigation helpers
+
+**LL-035: Experience Model Uses 'role' Not 'title'**
+- Collector's Experience model uses `role` field, not `title`
+- Spec examples may reference `title` - always check actual model
+- **Apply to:** Any code accessing Experience attributes
+
+---
+
+### M5 Formatter Module (Complete)
+
+#### Lessons Learned
+
+**LL-036: WeasyPrint Requires GTK on Windows**
+- WeasyPrint requires GTK3/Pango native libraries
+- On Windows, these are not bundled and require MSYS2 or GTK bundle
+- Use `xhtml2pdf` instead - pure Python, no native dependencies:
+```python
+# WeasyPrint (requires GTK)
+from weasyprint import HTML
+html = HTML(string=html_content)
+html.write_pdf(output_path)
+
+# xhtml2pdf (pure Python)
+from xhtml2pdf import pisa
+with open(output_path, "w+b") as pdf_file:
+    pisa.CreatePDF(html_content, dest=pdf_file, encoding="utf-8")
+```
+- **Apply to:** Any PDF generation on Windows or cross-platform projects
+
+**LL-037: xhtml2pdf Error Handling**
+- `pisa.CreatePDF()` returns a status object with `err` count
+- Check `pisa_status.err` for errors, don't just rely on exceptions:
+```python
+pisa_status = pisa.CreatePDF(html_content, dest=pdf_file)
+if pisa_status.err:
+    raise PDFGenerationError(f"xhtml2pdf reported {pisa_status.err} errors")
+```
+- **Apply to:** Any xhtml2pdf PDF generation
+
+**LL-038: Pydantic Path Type Requires Config**
+- Using `pathlib.Path` in Pydantic models requires `arbitrary_types_allowed`:
+```python
+from pathlib import Path
+
+class FormattedDocument(BaseModel):
+    file_path: Path
+
+    model_config = {"arbitrary_types_allowed": True}
+```
+- **Apply to:** Any Pydantic model with Path fields
+
+**LL-039: Jinja2 selectattr Filter for Template Filtering**
+- Filter sections by type in Jinja2 templates:
+```html
+{% for section in cv.sections | selectattr('section_type', 'equalto', 'experience') | list %}
+    <!-- render experience sections -->
+{% endfor %}
+```
+- `| list` needed after `selectattr` to iterate
+- **Apply to:** Any Jinja2 template filtering by object attributes
+
+**LL-040: Templates Directory Convention**
+- Spec used `app/templates/` - adapted to `src/templates/`
+- Keep templates separate from module code
+- Use FileSystemLoader with absolute or project-relative paths:
+```python
+Environment(loader=FileSystemLoader(str(templates_dir)))
+```
+- **Apply to:** Any Jinja2 template loading
+
+---
+
+## Phase 3: Integration
+
+### S6 Pipeline Orchestrator (Complete)
+
+#### Lessons Learned
+
+**LL-041: Import from collections.abc for Python 3.9+**
+- For `Callable` and `Awaitable` types, import from `collections.abc` not `typing`
+- Ruff UP035 flags the deprecated `typing` import:
+```python
+# Old way (deprecated)
+from typing import Callable, Awaitable
+
+# New way (Python 3.9+)
+from collections.abc import Callable, Awaitable
+```
+- **Apply to:** Any code using callable types
+
+**LL-042: Cast Mock Return Values for Type Safety**
+- Mock `return_value` is typed as `Any` by mypy
+- Use explicit `cast()` when returning from typed test helper functions:
+```python
+from typing import cast
+
+async def track_rinser(*args: object, **kwargs: object) -> ProcessedJob:
+    call_order.append("rinser")
+    return cast(ProcessedJob, mock_rinser.process_job.return_value)
+```
+- **Apply to:** Any tests with typed helper functions using mocks
+
+**LL-043: Pipeline Orchestrator Adapts Spec to Actual Module Interfaces**
+- Spec may use different method names than actual implementations
+- Always check actual module interfaces before implementing integration:
+  - Spec: `create_application()` → Actual: `create_content()`
+  - Spec: `ApplicationPackage` → Actual: `CreatedContent`
+- **Apply to:** Any integration service connecting multiple modules
+
+**LL-044: Progress Callback Pattern for Long-Running Operations**
+- Use async callback for progress reporting:
+```python
+ProgressCallback = Callable[[PipelineProgress], Awaitable[None]]
+
+async def execute(self, input_data, progress_callback=None):
+    if progress_callback:
+        await progress_callback(progress)
+```
+- Enables polling updates for web interface (PoC scope)
+- **Apply to:** Any long-running service operations
+
+---
+
+### API Routes (Complete)
+
+#### Lessons Learned
+
+**LL-045: Generator Return Type for pytest Fixtures with yield**
+- Fixtures using `yield` need `Generator` return type for mypy:
+```python
+from collections.abc import Generator
+
+@pytest.fixture
+def client() -> Generator[TestClient, None, None]:
+    # setup
+    yield TestClient(app)
+    # cleanup
+```
+- Without this, mypy reports "The return type of a generator function should be Generator"
+- **Apply to:** Any pytest fixtures using yield
+
+**LL-046: FastAPI BackgroundTasks for Long-Running Operations**
+- Use `BackgroundTasks` for pipeline execution to return immediately:
+```python
+@router.post("/apply")
+async def apply(
+    request: ApplyRequest,
+    background_tasks: BackgroundTasks,
+):
+    job_id = str(uuid.uuid4())[:8]
+    background_tasks.add_task(execute_pipeline, ...)
+    return ApplyResponse(job_id=job_id, status="running")
+```
+- Client polls `/api/status/{job_id}` for completion
+- **Apply to:** Any endpoint that triggers long-running operations
+
+**LL-047: In-Memory JobStore for PoC**
+- Simple dict-based storage works for PoC:
+```python
+class JobStore:
+    def __init__(self) -> None:
+        self._jobs: dict[str, PipelineResult] = {}
+
+    def store(self, result: PipelineResult) -> str:
+        job_id = result.job_id or result.pipeline_id
+        self._jobs[job_id] = result
+        return job_id
+```
+- Use fallback to `pipeline_id` if `job_id` is None
+- Production would use a database
+- **Apply to:** Simple state management in PoC APIs
+
+**LL-048: FastAPI Dependency Override for Testing**
+- Override dependencies in tests using `app.dependency_overrides`:
+```python
+from src.web.dependencies import get_orchestrator
+
+async def override_orchestrator() -> Mock:
+    return mock_orchestrator
+
+app.dependency_overrides[get_orchestrator] = override_orchestrator
+
+# Cleanup
+app.dependency_overrides.clear()
+```
+- Always clear overrides in fixture cleanup
+- **Apply to:** Any FastAPI endpoint tests
+
+---
+
+### S8 Notification Service (Complete)
+
+#### Lessons Learned
+
+**LL-049: Use deque for Bounded Collections**
+- `collections.deque` with `maxlen` automatically evicts oldest items:
+```python
+from collections import deque
+
+self._notifications: deque[Notification] = deque(maxlen=50)
+# Adding item 51 automatically removes item 1
+```
+- Simpler than manual eviction logic
+- **Apply to:** Any bounded in-memory collection
+
+**LL-050: Notification Type-Specific Defaults**
+- Warning and error notifications should not auto-dismiss:
+```python
+def notify_warning(self, title: str, message: str, ...) -> Notification:
+    return self.notify(
+        NotificationType.WARNING, title, message,
+        auto_dismiss=False,  # Warnings stay visible
+        ...
+    )
+```
+- Info and success can auto-dismiss (5-10 seconds)
+- **Apply to:** Any notification system design
+
+**LL-051: Service Integration with Web Routes**
+- When adding new services, update multiple files:
+  1. Create service package in `src/services/<name>/`
+  2. Create API routes in `src/web/routes/<name>.py`
+  3. Update `src/web/routes/__init__.py` to export router
+  4. Update `src/web/main.py` to include router
+  5. Update health check to include new service
+- **Apply to:** Any new service integration
+
+**LL-052: Jinja2 Templates with FastAPI**
+- Use `Jinja2Templates` from `fastapi.templating` for server-rendered pages
+- Templates need `request` parameter passed for proper rendering
+- Keep templates in dedicated directory (`src/web/templates/`)
+- Use `TemplateResponse(request=request, name="template.html")` pattern
+- **Apply to:** Server-rendered web pages
+
+**LL-053: Vanilla JS for PoC Web Interface**
+- For PoC, vanilla JavaScript with fetch API is sufficient
+- Avoids complexity of npm, build tools, Vue/React frameworks
+- Polling pattern works well for status updates (1-3 second intervals)
+- Use CSS-in-style tags for self-contained templates
+- **Apply to:** Simple PoC web interfaces
+
+**LL-054: Update Tests When Changing Endpoint Paths**
+- When moving an endpoint (e.g., `/` to `/info`), update corresponding tests
+- Search for endpoint path in test files before changing routes
+- Tests may call specific paths that need to be updated
+- **Apply to:** Any route path changes
+
+---
+
 ## Quick Reference
 
 ### Implementation Order
@@ -421,12 +815,18 @@ def set_current_from_end_date(self) -> "Experience":
 3. S4 Vector Store - Complete
 4. S1 LLM Service - Complete
 
-#### Phase 2: Modules (In Progress)
+#### Phase 2: Modules (Complete)
 5. M1 Collector - Complete
-6. M2 Rinser - Not Started
-7. M3 Analyzer - Not Started
-8. M4 Creator - Not Started
-9. M5 Formatter - Not Started
+6. M2 Rinser - Complete
+7. M3 Analyzer - Complete
+8. M4 Creator - Complete
+9. M5 Formatter - Complete
+
+#### Phase 3: Integration (Complete)
+10. S6 Pipeline Orchestrator - Complete
+11. API Routes - Complete
+12. S8 Notification Service - Complete
+13. Web Interface - Complete
 
 ### Test Targets
 | Component | Tests | Coverage |
@@ -436,9 +836,17 @@ def set_current_from_end_date(self) -> "Experience":
 | S4 Vector Store | 55 | >90% |
 | S1 LLM Service | 50 | >90% |
 | M1 Collector | 49 | >90% |
-| **Total** | **227** | **>90%** |
+| M2 Rinser | 71 | >90% |
+| M3 Analyzer | 62 | >90% |
+| M4 Creator | 48 | >90% |
+| M5 Formatter | 38 | >90% |
+| S6 Pipeline | 52 | >90% |
+| API Routes | 43 | >90% |
+| S8 Notification | 40 | >90% |
+| Web Interface | 26 | >90% |
+| **Total** | **607** | **>90%** |
 
 ---
 
 *Last Updated: December 10, 2025*
-*Phase 2 Core Modules In Progress - M1 Collector Complete with 227 total tests*
+*Phase 3 Integration Complete - All PoC components implemented (607 total tests)*
