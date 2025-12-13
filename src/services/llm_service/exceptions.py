@@ -10,7 +10,7 @@ class LLMError(Exception):
 
 
 class LLMProviderError(LLMError):
-    """Error from the LLM provider (Anthropic)."""
+    """Error from the LLM provider (Ollama or other)."""
 
     def __init__(self, message: str, status_code: int | None = None):
         self.status_code = status_code

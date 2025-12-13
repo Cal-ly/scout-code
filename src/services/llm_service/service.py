@@ -1,7 +1,7 @@
 """
 LLM Service
 
-Wrapper around Anthropic Claude API with cost tracking and caching.
+Wrapper around Ollama for local LLM inference with caching.
 
 Usage:
     llm = LLMService(cost_tracker, cache)
@@ -14,7 +14,7 @@ Usage:
     )
     print(response.content)
 
-    # JSON extraction
+    # JSON extraction (uses Ollama's JSON mode)
     data = await llm.generate_json(
         prompt="Extract name and age from: John is 30 years old",
         module="rinser"
@@ -25,18 +25,12 @@ Usage:
 import asyncio
 import json
 import logging
-import os
-import time
 import uuid
 from datetime import datetime
 from typing import Any
 
-import anthropic
-from anthropic import APIError, APITimeoutError, RateLimitError
-
 from src.services.cache_service import CacheService
-from src.services.cost_tracker import CostTrackerService
-from src.services.cost_tracker.exceptions import BudgetExceededError
+from src.services.cost_tracker import BudgetExceededError, CostTrackerService
 from src.services.llm_service.exceptions import (
     LLMError,
     LLMInitializationError,
@@ -51,27 +45,27 @@ from src.services.llm_service.models import (
     LLMResponse,
     MessageRole,
     PromptMessage,
-    TokenUsage,
 )
+from src.services.llm_service.providers import LLMProvider, OllamaProvider
 
 logger = logging.getLogger(__name__)
 
-# Default model for PoC
-DEFAULT_MODEL = "claude-3-5-haiku-20241022"
+# Default model for PoC (local Ollama)
+DEFAULT_MODEL = "qwen2.5:3b"
 
 
 class LLMService:
     """
     LLM Service for Scout.
 
-    Provides a simple interface to Claude API with:
-    - Automatic budget checking via Cost Tracker
+    Provides a simple interface to local LLMs via Ollama with:
+    - Provider abstraction for flexibility
     - Response caching via Cache Service
     - Retry logic with exponential backoff
-    - Cost calculation and recording
+    - Usage metrics tracking
 
     Attributes:
-        cost_tracker: Cost Tracker Service instance.
+        cost_tracker: Cost Tracker Service instance (for metrics).
         cache: Cache Service instance.
 
     Example:
@@ -100,13 +94,13 @@ class LLMService:
         Initialize LLM Service.
 
         Args:
-            cost_tracker: Cost Tracker Service for budget management.
+            cost_tracker: Cost Tracker Service for usage metrics.
             cache: Cache Service for response caching.
             config: Optional configuration overrides.
         """
         self._cost_tracker = cost_tracker
         self._cache = cache
-        self._client: anthropic.AsyncAnthropic | None = None
+        self._provider: LLMProvider | None = None
         self._initialized = False
 
         # Configuration
@@ -119,7 +113,7 @@ class LLMService:
 
         # Stats
         self._total_requests = 0
-        self._total_cost = 0.0
+        self._total_tokens = 0
         self._last_request_time: datetime | None = None
         self._last_error: str | None = None
 
@@ -127,35 +121,33 @@ class LLMService:
         """
         Initialize the LLM Service.
 
-        Creates Anthropic client using ANTHROPIC_API_KEY environment variable.
+        Creates Ollama provider and verifies model availability.
 
         Raises:
-            LLMInitializationError: If API key is missing or client creation fails.
+            LLMInitializationError: If Ollama not running or model not found.
         """
         if self._initialized:
             logger.warning("LLM Service already initialized")
             return
 
-        # Get API key from environment
-        api_key = os.getenv("ANTHROPIC_API_KEY")
-        if not api_key:
-            raise LLMInitializationError(
-                "ANTHROPIC_API_KEY environment variable not set"
-            )
-
         try:
-            # Create async client
-            self._client = anthropic.AsyncAnthropic(
-                api_key=api_key,
+            # Create Ollama provider
+            self._provider = OllamaProvider(
+                model=self._config.model,
+                fallback_model=self._config.fallback_model,
+                host=self._config.ollama_host,
                 timeout=float(self._timeout),
             )
+            await self._provider.initialize()
 
             self._initialized = True
-            logger.info(f"LLM Service initialized with model: {self._model}")
+            logger.info(f"LLM Service initialized with Ollama: {self._model}")
 
         except Exception as e:
+            if isinstance(e, LLMInitializationError):
+                raise
             raise LLMInitializationError(
-                f"Failed to initialize Anthropic client: {e}"
+                f"Failed to initialize Ollama provider: {e}"
             ) from e
 
     async def shutdown(self) -> None:
@@ -163,9 +155,9 @@ class LLMService:
         if not self._initialized:
             return
 
-        if self._client:
-            await self._client.close()
-            self._client = None
+        if self._provider:
+            await self._provider.shutdown()
+            self._provider = None
 
         self._initialized = False
         logger.info("LLM Service shutdown complete")
@@ -249,7 +241,7 @@ class LLMService:
             )
 
     # =========================================================================
-    # API CALL
+    # PROVIDER CALL
     # =========================================================================
 
     async def _call_api(
@@ -258,7 +250,7 @@ class LLMService:
         request_id: str,
     ) -> LLMResponse:
         """
-        Make actual API call to Anthropic.
+        Make actual call to LLM provider (Ollama).
 
         Args:
             request: The LLM request.
@@ -268,61 +260,13 @@ class LLMService:
             LLMResponse with content and usage.
 
         Raises:
-            LLMProviderError: On API errors.
+            LLMProviderError: On provider errors.
             LLMTimeoutError: On timeout.
         """
-        if self._client is None:
-            raise LLMError("Anthropic client not initialized")
+        if self._provider is None:
+            raise LLMError("LLM provider not initialized")
 
-        start_time = time.time()
-
-        # Build messages for API (cast to Any for Anthropic SDK compatibility)
-        messages: Any = [m.to_api_format() for m in request.messages]
-
-        try:
-            response = await self._client.messages.create(
-                model=self._model,
-                max_tokens=request.max_tokens,
-                temperature=request.temperature,
-                system=request.system or "",
-                messages=messages,
-            )
-
-            latency_ms = int((time.time() - start_time) * 1000)
-
-            # Extract content from response (handle different block types)
-            content = ""
-            if response.content:
-                first_block = response.content[0]
-                if hasattr(first_block, "text"):
-                    content = str(first_block.text)
-
-            # Build usage
-            usage = TokenUsage(
-                input_tokens=response.usage.input_tokens,
-                output_tokens=response.usage.output_tokens,
-            )
-
-            # Calculate cost
-            cost = self._calculate_cost(usage.input_tokens, usage.output_tokens)
-
-            return LLMResponse(
-                content=content,
-                usage=usage,
-                cost=cost,
-                model=self._model,
-                cached=False,
-                latency_ms=latency_ms,
-                request_id=request_id,
-            )
-
-        except APITimeoutError:
-            raise LLMTimeoutError(f"Request timed out after {self._timeout}s")
-        except RateLimitError as e:
-            raise LLMProviderError(f"Rate limit exceeded: {e}", status_code=429)
-        except APIError as e:
-            status_code = getattr(e, "status_code", None)
-            raise LLMProviderError(f"Anthropic API error: {e}", status_code=status_code)
+        return await self._provider.generate(request, request_id)
 
     async def _call_with_retry(
         self,
@@ -456,22 +400,22 @@ class LLMService:
         # Make API call with retry
         response = await self._call_with_retry(request, request_id)
 
-        # Record cost in cost tracker
+        # Record usage in cost tracker (cost is 0 for local inference)
         cost = self._calculate_cost(
             response.usage.input_tokens, response.usage.output_tokens
         )
         await self._cost_tracker.record_cost(
-            service_name="anthropic",
+            service_name="ollama",
             model=self._model,
             input_tokens=response.usage.input_tokens,
             output_tokens=response.usage.output_tokens,
-            cost=cost,
+            cost=cost,  # Will be 0.0 for local inference
             module=module,
         )
 
         # Update stats
         self._total_requests += 1
-        self._total_cost += response.cost
+        self._total_tokens += response.usage.total_tokens
         self._last_request_time = datetime.now()
         self._last_error = None  # Clear on success
 
@@ -601,21 +545,30 @@ class LLMService:
             LLMHealth with status and metrics.
         """
         status = "healthy"
-        api_connected = True
+        ollama_connected = True
+        model_loaded: str | None = self._model
 
         if not self._initialized:
             status = "unavailable"
-            api_connected = False
+            ollama_connected = False
+            model_loaded = None
         elif self._last_error:
             status = "degraded"
 
+        # Check provider health if available
+        if self._provider:
+            provider_health = await self._provider.health_check()
+            if provider_health.get("status") != "healthy":
+                status = provider_health.get("status", "degraded")
+
         return LLMHealth(
             status=status,
-            api_connected=api_connected,
+            ollama_connected=ollama_connected,
+            model_loaded=model_loaded,
             last_request_time=self._last_request_time,
             last_error=self._last_error,
             total_requests=self._total_requests,
-            total_cost=self._total_cost,
+            total_tokens=self._total_tokens,
         )
 
 

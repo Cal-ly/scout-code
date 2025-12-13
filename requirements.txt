@@ -10,8 +10,8 @@ uvicorn[standard]>=0.27.0
 pydantic>=2.5.0
 pydantic-settings>=2.1.0
 
-# LLM Integration
-anthropic>=0.18.0
+# LLM Integration (Local via Ollama)
+ollama>=0.4.0
 
 # Vector Database & Embeddings
 chromadb>=0.4.22

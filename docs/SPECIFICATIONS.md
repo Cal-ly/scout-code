@@ -33,7 +33,8 @@ When implementing with Claude Code, reference these specifications from project 
 ### Services (Implementation Order: S2 → S3 → S4 → S1 → S6 → S7 → S8)
 
 - **S1 LLM Service** - `/mnt/project/S1_LLM_Service_-_Claude_Code_Instructions.md`
-  - Claude API integration, retry logic, token management
+  - **Ollama local LLM integration** (Qwen 2.5 3B / Gemma 2 2B)
+  - See also: `docs/guides/Local_LLM_Transition_Guide.md`
   
 - **S2 Cost Tracker** - `/mnt/project/S2_Cost_Tracker_Service_-_Claude_Code_Instructions.md`
   - Budget enforcement, cost tracking
@@ -60,16 +61,19 @@ When implementing with Claude Code, reference these specifications from project 
 
 - **PoC Scope** - `/mnt/project/Scout_PoC_Scope_Document.md`
   - **CRITICAL**: What's in/out of scope, boundaries, constraints
-  
+
+- **Local LLM Transition** - `docs/guides/Local_LLM_Transition_Guide.md`
+  - **NEW**: Migration from Anthropic API to Ollama local inference
+
 - **Project Structure** - `/mnt/project/Scout_PoC_-_Complete_Project_Structure___Configuration.md`
   - Complete directory layout, Docker setup
-  
+
 - **Implementation Checklist** - `/mnt/project/Scout_Implementation_Checklist.md`
   - **Step-by-step guide** with checkboxes for each component
-  
+
 - **Development Guide** - `/mnt/project/Scout_Claude_Code_Development_Guide.md`
   - Code patterns, best practices, standards
-  
+
 - **CLAUDE.md** - `/mnt/project/CLAUDE.md`
   - How to interact with Claude Code effectively
 
@@ -108,26 +112,26 @@ For each component:
 
 ## Project Checklist Status
 
-Track progress in `/mnt/project/Scout_Implementation_Checklist.md`:
+All phases complete. Track progress in `/mnt/project/Scout_Implementation_Checklist.md`:
 
-### Phase 1: Foundation Services
-- [ ] S2 Cost Tracker
-- [ ] S3 Cache Service  
-- [ ] S4 Vector Store
-- [ ] S1 LLM Service
+### Phase 1: Foundation Services (COMPLETE)
+- [x] S2 Cost Tracker (27 tests)
+- [x] S3 Cache Service (46 tests)
+- [x] S4 Vector Store (55 tests)
+- [x] S1 LLM Service (52 tests) - **Refactored for Ollama**
 
-### Phase 2: Core Modules
-- [ ] M1 Collector
-- [ ] M2 Rinser
-- [ ] M3 Analyzer
-- [ ] M4 Creator
-- [ ] M5 Formatter
+### Phase 2: Core Modules (COMPLETE)
+- [x] M1 Collector (49 tests)
+- [x] M2 Rinser (71 tests)
+- [x] M3 Analyzer (62 tests)
+- [x] M4 Creator (48 tests)
+- [x] M5 Formatter (38 tests)
 
-### Phase 3: Integration
-- [ ] S6 Pipeline Orchestrator
-- [ ] API Routes
-- [ ] S8 Notification Service
-- [ ] Web Interface
+### Phase 3: Integration (COMPLETE)
+- [x] S6 Pipeline Orchestrator (52 tests)
+- [x] API Routes (43 tests)
+- [x] S8 Notification Service (40 tests)
+- [x] Web Interface (26 tests)
 
 ## Claude Code Commands
 
@@ -150,13 +154,19 @@ claude "Review the implementation against the specification in /mnt/project/"
 - **Check PoC scope** - Many features are explicitly deferred
 - **Use checklist** - Track progress systematically
 
-## Next Steps
+## Completion Status
+
+**All PoC phases complete (609+ tests passing)**
 
 1. ✅ Project structure created
-2. ✅ Specifications centralized  
-3. → Start Phase 1: Implement S2 Cost Tracker Service
-4. → Follow implementation checklist step-by-step
+2. ✅ Specifications centralized
+3. ✅ Phase 1: Foundation Services implemented
+4. ✅ Phase 2: Core Modules implemented
+5. ✅ Phase 3: Integration implemented
+6. ✅ LLM Service refactored for local Ollama inference
+
+**Architecture:** Local LLM via Ollama (Qwen 2.5 3B / Gemma 2 2B)
 
 ---
 
-**Ready to start implementation with Claude Code!**
+*Last updated: December 13, 2025*

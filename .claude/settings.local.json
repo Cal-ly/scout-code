@@ -15,7 +15,12 @@
       "Bash(powershell.exe -Command \"Set-Location ''c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code''; .\\venv\\Scripts\\python.exe -m mypy src/services/cache_service/ --ignore-missing-imports\")",
       "Bash(powershell.exe -Command \"Set-Location ''c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code''; .\\venv\\Scripts\\python.exe -m ruff check src/services/cache_service/\")",
       "Bash(powershell.exe -Command \"Set-Location ''c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code''; .\\venv\\Scripts\\python.exe -m pytest tests/test_cache.py -v --tb=short\")",
-      "Bash(powershell.exe -Command:*)"
+      "Bash(powershell.exe -Command:*)",
+      "Bash(python -m mypy:*)",
+      "Bash(pip install:*)",
+      "Bash(python -m ruff check:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

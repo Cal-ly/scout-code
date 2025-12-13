@@ -18,14 +18,19 @@ Demonstrate Scout's core value proposition: **intelligent job application genera
 
 | Decision | Choice |
 |----------|--------|
-| LLM Provider | Anthropic only (no OpenAI fallback) |
-| LLM Model | Claude 3.5 Haiku only |
+| ~~LLM Provider~~ | ~~Anthropic only (no OpenAI fallback)~~ |
+| **LLM Provider** | **Ollama (Local) - Edge deployment focus** |
+| **LLM Model** | **Qwen 2.5 3B primary, Gemma 2 2B fallback** |
 | Caching | Memory + File (no Redis) |
 | Pipeline Execution | Sequential only (no parallelism) |
 | Notifications | In-app only (no email/SMS/push) |
 | Job Input | Paste only (no URL fetching) |
 | Document Output | PDF only (DOCX deferred) |
 | Real-time Updates | Polling (no WebSocket) |
+
+> **Architecture Update (December 2025):** Changed from Anthropic Claude API to
+> local Ollama inference to support the thesis objective of edge computing on
+> Raspberry Pi 5. See `docs/guides/Local_LLM_Transition_Guide.md` for details.
 
 ---
 
@@ -82,7 +87,13 @@ Demonstrate Scout's core value proposition: **intelligent job application genera
 - ❌ WebSocket server (real-time updates)
 - ❌ SMTP server (email notifications)
 - ❌ External notification services (Twilio, push providers)
-- ❌ OpenAI API integration
+- ❌ ~~OpenAI API integration~~ Cloud LLM APIs (Anthropic/OpenAI)
+
+### Added to PoC Architecture (December 2025)
+
+- ✅ **Ollama** - Local LLM inference server
+- ✅ **Qwen 2.5 3B** - Primary local model (Q4 quantized, ~2GB)
+- ✅ **Gemma 2 2B** - Fallback local model (~1.6GB)
 
 ---
 
@@ -90,43 +101,57 @@ Demonstrate Scout's core value proposition: **intelligent job application genera
 
 ### S1: LLM Service
 
+> **Updated December 2025:** Changed from Anthropic Claude API to local Ollama inference.
+
 #### In Scope (PoC)
 
 | Feature | Implementation |
 |---------|----------------|
-| Anthropic Claude provider | Full implementation |
+| **Ollama local provider** | Full implementation with provider abstraction |
+| **Qwen 2.5 3B model** | Primary model (Q4 quantized) |
+| **Gemma 2 2B model** | Fallback model for reliability |
 | Mock provider | For testing only |
-| Model | Claude 3.5 Haiku (`claude-3-5-haiku-20241022`) only |
-| Token counting | Using tiktoken for cost calculation |
+| Token counting | Track usage for metrics (no billing) |
 | Response caching | Integration with Cache Service |
 | Basic retry logic | 3 attempts, 1s/2s/4s delays (simple exponential) |
-| JSON response parsing | Standard JSON extraction |
-| Cost reporting | Report usage to Cost Tracker Service |
+| JSON response parsing | Ollama JSON mode + schema constraints |
+| Usage reporting | Report metrics to Cost Tracker Service |
 
 #### Out of Scope (Deferred)
 
 | Feature | Reason |
 |---------|--------|
-| OpenAI provider | Reduces complexity; Anthropic sufficient |
-| Model selection (Sonnet/Opus) | Single model simplifies configuration |
+| ~~Anthropic provider~~ | Replaced with local Ollama |
+| Cloud API fallback | Local-only for thesis edge computing focus |
+| Model selection UI | Config-based selection sufficient |
 | Complex retry strategies | Basic retry sufficient for PoC |
-| Provider health monitoring | Observability enhancement |
-| Custom schema validation | JSON parsing sufficient |
-| Rate limit queuing | Basic throttling sufficient |
+| Streaming responses | Not needed for PoC |
+| Hardware acceleration (NPU) | Future enhancement |
 
 #### PoC Implementation Notes
 
 ```python
-# Simplified LLM Service configuration
+# Local LLM Service configuration
 class LLMServiceConfig:
-    provider: str = "anthropic"  # Fixed, no selection
-    model: str = "claude-3-5-haiku-20241022"  # Fixed, no selection
+    provider: str = "ollama"  # Local Ollama inference
+    model: str = "qwen2.5:3b"  # Primary model
+    fallback_model: str = "gemma2:2b"  # Fallback
+    ollama_host: str = "http://localhost:11434"
     max_retries: int = 3
     retry_delays: list = [1, 2, 4]  # seconds
-    timeout: int = 30
+    timeout: int = 120  # Longer for local inference
     temperature: float = 0.3
     max_tokens: int = 2000
 ```
+
+#### Performance Expectations (Raspberry Pi 5, 8GB)
+
+| Model | Speed | RAM Usage |
+|-------|-------|-----------|
+| Qwen 2.5 3B (Q4) | 2-4 tok/s | ~3GB |
+| Gemma 2 2B | 4-6 tok/s | ~2GB |
+
+**Estimated pipeline time:** 15-30 minutes (vs <2 min with cloud API)
 
 ---
 
@@ -559,9 +584,9 @@ python-multipart = "^0.0.9"
 pydantic = "^2.5.0"
 pydantic-settings = "^2.1.0"
 
-# LLM Integration
-anthropic = "^0.25.0"
-tiktoken = "^0.6.0"
+# LLM Integration (Local Ollama)
+ollama = "^0.4.0"
+# anthropic - removed, using local inference
 
 # Vector Store
 chromadb = "^0.4.22"
@@ -592,11 +617,19 @@ mypy = "^1.8.0"
 |------------|--------|
 | `redis` | No Redis caching |
 | `celery` | No distributed execution |
-| `openai` | No OpenAI fallback |
+| `openai` | No cloud API fallback |
+| `anthropic` | Replaced with local Ollama |
+| `tiktoken` | Not needed for local inference |
 | `websockets` | Polling instead |
 | `twilio` | No SMS notifications |
 | `apscheduler` | No scheduled tasks |
 | `networkx` | No DAG processing |
+
+### Added Dependencies (December 2025)
+
+| Dependency | Reason |
+|------------|--------|
+| `ollama` | Local LLM inference client |
 
 ### System Dependencies
 
@@ -608,6 +641,13 @@ apt-get install -y \
     libgdk-pixbuf2.0-0 \
     libffi-dev \
     shared-mime-info
+
+# For Ollama local LLM (required)
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Pull required models
+ollama pull qwen2.5:3b
+ollama pull gemma2:2b
 ```
 
 ---
@@ -887,18 +927,19 @@ ENVIRONMENT=development
 DEBUG=true
 SECRET_KEY=generate-with-openssl-rand-hex-32
 
-# Anthropic (REQUIRED)
-ANTHROPIC_API_KEY=sk-ant-api03-xxx
+# Ollama Local LLM (REQUIRED - no API key needed)
+LLM_PROVIDER=ollama
+LLM_MODEL=qwen2.5:3b
+LLM_FALLBACK_MODEL=gemma2:2b
+OLLAMA_HOST=http://localhost:11434
 
-# LLM Configuration (Fixed for PoC)
-LLM_MODEL=claude-3-5-haiku-20241022
+# LLM Configuration
 LLM_TEMPERATURE=0.3
 LLM_MAX_TOKENS=2000
-LLM_TIMEOUT=30
+LLM_TIMEOUT=120
 
-# Cost Control
-MAX_DAILY_SPEND=10.00
-MAX_MONTHLY_SPEND=50.00
+# Note: No cost control needed - local inference is free
+# Cost tracker now tracks usage metrics only
 
 # Cache
 CACHE_TTL=3600
@@ -918,6 +959,7 @@ LOG_LEVEL=INFO
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2025-11-26 | Initial approved scope document |
+| 1.1 | 2025-12-13 | Changed LLM provider from Anthropic API to local Ollama (Qwen 2.5 3B / Gemma 2 2B) |
 
 ---
 

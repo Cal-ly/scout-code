@@ -1,7 +1,7 @@
 """
 LLM Service Data Models
 
-Pydantic models for Anthropic Claude API integration.
+Pydantic models for Ollama-based local LLM integration.
 """
 
 import hashlib
@@ -23,7 +23,7 @@ class PromptMessage(BaseModel):
     """
     A single message in the conversation.
 
-    Note: Claude API handles system prompts separately,
+    Note: System prompts are handled separately,
     so role is only 'user' or 'assistant'.
     """
 
@@ -31,7 +31,7 @@ class PromptMessage(BaseModel):
     content: str
 
     def to_api_format(self) -> dict[str, str]:
-        """Convert to Anthropic API format."""
+        """Convert to LLM API format (Ollama/Anthropic compatible)."""
         return {"role": self.role.value, "content": self.content}
 
 
@@ -107,7 +107,7 @@ class LLMResponse(BaseModel):
     cost: float
 
     # Metadata
-    model: str = "claude-3-5-haiku-20241022"
+    model: str = "qwen2.5:3b"  # Default local model
     cached: bool = False
     latency_ms: int = 0
 
@@ -124,11 +124,12 @@ class LLMHealth(BaseModel):
     """
 
     status: str = "healthy"  # "healthy", "degraded", "unavailable"
-    api_connected: bool = True
+    ollama_connected: bool = True  # Renamed from api_connected
+    model_loaded: str | None = None  # Currently loaded model
     last_request_time: datetime | None = None
     last_error: str | None = None
     total_requests: int = 0
-    total_cost: float = 0.0
+    total_tokens: int = 0  # Track tokens instead of cost for local
 
 
 class LLMConfig(BaseModel):
@@ -138,14 +139,20 @@ class LLMConfig(BaseModel):
     All values can be overridden via environment variables.
     """
 
-    model: str = "claude-3-5-haiku-20241022"
+    # Provider selection
+    provider: str = "ollama"  # Currently only "ollama" supported
+
+    # Ollama settings
+    ollama_host: str = "http://localhost:11434"
+    model: str = "qwen2.5:3b"  # Primary model
+    fallback_model: str = "gemma2:2b"  # Fallback model
+
+    # Generation parameters
     temperature: float = 0.3
     max_tokens: int = 2000
-    timeout: int = 30  # seconds
+    timeout: int = 120  # Longer timeout for local inference
     max_retries: int = 3
 
-    # Haiku pricing (per 1M tokens) - November 2024
-    # Input: $1.00 per 1M tokens = $0.001 per 1K tokens
-    # Output: $5.00 per 1M tokens = $0.005 per 1K tokens
-    input_cost_per_1k: float = 0.001
-    output_cost_per_1k: float = 0.005
+    # Cost tracking (for metrics, not billing - local is free)
+    input_cost_per_1k: float = 0.0
+    output_cost_per_1k: float = 0.0

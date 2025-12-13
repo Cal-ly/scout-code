@@ -1,8 +1,8 @@
 """
 LLM Service
 
-Anthropic Claude API integration for all LLM operations.
-PoC scope: Claude 3.5 Haiku only, basic retry logic, cost tracking.
+Ollama-based local LLM integration for all LLM operations.
+PoC scope: Qwen 2.5 3B / Gemma 2 2B, basic retry logic, usage tracking.
 
 Usage:
     from src.services.llm_service import LLMService, get_llm_service
@@ -31,6 +31,7 @@ from src.services.llm_service.models import (
     PromptMessage,
     TokenUsage,
 )
+from src.services.llm_service.providers import LLMProvider, OllamaProvider
 from src.services.llm_service.service import (
     LLMService,
     get_llm_service,
@@ -44,6 +45,9 @@ __all__ = [
     "get_llm_service",
     "shutdown_llm_service",
     "reset_llm_service",
+    # Providers
+    "LLMProvider",
+    "OllamaProvider",
     # Models
     "LLMRequest",
     "LLMResponse",

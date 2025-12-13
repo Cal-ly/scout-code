@@ -13,43 +13,15 @@
 
 ## Phase 1: Foundation Services
 
-### S1 LLM Service (Complete)
+### S1 LLM Service (Complete - Refactored for Ollama)
 
 #### Lessons Learned
 
-**LL-016: Anthropic SDK Content Block Types**
-- Response content can be `TextBlock`, `ThinkingBlock`, `ToolUseBlock`, etc.
-- Use `hasattr()` to check for `text` attribute before accessing:
-```python
-content = ""
-if response.content:
-    first_block = response.content[0]
-    if hasattr(first_block, "text"):
-        content = str(first_block.text)
-```
-- **Apply to:** Any Anthropic SDK response handling
+> **Note:** LL-016, LL-017, and LL-018 from the original Anthropic implementation
+> are no longer applicable. The service now uses Ollama with a provider abstraction.
+> See LL-055 to LL-058 for the new Ollama-specific lessons.
 
-**LL-017: Anthropic SDK Message Format Typing**
-- Anthropic SDK expects specific `MessageParam` type for messages
-- Use `Any` type annotation to avoid mypy errors:
-```python
-messages: Any = [m.to_api_format() for m in request.messages]
-```
-- **Apply to:** Any Anthropic API calls with messages
-
-**LL-018: AsyncMock for Async Client Methods in Tests**
-- When mocking `AsyncAnthropic` client, use `AsyncMock` for async methods
-- `MagicMock` will fail on `await` expressions:
-```python
-# Wrong - will fail on await client.close()
-mock_client = MagicMock()
-
-# Correct
-mock_client = AsyncMock()
-```
-- **Apply to:** Any tests mocking async clients
-
-**LL-019: LLM Service Integration Pattern**
+**LL-019: LLM Service Integration Pattern** (Still Applicable)
 - Cache check before API call
 - Budget check after cache miss
 - Record cost after successful API call
@@ -65,6 +37,60 @@ await self._cost_tracker.record_cost(...)  # Record after success
 await self._store_in_cache(cache_key, response, ttl)
 ```
 - **Apply to:** Any service integrating cache and cost tracking
+
+**LL-055: Provider Abstraction Pattern for LLM Services**
+- Use abstract base class (`LLMProvider`) for provider implementations
+- Keep service interface unchanged when switching providers
+- Provider handles all API-specific logic (authentication, response parsing)
+```python
+class LLMProvider(ABC):
+    @abstractmethod
+    async def initialize(self) -> None: pass
+    @abstractmethod
+    async def generate(self, request: LLMRequest, request_id: str) -> LLMResponse: pass
+    @abstractmethod
+    async def health_check(self) -> dict[str, Any]: pass
+```
+- **Apply to:** Any service that may need multiple provider implementations
+
+**LL-056: Ollama AsyncClient Usage**
+- Use `ollama.AsyncClient` for async operations
+- Client doesn't require explicit close - set to None on shutdown
+- Check model availability during initialization with `client.list()`
+```python
+self._client = ollama.AsyncClient(host=self._host)
+models_response = await self._client.list()
+model_names = [m.get("name", "") for m in models_response.get("models", [])]
+```
+- **Apply to:** Any Ollama integration
+
+**LL-057: Ollama JSON Mode**
+- Use `format="json"` parameter for structured JSON output
+- Lower temperature (0.1) recommended for structured output
+- Still need to add JSON instruction to system prompt for best results
+```python
+response = await self._client.chat(
+    model=self._model,
+    messages=messages,
+    format="json" if request.purpose == "json_extraction" else None,
+    options={"temperature": 0.1, "num_predict": request.max_tokens},
+)
+```
+- **Apply to:** Any Ollama call expecting JSON output
+
+**LL-058: Local Inference Cost Tracking**
+- Local inference has no API cost but still track for metrics
+- Use `total_tokens` instead of `total_cost` in health status
+- Keep cost tracking infrastructure for potential future API fallback
+```python
+# In LLMConfig for local:
+input_cost_per_1k: float = 0.0
+output_cost_per_1k: float = 0.0
+
+# In LLMHealth:
+total_tokens: int = 0  # Track tokens instead of cost
+```
+- **Apply to:** Any local LLM integration
 
 ---
 
@@ -805,6 +831,49 @@ def notify_warning(self, title: str, message: str, ...) -> Notification:
 
 ---
 
+## Architecture Change: Local LLM Transition (December 2025)
+
+### Context
+
+The project transitioned from Anthropic Claude Haiku 3.5 API to local Ollama inference
+to support the thesis objective of edge computing on Raspberry Pi 5.
+
+**Status:** ✅ Implementation Complete (December 13, 2025)
+
+### Lessons Validated (Promoted to LL-055 to LL-058)
+
+**LI-003: Ollama Provider Abstraction** → ✅ **Validated as LL-055**
+- Created provider abstraction layer (`LLMProvider` base class)
+- Implemented `OllamaProvider` as primary provider
+- Service interface unchanged - modules don't need modification
+
+**LI-004: Ollama Structured Output** → ✅ **Validated as LL-057**
+- `format="json"` works for basic JSON output
+- Lower temperature (0.1) used for structured output
+- JSON instruction in system prompt still recommended
+
+**LI-005: Local LLM Performance Expectations** → ⏳ **Pending Pi 5 Testing**
+- Performance expectations documented but need validation on actual Pi 5 hardware
+- Development machine testing shows good performance with Ollama
+
+**LI-006: Ollama Service Dependency** → ✅ **Validated as LL-056**
+- Initialization checks Ollama connectivity and model availability
+- Helpful error messages guide users to `ollama pull` commands
+- Health check endpoint verifies Ollama status
+
+**LI-007: Cost Tracker Adaptation** → ✅ **Validated as LL-058**
+- Cost rates set to 0.0 for local inference
+- Token tracking still active for metrics
+- Budget check infrastructure retained for future API fallback
+
+### Reference Documents
+
+- **Transition Guide:** `docs/guides/Local_LLM_Transition_Guide.md`
+- **Updated S1 Spec:** `docs/services/S1_LLM_Service_-_Claude_Code_Instructions.md`
+- **Updated Scope:** `docs/guides/Scout_PoC_Scope_Document.md`
+
+---
+
 ## Quick Reference
 
 ### Implementation Order
@@ -813,7 +882,7 @@ def notify_warning(self, title: str, message: str, ...) -> Notification:
 1. S2 Cost Tracker - Complete
 2. S3 Cache Service - Complete
 3. S4 Vector Store - Complete
-4. S1 LLM Service - Complete
+4. S1 LLM Service - Complete (✅ Refactored for Ollama)
 
 #### Phase 2: Modules (Complete)
 5. M1 Collector - Complete
@@ -848,5 +917,6 @@ def notify_warning(self, title: str, message: str, ...) -> Notification:
 
 ---
 
-*Last Updated: December 10, 2025*
+*Last Updated: December 13, 2025*
 *Phase 3 Integration Complete - All PoC components implemented (607 total tests)*
+*Architecture Update: LLM transitioned from Anthropic API to local Ollama - Implementation Complete*

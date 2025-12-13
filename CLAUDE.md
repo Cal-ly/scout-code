@@ -94,7 +94,7 @@ scout-code/
 │   │   ├── creator/            # M4: Tailored content generation
 │   │   └── formatter/          # M5: Document output (PDF/DOCX)
 │   ├── services/               # Services (LLM, Cache, CostTracker, VectorStore)
-│   │   ├── llm_service/        # S1: Claude API integration
+│   │   ├── llm_service/        # S1: Ollama local LLM integration
 │   │   ├── cost_tracker/       # S2: Budget & cost tracking
 │   │   ├── cache_service/      # S3: Multi-tier caching
 │   │   └── vector_store/       # S4: ChromaDB vector database
@@ -123,7 +123,7 @@ These decisions are **locked** - do not implement deferred features:
 
 | Component | In Scope | Deferred |
 |-----------|----------|----------|
-| **LLM** | Anthropic Claude 3.5 Haiku only | OpenAI fallback, model selection |
+| **LLM** | **Ollama local: Qwen 2.5 3B + Gemma 2 2B** | ~~Anthropic API~~, cloud fallback |
 | **Cache** | Memory + file cache | Redis, semantic caching |
 | **Pipeline** | Sequential execution | Parallel, checkpointing, DAG |
 | **Vector Store** | 2 collections (profiles, jobs) | FAISS, batch optimization, 5 collections |
@@ -132,6 +132,10 @@ These decisions are **locked** - do not implement deferred features:
 | **Output** | PDF only | DOCX |
 | **Web** | Polling updates | WebSocket |
 | **Services** | Core 4 services | Content Optimizer (S7) |
+
+> **Architecture Update (December 2025):** LLM changed from Anthropic Claude API
+> to local Ollama inference for edge deployment on Raspberry Pi 5.
+> See `docs/guides/Local_LLM_Transition_Guide.md` for implementation details.
 
 If you're unsure whether something is in scope, check `docs/guides/Scout_PoC_Scope_Document.md`.
 
@@ -335,6 +339,12 @@ source venv/bin/activate    # Activate venv (Linux/Mac)
 make install                # Install dependencies
 make run                    # Run dev server (uvicorn on port 8000)
 
+# Ollama (Local LLM - required)
+ollama serve                # Start Ollama server (if not running)
+ollama list                 # List installed models
+ollama pull qwen2.5:3b      # Pull primary model
+ollama pull gemma2:2b       # Pull fallback model
+
 # Testing
 make test                   # Run all tests
 make test-cov               # Run tests with coverage
@@ -402,6 +412,25 @@ import torch
 device = "cuda" if torch.cuda.is_available() else "cpu"
 ```
 
+### 6. Ollama Must Be Running
+LLM Service requires Ollama server to be running:
+```bash
+# Check if running
+curl http://localhost:11434/api/tags
+
+# Start if not running
+ollama serve &
+
+# Verify models are available
+ollama list
+```
+
+### 7. Local LLM Performance
+Expect slower inference on Raspberry Pi 5:
+- Qwen 2.5 3B: ~2-4 tokens/second
+- Gemma 2 2B: ~4-6 tokens/second
+- Full pipeline: 15-30 minutes (vs <2 min with cloud API)
+
 ---
 
 ## Quick Reference
@@ -413,6 +442,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 | **Lessons Learned** | `LL-LI.md` (read first!) |
 | **Session Handover** | `HANDOVER.md` |
 | **PoC Scope** | `docs/guides/Scout_PoC_Scope_Document.md` |
+| **Local LLM Transition** | `docs/guides/Local_LLM_Transition_Guide.md` |
 | Module Specifications | `docs/modules/` (mixed naming: spaces or underscores) |
 | Service Specifications | `docs/services/` (mixed naming: spaces or underscores) |
 | Architecture Docs | `docs/architecture/` |
@@ -469,13 +499,13 @@ Vector Store Service ─────────────┤
 
 ## Current Project Status
 
-**Phase:** Phase 3 - Integration (IN PROGRESS)
+**Phase:** Phase 3 - Integration (COMPLETE)
 
-### Phase 1: Foundation Services (COMPLETE - 178 tests)
+### Phase 1: Foundation Services (COMPLETE - 180 tests)
 - ✅ **S2 Cost Tracker Service** - Complete (27 tests)
 - ✅ **S3 Cache Service** - Complete (46 tests)
 - ✅ **S4 Vector Store Service** - Complete (55 tests)
-- ✅ **S1 LLM Service** - Complete (50 tests)
+- ✅ **S1 LLM Service** - Complete (52 tests) - **Refactored for Ollama**
 
 ### Phase 2: Core Modules (COMPLETE - 268 tests)
 - ✅ **M1 Collector** - Complete (49 tests)
@@ -484,17 +514,20 @@ Vector Store Service ─────────────┤
 - ✅ **M4 Creator** - Complete (48 tests)
 - ✅ **M5 Formatter** - Complete (38 tests)
 
-### Phase 3: Integration (IN PROGRESS - 95 tests)
+### Phase 3: Integration (COMPLETE - 161 tests)
 - ✅ **S6 Pipeline Orchestrator** - Complete (52 tests)
 - ✅ **API Routes** - Complete (43 tests)
-- 🔄 **Next:** S8 Notification Service
+- ✅ **S8 Notification Service** - Complete (40 tests)
+- ✅ **Web Interface** - Complete (26 tests)
 
-**Total Tests:** 541/541 passing
+**Total Tests:** 609+ passing
 
 **Learning Documentation:**
-- See `LL-LI.md` for validated patterns (LL-001 to LL-048)
+- See `LL-LI.md` for validated patterns (LL-001 to LL-058)
 - See `HANDOVER.md` for session continuity context
+
+**Architecture:** Local LLM via Ollama (Qwen 2.5 3B / Gemma 2 2B)
 
 ---
 
-*Last updated: December 10, 2025*
+*Last updated: December 13, 2025*
