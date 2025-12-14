@@ -20,7 +20,7 @@ from src.services.pipeline import (
     shutdown_pipeline_orchestrator,
 )
 from src.web.dependencies import get_job_store, reset_job_store
-from src.web.routes import notifications_router, pages_router, router
+from src.web.routes import notifications_router, pages_router, profile_router, router
 from src.web.schemas import HealthResponse
 
 # Configure logging
@@ -29,6 +29,11 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+# Set up memory logging for web interface
+from src.web.log_handler import setup_memory_logging
+
+setup_memory_logging(max_entries=500)
 
 # Application metadata
 APP_NAME = "Scout"
@@ -94,6 +99,7 @@ app.add_middleware(
 app.include_router(router)
 app.include_router(notifications_router)
 app.include_router(pages_router)
+app.include_router(profile_router)
 
 
 @app.get("/info", tags=["info"])

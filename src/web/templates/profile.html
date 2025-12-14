@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scout - Profile</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .header {
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .header h1 {
+            font-size: 1.5rem;
+            color: #1a1a1a;
+        }
+        .header p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .back-link {
+            color: #2563eb;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        .card .description {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        textarea {
+            width: 100%;
+            min-height: 350px;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            resize: vertical;
+            line-height: 1.6;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+        .char-counter {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+        }
+        .char-count {
+            color: #666;
+        }
+        .char-count.error {
+            color: #dc2626;
+        }
+        .char-count.warning {
+            color: #d97706;
+        }
+        .char-count.success {
+            color: #059669;
+        }
+        .char-limit {
+            color: #9ca3af;
+        }
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .btn {
+            padding: 0.875rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            flex: 2;
+            background: #2563eb;
+            color: #fff;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: #1d4ed8;
+        }
+        .btn-primary:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            flex: 1;
+            background: #e5e7eb;
+            color: #374151;
+        }
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+        .loading-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 2rem;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .success-state {
+            text-align: center;
+            padding: 2rem;
+        }
+        .success-icon {
+            font-size: 3rem;
+            color: #10b981;
+            margin-bottom: 1rem;
+        }
+        .success-state h3 {
+            color: #065f46;
+            margin-bottom: 0.5rem;
+        }
+        .success-state p {
+            color: #047857;
+            margin-bottom: 1.5rem;
+        }
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+        .hidden { display: none !important; }
+
+        /* Tips section */
+        .tips {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .tips h4 {
+            color: #0369a1;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        .tips ul {
+            color: #0c4a6e;
+            font-size: 0.85rem;
+            margin-left: 1.25rem;
+        }
+        .tips li {
+            margin-bottom: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <a href="/" class="back-link">&larr; Back to Dashboard</a>
+        <div style="flex: 1;">
+            <h1>Scout</h1>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Form Section -->
+        <section id="form-section" class="card">
+            <h2 id="page-title">Create Your Professional Profile</h2>
+            <p class="description">
+                Describe your professional experience, skills, and qualifications.
+                This profile will be used to match you with job opportunities and generate tailored applications.
+            </p>
+
+            <div class="tips">
+                <h4>What to include:</h4>
+                <ul>
+                    <li>Your current role and years of experience</li>
+                    <li>Key technical and soft skills</li>
+                    <li>Notable achievements and projects</li>
+                    <li>Education and certifications</li>
+                    <li>Career objectives and interests</li>
+                </ul>
+            </div>
+
+            <div id="error-container" class="error-message hidden"></div>
+
+            <textarea
+                id="profile-text"
+                placeholder="I am a [Your Role] with [X years] of experience in [Industry/Domain].
+
+Professional Experience:
+- Currently working as [Role] at [Company], where I [key responsibilities and achievements]
+- Previously worked at [Company] as [Role], leading [projects/teams/initiatives]
+
+Technical Skills:
+- Programming: Python, JavaScript, SQL
+- Tools & Frameworks: React, FastAPI, PostgreSQL
+- Methodologies: Agile, CI/CD, Test-Driven Development
+
+Key Achievements:
+- Led a team that delivered [project] resulting in [measurable outcome]
+- Improved [process] by [percentage/metric]
+- Received [award/recognition] for [achievement]
+
+Education:
+- [Degree] in [Field] from [University], [Year]
+- [Certifications or additional training]
+
+Career Goals:
+I'm passionate about [interests] and looking for opportunities to [career objectives]..."
+            ></textarea>
+
+            <div class="char-counter">
+                <span class="char-count" id="char-count">0 characters</span>
+                <span class="char-limit">100 - 10,000 characters</span>
+            </div>
+
+            <div class="btn-group">
+                <button id="submit-btn" class="btn btn-primary" disabled>
+                    Save & Index Profile
+                </button>
+                <a href="/" class="btn btn-secondary" style="text-align: center; text-decoration: none;">
+                    Cancel
+                </a>
+            </div>
+        </section>
+
+        <!-- Loading Section -->
+        <section id="loading-section" class="card hidden">
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <span>Saving and indexing your profile...</span>
+            </div>
+        </section>
+
+        <!-- Success Section -->
+        <section id="success-section" class="card hidden">
+            <div class="success-state">
+                <div class="success-icon">&#10003;</div>
+                <h3>Profile Saved Successfully!</h3>
+                <p id="success-message">Your profile has been indexed and is ready for job matching.</p>
+                <a href="/" class="btn btn-primary" style="display: inline-block; text-decoration: none;">
+                    Go to Dashboard
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // DOM Elements
+        const formSection = document.getElementById('form-section');
+        const loadingSection = document.getElementById('loading-section');
+        const successSection = document.getElementById('success-section');
+        const profileText = document.getElementById('profile-text');
+        const charCount = document.getElementById('char-count');
+        const submitBtn = document.getElementById('submit-btn');
+        const errorContainer = document.getElementById('error-container');
+        const pageTitle = document.getElementById('page-title');
+        const successMessage = document.getElementById('success-message');
+
+        // Constants
+        const MIN_CHARS = 100;
+        const MAX_CHARS = 10000;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load existing profile if any
+            loadExistingProfile();
+
+            // Character counter
+            profileText.addEventListener('input', updateCharCount);
+
+            // Submit button
+            submitBtn.addEventListener('click', saveProfile);
+        });
+
+        async function loadExistingProfile() {
+            try {
+                const response = await fetch('/api/profile/retrieve');
+                if (response.ok) {
+                    const data = await response.json();
+                    profileText.value = data.profile_text;
+                    pageTitle.textContent = 'Edit Your Professional Profile';
+                    updateCharCount();
+                }
+            } catch (error) {
+                // No existing profile - that's fine
+                console.log('No existing profile found');
+            }
+        }
+
+        function updateCharCount() {
+            const len = profileText.value.length;
+            charCount.textContent = `${len} characters`;
+
+            // Update styling based on character count
+            charCount.classList.remove('error', 'warning', 'success');
+
+            if (len < MIN_CHARS) {
+                charCount.classList.add('error');
+                charCount.textContent += ` (${MIN_CHARS - len} more needed)`;
+                submitBtn.disabled = true;
+            } else if (len > MAX_CHARS) {
+                charCount.classList.add('error');
+                charCount.textContent += ` (${len - MAX_CHARS} over limit)`;
+                submitBtn.disabled = true;
+            } else if (len < 500) {
+                charCount.classList.add('warning');
+                charCount.textContent += ' (consider adding more detail)';
+                submitBtn.disabled = false;
+            } else {
+                charCount.classList.add('success');
+                submitBtn.disabled = false;
+            }
+        }
+
+        function showError(message) {
+            errorContainer.textContent = message;
+            errorContainer.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorContainer.classList.add('hidden');
+        }
+
+        async function saveProfile() {
+            const text = profileText.value.trim();
+
+            // Validate
+            if (text.length < MIN_CHARS || text.length > MAX_CHARS) {
+                showError(`Profile text must be between ${MIN_CHARS} and ${MAX_CHARS} characters.`);
+                return;
+            }
+
+            hideError();
+
+            // Show loading
+            formSection.classList.add('hidden');
+            loadingSection.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/profile/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profile_text: text })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to save profile');
+                }
+
+                const result = await response.json();
+
+                // Show success
+                loadingSection.classList.add('hidden');
+                successSection.classList.remove('hidden');
+
+                const action = result.status === 'created' ? 'created' : 'updated';
+                successMessage.textContent =
+                    `Your profile has been ${action} and indexed into ${result.chunk_count} searchable chunks.`;
+
+            } catch (error) {
+                // Show error
+                loadingSection.classList.add('hidden');
+                formSection.classList.remove('hidden');
+                showError(error.message);
+            }
+        }
+    </script>
+</body>
+</html>

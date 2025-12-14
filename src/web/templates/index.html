@@ -254,6 +254,167 @@
         }
         .toast-close:hover { opacity: 1; }
         .hidden { display: none !important; }
+
+        /* Profile Warning Styles */
+        .profile-warning {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .profile-warning-icon {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+        .profile-warning-content {
+            flex: 1;
+        }
+        .profile-warning-content h3 {
+            color: #92400e;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+        .profile-warning-content p {
+            color: #78350f;
+            font-size: 0.9rem;
+        }
+        .btn-create-profile {
+            background: #f59e0b;
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+        .btn-create-profile:hover {
+            background: #d97706;
+        }
+        .profile-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            background: #d1fae5;
+            border-radius: 6px;
+            color: #065f46;
+            font-size: 0.9rem;
+        }
+        .profile-status-icon {
+            font-size: 1.1rem;
+        }
+        .profile-status a {
+            color: #047857;
+            text-decoration: underline;
+        }
+
+        /* Log Viewer Styles */
+        .log-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            z-index: 900;
+            transition: height 0.3s ease;
+        }
+        .log-panel.collapsed {
+            height: 36px;
+        }
+        .log-panel.expanded {
+            height: 300px;
+        }
+        .log-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: #16213e;
+            cursor: pointer;
+            user-select: none;
+        }
+        .log-header:hover {
+            background: #1a2744;
+        }
+        .log-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .log-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+        .log-status.error { background: #ef4444; }
+        .log-status.warning { background: #f59e0b; }
+        .log-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .log-filter {
+            padding: 4px 8px;
+            border: 1px solid #374151;
+            border-radius: 4px;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            font-size: 11px;
+        }
+        .log-btn {
+            padding: 4px 10px;
+            border: none;
+            border-radius: 4px;
+            background: #374151;
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        .log-btn:hover {
+            background: #4b5563;
+        }
+        .log-content {
+            height: calc(100% - 36px);
+            overflow-y: auto;
+            padding: 8px 12px;
+        }
+        .log-entry {
+            padding: 2px 0;
+            border-bottom: 1px solid #2d2d44;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        .log-entry.level-ERROR { color: #f87171; }
+        .log-entry.level-WARNING { color: #fbbf24; }
+        .log-entry.level-INFO { color: #60a5fa; }
+        .log-entry.level-DEBUG { color: #9ca3af; }
+        .log-empty {
+            color: #6b7280;
+            font-style: italic;
+            padding: 20px;
+            text-align: center;
+        }
+        .log-expand-icon {
+            transition: transform 0.3s ease;
+        }
+        .log-panel.expanded .log-expand-icon {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
 <body>
@@ -263,6 +424,23 @@
     </header>
 
     <main class="container">
+        <!-- Profile Warning Section (shown when no profile exists) -->
+        <section id="profile-warning-section" class="profile-warning hidden">
+            <div class="profile-warning-icon">&#9888;</div>
+            <div class="profile-warning-content">
+                <h3>Profile Required</h3>
+                <p>Create your professional profile to start matching jobs and generating applications.</p>
+            </div>
+            <a href="/profile/create" class="btn-create-profile">Create Profile</a>
+        </section>
+
+        <!-- Profile Status Section (shown when profile exists) -->
+        <div id="profile-status-section" class="profile-status hidden">
+            <span class="profile-status-icon">&#10003;</span>
+            <span id="profile-status-text">Profile ready</span>
+            <a href="/profile/create">Edit Profile</a>
+        </div>
+
         <!-- Input Section -->
         <section id="input-section" class="card">
             <h2>Paste Job Posting</h2>
@@ -348,6 +526,33 @@ Include:
         </section>
     </main>
 
+    <!-- Log Viewer Panel -->
+    <div class="log-panel collapsed" id="log-panel">
+        <div class="log-header" onclick="toggleLogPanel()">
+            <div class="log-title">
+                <span class="log-status" id="log-status"></span>
+                <span>Application Logs</span>
+                <span id="log-count">(0 entries)</span>
+            </div>
+            <div class="log-controls" onclick="event.stopPropagation()">
+                <select class="log-filter" id="log-level-filter" onchange="fetchLogs()">
+                    <option value="">All Levels</option>
+                    <option value="ERROR">Errors</option>
+                    <option value="WARNING">Warnings</option>
+                    <option value="INFO">Info</option>
+                    <option value="DEBUG">Debug</option>
+                </select>
+                <button class="log-btn" onclick="fetchLogs()">Refresh</button>
+                <button class="log-btn" onclick="copyLogs()">Copy All</button>
+                <button class="log-btn" onclick="clearLogs()">Clear</button>
+                <span class="log-expand-icon">&#9650;</span>
+            </div>
+        </div>
+        <div class="log-content" id="log-content">
+            <div class="log-empty">Loading logs...</div>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div class="toast-container" id="toast-container"></div>
 
@@ -372,8 +577,14 @@ Include:
         // Step mapping
         const stepOrder = ['rinser', 'analyzer', 'creator', 'formatter'];
 
+        // Profile state
+        let profileExists = false;
+
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            // Check profile status first
+            checkProfileStatus();
+
             // Character counter
             jobTextArea.addEventListener('input', updateCharCount);
 
@@ -387,6 +598,46 @@ Include:
             // Start notification polling
             startNotificationPolling();
         });
+
+        async function checkProfileStatus() {
+            try {
+                const response = await fetch('/api/profile/status');
+                if (!response.ok) {
+                    throw new Error('Failed to check profile status');
+                }
+
+                const status = await response.json();
+                profileExists = status.exists && status.is_indexed;
+
+                const warningSection = document.getElementById('profile-warning-section');
+                const statusSection = document.getElementById('profile-status-section');
+                const statusText = document.getElementById('profile-status-text');
+
+                if (!status.exists) {
+                    // No profile - show warning, disable input
+                    warningSection.classList.remove('hidden');
+                    statusSection.classList.add('hidden');
+                    inputSection.classList.add('hidden');
+                    submitBtn.disabled = true;
+                } else if (!status.is_indexed) {
+                    // Profile exists but not indexed
+                    warningSection.classList.add('hidden');
+                    statusSection.classList.remove('hidden');
+                    statusText.textContent = 'Profile needs indexing';
+                    submitBtn.disabled = true;
+                } else {
+                    // Profile ready
+                    warningSection.classList.add('hidden');
+                    statusSection.classList.remove('hidden');
+                    statusText.textContent = `Profile ready (${status.chunk_count} chunks, ${status.character_count} chars)`;
+                    inputSection.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Profile status check failed:', error);
+                // On error, assume profile might exist and show input
+                inputSection.classList.remove('hidden');
+            }
+        }
 
         function updateCharCount() {
             const len = jobTextArea.value.length;
@@ -641,6 +892,127 @@ Include:
             div.textContent = text;
             return div.innerHTML;
         }
+
+        // =====================================================================
+        // LOG VIEWER FUNCTIONS
+        // =====================================================================
+
+        let logPollInterval = null;
+        let logPanelExpanded = false;
+
+        function toggleLogPanel() {
+            const panel = document.getElementById('log-panel');
+            logPanelExpanded = !logPanelExpanded;
+
+            if (logPanelExpanded) {
+                panel.classList.remove('collapsed');
+                panel.classList.add('expanded');
+                fetchLogs();
+                startLogPolling();
+            } else {
+                panel.classList.remove('expanded');
+                panel.classList.add('collapsed');
+                stopLogPolling();
+            }
+        }
+
+        function startLogPolling() {
+            if (logPollInterval) clearInterval(logPollInterval);
+            logPollInterval = setInterval(fetchLogs, 2000);
+        }
+
+        function stopLogPolling() {
+            if (logPollInterval) {
+                clearInterval(logPollInterval);
+                logPollInterval = null;
+            }
+        }
+
+        async function fetchLogs() {
+            const levelFilter = document.getElementById('log-level-filter').value;
+            const logContent = document.getElementById('log-content');
+            const logCount = document.getElementById('log-count');
+            const logStatus = document.getElementById('log-status');
+
+            try {
+                let url = '/api/logs?limit=100';
+                if (levelFilter) {
+                    url += `&level=${levelFilter}`;
+                }
+
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch logs');
+                }
+
+                const data = await response.json();
+
+                // Update count
+                logCount.textContent = `(${data.total} entries)`;
+
+                // Check for errors
+                const hasErrors = data.entries.some(e => e.level === 'ERROR');
+                const hasWarnings = data.entries.some(e => e.level === 'WARNING');
+
+                logStatus.classList.remove('error', 'warning');
+                if (hasErrors) {
+                    logStatus.classList.add('error');
+                } else if (hasWarnings) {
+                    logStatus.classList.add('warning');
+                }
+
+                // Render entries
+                if (data.entries.length === 0) {
+                    logContent.innerHTML = '<div class="log-empty">No log entries</div>';
+                } else {
+                    logContent.innerHTML = data.entries.map(entry =>
+                        `<div class="log-entry level-${entry.level}">${escapeHtml(entry.message)}</div>`
+                    ).join('');
+
+                    // Auto-scroll to bottom if near bottom
+                    if (logContent.scrollHeight - logContent.scrollTop < logContent.clientHeight + 100) {
+                        logContent.scrollTop = logContent.scrollHeight;
+                    }
+                }
+
+            } catch (error) {
+                console.error('Log fetch error:', error);
+                logContent.innerHTML = '<div class="log-empty">Error loading logs</div>';
+            }
+        }
+
+        async function clearLogs() {
+            try {
+                await fetch('/api/logs', { method: 'DELETE' });
+                fetchLogs();
+            } catch (error) {
+                console.error('Failed to clear logs:', error);
+            }
+        }
+
+        async function copyLogs() {
+            try {
+                const response = await fetch('/api/logs?limit=500');
+                if (!response.ok) throw new Error('Failed to fetch logs');
+
+                const data = await response.json();
+                const logText = data.entries.map(e => e.message).join('\n');
+
+                await navigator.clipboard.writeText(logText);
+
+                // Show brief feedback
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => { btn.textContent = originalText; }, 1500);
+            } catch (error) {
+                console.error('Failed to copy logs:', error);
+                alert('Failed to copy logs to clipboard');
+            }
+        }
+
+        // Initial log fetch (to show status indicator even when collapsed)
+        setTimeout(fetchLogs, 1000);
     </script>
 </body>
 </html>

@@ -1,0 +1,47 @@
+Data Analyst
+Nordic Analytics Group
+Aarhus, Denmark (On-site)
+
+Company Description
+Nordic Analytics Group is a consultancy firm helping businesses across Denmark leverage data for strategic decision-making. Our clients include major retailers, financial institutions, and healthcare organizations.
+
+Position Overview
+We are seeking a Data Analyst to join our analytics team in Aarhus. You will work directly with clients to understand their business challenges, analyze complex datasets, and deliver actionable insights through compelling visualizations and reports.
+
+Key Responsibilities
+- Collect, clean, and validate data from multiple sources
+- Perform statistical analysis and create predictive models
+- Build interactive dashboards and reports using Power BI or Tableau
+- Present findings to both technical and non-technical stakeholders
+- Document data processes and maintain data quality standards
+- Collaborate with data engineers to improve data pipelines
+
+Required Qualifications
+- Master's degree in Statistics, Economics, Data Science, or related field
+- 2-4 years of experience in data analysis or business intelligence
+- Advanced SQL skills for complex queries and data manipulation
+- Proficiency in Python or R for statistical analysis
+- Experience with visualization tools (Power BI, Tableau, or similar)
+- Strong analytical and problem-solving abilities
+- Excellent presentation and communication skills
+- Fluent in Danish and English
+
+Preferred Qualifications
+- Experience in retail, finance, or healthcare sectors
+- Knowledge of machine learning techniques
+- Familiarity with cloud data platforms (Snowflake, BigQuery)
+- Project management experience
+
+Benefits
+- Annual salary: 480,000 - 580,000 DKK
+- 6 weeks paid vacation
+- Continuing education support
+- Health and dental insurance
+- Company laptop and phone
+- Free parking at the office
+- Friday afternoon social events
+
+Application Process
+Please send your CV along with a brief cover letter describing a data analysis project you're proud of and what insights you delivered.
+
+Start Date: February 1, 2026

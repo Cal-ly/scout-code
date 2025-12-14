@@ -1,0 +1,163 @@
+# Scout User Profile - Sample for Testing
+# This profile is used by Scout to generate tailored job applications
+
+# Basic Information
+full_name: "Alex Jensen"
+email: "alex.jensen@email.dk"
+phone: "+45 12 34 56 78"
+location: "Copenhagen, Denmark"
+linkedin_url: "https://linkedin.com/in/alexjensen"
+github_url: "https://github.com/alexjensen"
+
+# Professional Summary
+title: "Full Stack Software Developer"
+years_experience: 5.0
+summary: |
+  Experienced full-stack developer with 5 years of experience building
+  scalable web applications. Strong background in Python, JavaScript/TypeScript,
+  and cloud technologies. Passionate about clean code, automated testing,
+  and DevOps practices. Looking for opportunities to work on challenging
+  projects that make a positive impact.
+
+# Skills
+skills:
+  - name: "Python"
+    level: "advanced"
+    years: 5.0
+    keywords: ["Django", "FastAPI", "Flask", "asyncio", "pandas"]
+
+  - name: "JavaScript"
+    level: "advanced"
+    years: 4.0
+    keywords: ["ES6+", "Node.js", "npm"]
+
+  - name: "TypeScript"
+    level: "intermediate"
+    years: 2.0
+    keywords: ["type safety", "interfaces"]
+
+  - name: "React"
+    level: "intermediate"
+    years: 3.0
+    keywords: ["hooks", "Redux", "Next.js", "component design"]
+
+  - name: "PostgreSQL"
+    level: "advanced"
+    years: 4.0
+    keywords: ["SQL", "query optimization", "database design"]
+
+  - name: "Docker"
+    level: "intermediate"
+    years: 3.0
+    keywords: ["containerization", "docker-compose", "Dockerfile"]
+
+  - name: "Git"
+    level: "advanced"
+    years: 5.0
+    keywords: ["version control", "branching", "CI/CD", "GitHub"]
+
+  - name: "REST API Design"
+    level: "advanced"
+    years: 4.0
+    keywords: ["OpenAPI", "HTTP", "JSON", "API versioning"]
+
+  - name: "Linux"
+    level: "intermediate"
+    years: 4.0
+    keywords: ["Ubuntu", "bash", "server administration"]
+
+  - name: "Agile/Scrum"
+    level: "intermediate"
+    years: 3.0
+    keywords: ["sprint planning", "retrospectives", "Jira"]
+
+# Work Experience
+experiences:
+  - company: "TechStart ApS"
+    role: "Senior Software Developer"
+    start_date: "2022-03-01"
+    end_date: null
+    current: true
+    description: |
+      Lead developer for a B2B SaaS platform serving logistics companies.
+      Responsible for backend architecture, API design, and mentoring junior developers.
+    achievements:
+      - "Reduced API response times by 40% through query optimization"
+      - "Implemented CI/CD pipeline reducing deployment time from hours to minutes"
+      - "Led migration from monolith to microservices architecture"
+    technologies:
+      - "Python"
+      - "FastAPI"
+      - "PostgreSQL"
+      - "Docker"
+      - "AWS"
+      - "React"
+
+  - company: "WebSolutions Denmark"
+    role: "Software Developer"
+    start_date: "2020-01-15"
+    end_date: "2022-02-28"
+    current: false
+    description: |
+      Full-stack developer working on client web applications.
+      Collaborated with design team to implement responsive UIs.
+    achievements:
+      - "Delivered 15+ client projects on time and within budget"
+      - "Built reusable component library reducing development time by 30%"
+      - "Introduced automated testing, achieving 80% code coverage"
+    technologies:
+      - "Python"
+      - "Django"
+      - "JavaScript"
+      - "React"
+      - "PostgreSQL"
+      - "Redis"
+
+  - company: "DataTech Startup"
+    role: "Junior Developer"
+    start_date: "2019-06-01"
+    end_date: "2019-12-31"
+    current: false
+    description: |
+      Entry-level position focused on data processing and automation scripts.
+      Gained experience with Python and SQL databases.
+    achievements:
+      - "Automated manual data entry processes saving 20 hours/week"
+      - "Developed internal dashboard for monitoring system health"
+    technologies:
+      - "Python"
+      - "SQL"
+      - "Pandas"
+      - "Flask"
+
+# Education
+education:
+  - institution: "Technical University of Denmark (DTU)"
+    degree: "Bachelor of Science"
+    field: "Software Technology"
+    start_date: "2016-09-01"
+    end_date: "2019-06-15"
+    gpa: 10.2
+    relevant_courses:
+      - "Algorithms and Data Structures"
+      - "Database Systems"
+      - "Software Engineering"
+      - "Web Development"
+      - "Computer Networks"
+
+# Certifications
+certifications:
+  - name: "AWS Certified Developer - Associate"
+    issuer: "Amazon Web Services"
+    date_obtained: "2023-06-15"
+    expiry_date: "2026-06-15"
+    credential_id: "AWS-DEV-12345"
+
+  - name: "Professional Scrum Master I"
+    issuer: "Scrum.org"
+    date_obtained: "2022-03-01"
+    expiry_date: null
+    credential_id: "PSM-67890"
+
+# Metadata
+profile_version: "1.0"

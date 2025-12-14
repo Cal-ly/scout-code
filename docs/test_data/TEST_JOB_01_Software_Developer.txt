@@ -1,0 +1,46 @@
+Software Developer - Full Stack
+TechFlow Solutions ApS
+Copenhagen, Denmark (Hybrid)
+
+About TechFlow Solutions
+TechFlow Solutions is a growing Danish tech company specializing in enterprise SaaS solutions for the logistics and supply chain industry. We serve over 200 companies across Scandinavia and are expanding into the European market.
+
+About the Role
+We are looking for a Full Stack Software Developer to join our product team. You will work on our core platform, developing new features and improving existing functionality. This is an excellent opportunity for someone who wants to make a real impact in a fast-paced environment.
+
+Responsibilities
+- Design, develop, and maintain web applications using Python and React
+- Collaborate with product managers and designers to implement new features
+- Write clean, testable, and well-documented code
+- Participate in code reviews and provide constructive feedback
+- Troubleshoot and debug production issues
+- Contribute to technical architecture decisions
+
+Requirements
+- Bachelor's degree in Computer Science or related field
+- 3+ years of experience in full-stack development
+- Strong proficiency in Python (Django or FastAPI)
+- Experience with React and TypeScript
+- Familiarity with PostgreSQL and Redis
+- Understanding of RESTful API design
+- Experience with Git and CI/CD pipelines
+- Good communication skills in English
+
+Nice to Have
+- Experience with Docker and Kubernetes
+- Knowledge of cloud platforms (AWS or Azure)
+- Experience with microservices architecture
+- Danish language skills
+
+What We Offer
+- Competitive salary (45,000 - 55,000 DKK/month)
+- Flexible working hours with hybrid model (3 days office, 2 days remote)
+- Professional development budget
+- Pension scheme and health insurance
+- Modern office in central Copenhagen
+- Team events and social activities
+
+How to Apply
+Submit your CV and a cover letter explaining why you're interested in this role and what you can bring to TechFlow Solutions.
+
+Application Deadline: January 15, 2026

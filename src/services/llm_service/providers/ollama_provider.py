@@ -90,8 +90,13 @@ class OllamaProvider(LLMProvider):
 
             # Verify Ollama is running by listing models
             models_response = await self._client.list()
-            models = models_response.get("models", [])
-            model_names = [m.get("name", "") for m in models]
+            # Handle both dict response (older) and object response (newer ollama package)
+            if hasattr(models_response, "models"):
+                models = models_response.models
+                model_names = [m.model for m in models]
+            else:
+                models = models_response.get("models", [])
+                model_names = [m.get("name", "") for m in models]
 
             # Check if primary model is available
             primary_available = any(self._model in name for name in model_names)
@@ -178,12 +183,15 @@ class OllamaProvider(LLMProvider):
 
             latency_ms = int((time.time() - start_time) * 1000)
 
-            # Extract content from response
-            content = response.get("message", {}).get("content", "")
-
-            # Ollama provides token counts in response
-            prompt_tokens = response.get("prompt_eval_count", 0) or 0
-            completion_tokens = response.get("eval_count", 0) or 0
+            # Extract content from response (handle both dict and object response)
+            if hasattr(response, "message"):
+                content = response.message.content if response.message else ""
+                prompt_tokens = getattr(response, "prompt_eval_count", 0) or 0
+                completion_tokens = getattr(response, "eval_count", 0) or 0
+            else:
+                content = response.get("message", {}).get("content", "")
+                prompt_tokens = response.get("prompt_eval_count", 0) or 0
+                completion_tokens = response.get("eval_count", 0) or 0
 
             usage = TokenUsage(
                 input_tokens=prompt_tokens,
@@ -263,7 +271,11 @@ class OllamaProvider(LLMProvider):
 
         try:
             models_response = await self._client.list()
-            models = models_response.get("models", [])
+            # Handle both dict response (older) and object response (newer ollama package)
+            if hasattr(models_response, "models"):
+                models = models_response.models
+            else:
+                models = models_response.get("models", [])
             return {
                 "status": "healthy",
                 "provider": "ollama",

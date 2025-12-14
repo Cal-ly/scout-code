@@ -528,6 +528,16 @@ async def get_pipeline_orchestrator() -> PipelineOrchestrator:
         from src.modules.rinser import get_rinser
 
         collector = await get_collector()
+
+        # Load user profile (required for Analyzer to match skills)
+        try:
+            await collector.load_profile()
+            logger.info("User profile loaded successfully")
+        except Exception as e:
+            logger.error(f"Failed to load user profile: {e}")
+            logger.error("Create data/profile.yaml with your profile data")
+            raise
+
         rinser = await get_rinser()
         analyzer = await get_analyzer()
         creator = await get_creator()

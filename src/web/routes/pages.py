@@ -35,3 +35,20 @@ async def index(request: Request) -> HTMLResponse:
         request=request,
         name="index.html",
     )
+
+
+@router.get("/profile/create", response_class=HTMLResponse)
+async def profile_create(request: Request) -> HTMLResponse:
+    """
+    Render the profile creation/edit page.
+
+    Args:
+        request: FastAPI request object (required for templates).
+
+    Returns:
+        Rendered HTML page.
+    """
+    return templates.TemplateResponse(
+        request=request,
+        name="profile.html",
+    )

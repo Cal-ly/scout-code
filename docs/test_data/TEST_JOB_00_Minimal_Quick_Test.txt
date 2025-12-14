@@ -1,0 +1,19 @@
+Python Developer
+TestCorp
+Copenhagen
+
+Requirements:
+- Python programming
+- REST API development
+- Git version control
+
+Responsibilities:
+- Write Python code
+- Build APIs
+- Code reviews
+
+Nice to have:
+- Docker experience
+- PostgreSQL
+
+Salary: 40,000-50,000 DKK/month

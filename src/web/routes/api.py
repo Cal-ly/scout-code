@@ -8,6 +8,7 @@ Endpoints:
     GET /api/status/{job_id} - Get pipeline status
     GET /api/download/{job_id}/{file_type} - Download PDF
     GET /api/jobs - List all jobs
+    GET /api/logs - Get recent application logs
 """
 
 import asyncio
@@ -17,6 +18,7 @@ from typing import Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
 from src.services.pipeline import (
     PipelineInput,
@@ -352,4 +354,483 @@ async def list_jobs(
         total=total,
         skip=skip,
         limit=limit,
+    )
+
+
+# =============================================================================
+# LOG ENDPOINTS
+# =============================================================================
+
+
+class LogEntryResponse(BaseModel):
+    """Single log entry."""
+
+    timestamp: str
+    level: str
+    logger: str
+    message: str
+
+
+class LogsResponse(BaseModel):
+    """Response containing log entries."""
+
+    entries: list[LogEntryResponse]
+    total: int
+
+
+@router.get(
+    "/logs",
+    response_model=LogsResponse,
+    summary="Get application logs",
+    description="Retrieve recent application log entries for debugging.",
+)
+async def get_logs(
+    limit: int = 100,
+    level: str | None = None,
+    logger_filter: str | None = None,
+) -> LogsResponse:
+    """
+    Get recent application logs.
+
+    Args:
+        limit: Maximum number of entries (default 100, max 500).
+        level: Filter by level (INFO, WARNING, ERROR, DEBUG).
+        logger_filter: Filter by logger name (partial match).
+
+    Returns:
+        LogsResponse with recent log entries.
+    """
+    from src.web.log_handler import get_memory_log_handler
+
+    handler = get_memory_log_handler()
+    entries = handler.get_entries(
+        limit=min(limit, 500),
+        level=level,
+        logger_filter=logger_filter,
+    )
+
+    return LogsResponse(
+        entries=[
+            LogEntryResponse(
+                timestamp=e.timestamp,
+                level=e.level,
+                logger=e.logger,
+                message=e.message,
+            )
+            for e in entries
+        ],
+        total=len(entries),
+    )
+
+
+@router.delete(
+    "/logs",
+    summary="Clear logs",
+    description="Clear all log entries from the memory buffer.",
+)
+async def clear_logs() -> dict[str, str]:
+    """Clear log buffer."""
+    from src.web.log_handler import get_memory_log_handler
+
+    handler = get_memory_log_handler()
+    handler.clear()
+    return {"status": "cleared"}
+
+
+# =============================================================================
+# DIAGNOSTIC ENDPOINTS
+# =============================================================================
+
+
+class ComponentStatus(BaseModel):
+    """Status of a single component."""
+
+    name: str
+    status: str  # "ok", "error", "not_initialized"
+    message: str | None = None
+    details: dict | None = None
+
+
+class DiagnosticsResponse(BaseModel):
+    """Full diagnostics response."""
+
+    overall: str
+    profile_loaded: bool
+    profile_name: str | None = None
+    components: list[ComponentStatus]
+
+
+class ProfileDiagnostics(BaseModel):
+    """Profile diagnostic information."""
+
+    loaded: bool
+    name: str | None = None
+    email: str | None = None
+    title: str | None = None
+    years_experience: float | None = None
+    skill_count: int = 0
+    experience_count: int = 0
+    education_count: int = 0
+    certification_count: int = 0
+
+
+@router.get(
+    "/diagnostics",
+    response_model=DiagnosticsResponse,
+    summary="Pipeline diagnostics",
+    description="Get diagnostic information about all pipeline components.",
+)
+async def get_diagnostics(
+    orchestrator: PipelineOrchestrator = Depends(get_orchestrator),
+) -> DiagnosticsResponse:
+    """
+    Get diagnostic status of all pipeline components.
+
+    Returns status of each module and service.
+    """
+    components: list[ComponentStatus] = []
+    overall_ok = True
+
+    # Check Collector and Profile
+    try:
+        collector = orchestrator._collector
+        profile = collector.get_profile()
+        components.append(
+            ComponentStatus(
+                name="collector",
+                status="ok",
+                message=f"Profile loaded: {profile.full_name}",
+                details={"profile_hash": collector._profile_hash},
+            )
+        )
+        profile_loaded = True
+        profile_name = profile.full_name
+    except Exception as e:
+        components.append(
+            ComponentStatus(name="collector", status="error", message=str(e))
+        )
+        profile_loaded = False
+        profile_name = None
+        overall_ok = False
+
+    # Check Rinser (LLM connection)
+    try:
+        rinser = orchestrator._rinser
+        if rinser._initialized:
+            components.append(
+                ComponentStatus(name="rinser", status="ok", message="Initialized")
+            )
+        else:
+            components.append(
+                ComponentStatus(
+                    name="rinser", status="not_initialized", message="Not initialized"
+                )
+            )
+            overall_ok = False
+    except Exception as e:
+        components.append(
+            ComponentStatus(name="rinser", status="error", message=str(e))
+        )
+        overall_ok = False
+
+    # Check Analyzer
+    try:
+        analyzer = orchestrator._analyzer
+        if analyzer._initialized:
+            components.append(
+                ComponentStatus(name="analyzer", status="ok", message="Initialized")
+            )
+        else:
+            components.append(
+                ComponentStatus(
+                    name="analyzer", status="not_initialized", message="Not initialized"
+                )
+            )
+            overall_ok = False
+    except Exception as e:
+        components.append(
+            ComponentStatus(name="analyzer", status="error", message=str(e))
+        )
+        overall_ok = False
+
+    # Check Creator
+    try:
+        creator = orchestrator._creator
+        if creator._initialized:
+            components.append(
+                ComponentStatus(name="creator", status="ok", message="Initialized")
+            )
+        else:
+            components.append(
+                ComponentStatus(
+                    name="creator", status="not_initialized", message="Not initialized"
+                )
+            )
+            overall_ok = False
+    except Exception as e:
+        components.append(
+            ComponentStatus(name="creator", status="error", message=str(e))
+        )
+        overall_ok = False
+
+    # Check Formatter
+    try:
+        formatter = orchestrator._formatter
+        if formatter._initialized:
+            components.append(
+                ComponentStatus(name="formatter", status="ok", message="Initialized")
+            )
+        else:
+            components.append(
+                ComponentStatus(
+                    name="formatter",
+                    status="not_initialized",
+                    message="Not initialized",
+                )
+            )
+            overall_ok = False
+    except Exception as e:
+        components.append(
+            ComponentStatus(name="formatter", status="error", message=str(e))
+        )
+        overall_ok = False
+
+    # Check LLM Service
+    try:
+        llm_service = orchestrator._rinser._llm
+        health = await llm_service.health_check()
+        if health.status == "healthy":
+            components.append(
+                ComponentStatus(
+                    name="llm_service",
+                    status="ok",
+                    message=f"Ollama: {health.model_loaded or 'unknown'}",
+                    details={
+                        "status": health.status,
+                        "ollama_connected": health.ollama_connected,
+                        "model": health.model_loaded,
+                    },
+                )
+            )
+        else:
+            components.append(
+                ComponentStatus(
+                    name="llm_service",
+                    status="degraded",
+                    message=health.last_error or "Unknown error",
+                    details={
+                        "status": health.status,
+                        "ollama_connected": health.ollama_connected,
+                    },
+                )
+            )
+            overall_ok = False
+    except Exception as e:
+        components.append(
+            ComponentStatus(name="llm_service", status="error", message=str(e))
+        )
+        overall_ok = False
+
+    return DiagnosticsResponse(
+        overall="ok" if overall_ok else "degraded",
+        profile_loaded=profile_loaded,
+        profile_name=profile_name,
+        components=components,
+    )
+
+
+@router.get(
+    "/diagnostics/profile",
+    response_model=ProfileDiagnostics,
+    summary="Profile diagnostics",
+    description="Get detailed information about the loaded user profile.",
+)
+async def get_profile_diagnostics(
+    orchestrator: PipelineOrchestrator = Depends(get_orchestrator),
+) -> ProfileDiagnostics:
+    """Get profile details for diagnostics."""
+    try:
+        collector = orchestrator._collector
+        profile = collector.get_profile()
+        return ProfileDiagnostics(
+            loaded=True,
+            name=profile.full_name,
+            email=profile.email,
+            title=profile.title,
+            years_experience=profile.years_experience,
+            skill_count=len(profile.skills),
+            experience_count=len(profile.experiences),
+            education_count=len(profile.education),
+            certification_count=len(profile.certifications),
+        )
+    except Exception:
+        return ProfileDiagnostics(loaded=False)
+
+
+class QuickTestResult(BaseModel):
+    """Result of quick component test."""
+
+    component: str
+    status: str
+    duration_ms: int
+    message: str | None = None
+    error: str | None = None
+
+
+class QuickTestResponse(BaseModel):
+    """Response from quick test."""
+
+    success: bool
+    total_duration_ms: int
+    results: list[QuickTestResult]
+
+
+@router.post(
+    "/diagnostics/quick-test",
+    response_model=QuickTestResponse,
+    summary="Quick pipeline test",
+    description="Run a quick test through pipeline components (no LLM calls).",
+)
+async def run_quick_test(
+    orchestrator: PipelineOrchestrator = Depends(get_orchestrator),
+) -> QuickTestResponse:
+    """
+    Quick test of pipeline components without full LLM processing.
+
+    Tests:
+    1. Profile access
+    2. Vector store query
+    3. Template loading
+    """
+    import time
+
+    results: list[QuickTestResult] = []
+    total_start = time.time()
+    all_success = True
+
+    # Test 1: Profile Access
+    start = time.time()
+    try:
+        collector = orchestrator._collector
+        profile = collector.get_profile()
+        results.append(
+            QuickTestResult(
+                component="profile_access",
+                status="ok",
+                duration_ms=int((time.time() - start) * 1000),
+                message=f"Profile: {profile.full_name}",
+            )
+        )
+    except Exception as e:
+        results.append(
+            QuickTestResult(
+                component="profile_access",
+                status="error",
+                duration_ms=int((time.time() - start) * 1000),
+                error=str(e),
+            )
+        )
+        all_success = False
+
+    # Test 2: Vector Store Query
+    start = time.time()
+    try:
+        collector = orchestrator._collector
+        # Quick semantic search
+        matches = await collector.search_skills("Python programming", n_results=3)
+        results.append(
+            QuickTestResult(
+                component="vector_search",
+                status="ok",
+                duration_ms=int((time.time() - start) * 1000),
+                message=f"Found {len(matches)} skill matches",
+            )
+        )
+    except Exception as e:
+        results.append(
+            QuickTestResult(
+                component="vector_search",
+                status="error",
+                duration_ms=int((time.time() - start) * 1000),
+                error=str(e),
+            )
+        )
+        all_success = False
+
+    # Test 3: LLM Connection (just health check, no generation)
+    start = time.time()
+    try:
+        llm_service = orchestrator._rinser._llm
+        health = await llm_service.health_check()
+        if health.status == "healthy":
+            results.append(
+                QuickTestResult(
+                    component="llm_connection",
+                    status="ok",
+                    duration_ms=int((time.time() - start) * 1000),
+                    message=f"Ollama ready: {health.model_loaded}",
+                )
+            )
+        else:
+            results.append(
+                QuickTestResult(
+                    component="llm_connection",
+                    status="warning",
+                    duration_ms=int((time.time() - start) * 1000),
+                    message=health.last_error or "Not healthy",
+                )
+            )
+    except Exception as e:
+        results.append(
+            QuickTestResult(
+                component="llm_connection",
+                status="error",
+                duration_ms=int((time.time() - start) * 1000),
+                error=str(e),
+            )
+        )
+        all_success = False
+
+    # Test 4: Template Loading
+    start = time.time()
+    try:
+        formatter = orchestrator._formatter
+        # Check templates exist
+        template_dir = formatter._templates_dir
+        if template_dir.exists():
+            templates = list(template_dir.glob("*.html"))
+            results.append(
+                QuickTestResult(
+                    component="templates",
+                    status="ok",
+                    duration_ms=int((time.time() - start) * 1000),
+                    message=f"Found {len(templates)} templates",
+                )
+            )
+        else:
+            results.append(
+                QuickTestResult(
+                    component="templates",
+                    status="warning",
+                    duration_ms=int((time.time() - start) * 1000),
+                    message="Template directory not found",
+                )
+            )
+    except Exception as e:
+        results.append(
+            QuickTestResult(
+                component="templates",
+                status="error",
+                duration_ms=int((time.time() - start) * 1000),
+                error=str(e),
+            )
+        )
+        all_success = False
+
+    total_duration = int((time.time() - total_start) * 1000)
+
+    return QuickTestResponse(
+        success=all_success,
+        total_duration_ms=total_duration,
+        results=results,
     )

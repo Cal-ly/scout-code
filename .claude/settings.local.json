@@ -22,7 +22,13 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(mkdir:*)",
-      "Bash(dir /b \"C:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\\docs\\deployment\")"
+      "Bash(dir /b \"C:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\\docs\\deployment\")",
+      "Bash(ssh:*)",
+      "Bash(scp:*)",
+      "Bash(curl:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(python:*)"
     ]
   }
 }
