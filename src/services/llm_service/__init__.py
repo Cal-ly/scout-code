@@ -2,7 +2,7 @@
 LLM Service
 
 Ollama-based local LLM integration for all LLM operations.
-PoC scope: Qwen 2.5 3B / Gemma 2 2B, basic retry logic, usage tracking.
+PoC scope: Qwen 2.5 3B / Gemma 2 2B, basic retry logic, metrics tracking.
 
 Usage:
     from src.services.llm_service import LLMService, get_llm_service
@@ -11,7 +11,7 @@ Usage:
     llm = await get_llm_service()
 
     # Manual instantiation (for testing)
-    llm = LLMService(cost_tracker, cache)
+    llm = LLMService(metrics_service, cache)
     await llm.initialize()
 """
 

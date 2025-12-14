@@ -3,7 +3,7 @@ name = "scout"
 version = "0.1.0"
 description = "Intelligent job application automation system with semantic matching and tailored content generation"
 authors = [
-    {name = "Carsten", email = "carsten@example.com"}
+    {name = "Cal", email = "carstenlydeking@gmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.12"

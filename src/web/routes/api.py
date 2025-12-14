@@ -9,6 +9,10 @@ Endpoints:
     GET /api/download/{job_id}/{file_type} - Download PDF
     GET /api/jobs - List all jobs
     GET /api/logs - Get recent application logs
+    GET /api/metrics/status - Get current metrics status
+    GET /api/metrics/summary - Get metrics summary for period
+    GET /api/metrics/entries - Get paginated metrics entries
+    GET /api/metrics/comparison - Get model comparison data
 """
 
 import asyncio
@@ -834,3 +838,294 @@ async def run_quick_test(
         total_duration_ms=total_duration,
         results=results,
     )
+
+
+# =============================================================================
+# METRICS ENDPOINTS
+# =============================================================================
+
+
+class MetricsStatusResponse(BaseModel):
+    """Current metrics status response."""
+
+    calls_today: int
+    success_rate_today: float
+    avg_tokens_per_second: float
+    avg_duration_seconds: float
+    primary_model_success_rate: float
+    fallback_usage_rate: float
+    current_temperature: float | None
+    throttling_warning: bool
+    performance_trend: str
+
+
+class MetricsEntryResponse(BaseModel):
+    """Single metrics entry."""
+
+    timestamp: str
+    model: str
+    module: str | None
+    job_id: str | None
+    duration_seconds: float
+    prompt_tokens: int
+    completion_tokens: int
+    tokens_per_second: float
+    success: bool
+    error_type: str | None
+    retry_count: int
+    fallback_used: bool
+    cpu_percent: float | None
+    memory_mb: float | None
+    temperature_c: float | None
+
+
+class MetricsEntriesResponse(BaseModel):
+    """Paginated metrics entries response."""
+
+    entries: list[MetricsEntryResponse]
+    total: int
+    skip: int
+    limit: int
+
+
+class MetricsSummaryResponse(BaseModel):
+    """Metrics summary response."""
+
+    period_start: str
+    period_end: str
+    total_calls: int
+    total_tokens: int
+    successful_calls: int
+    avg_tokens_per_second: float
+    median_duration_seconds: float
+    p95_duration_seconds: float
+    success_rate: float
+    error_breakdown: dict[str, int]
+    fallback_rate: float
+    avg_cpu_percent: float | None
+    avg_memory_mb: float | None
+    avg_temperature_c: float | None
+
+
+class ModelStatsResponse(BaseModel):
+    """Model statistics response."""
+
+    model_name: str
+    total_calls: int
+    success_count: int
+    success_rate: float
+    total_tokens: int
+    total_duration_seconds: float
+    avg_tokens_per_second: float
+    avg_duration_seconds: float
+    error_breakdown: dict[str, int]
+
+
+class MetricsComparisonResponse(BaseModel):
+    """Model comparison response."""
+
+    models: list[ModelStatsResponse]
+
+
+@router.get(
+    "/metrics/status",
+    response_model=MetricsStatusResponse,
+    summary="Get current metrics status",
+    description="Get real-time performance status including today's statistics.",
+)
+async def get_metrics_status() -> MetricsStatusResponse:
+    """Get current metrics status."""
+    from src.services.metrics_service import get_metrics_service
+
+    try:
+        metrics = await get_metrics_service()
+        status = await metrics.get_status()
+
+        return MetricsStatusResponse(
+            calls_today=status.calls_today,
+            success_rate_today=status.success_rate_today,
+            avg_tokens_per_second=status.avg_tokens_per_second,
+            avg_duration_seconds=status.avg_duration_seconds,
+            primary_model_success_rate=status.primary_model_success_rate,
+            fallback_usage_rate=status.fallback_usage_rate,
+            current_temperature=status.current_temperature,
+            throttling_warning=status.throttling_warning,
+            performance_trend=status.performance_trend,
+        )
+    except Exception as e:
+        logger.error(f"Failed to get metrics status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
+    "/metrics/summary",
+    response_model=MetricsSummaryResponse,
+    summary="Get metrics summary",
+    description="Get performance summary for a time period.",
+)
+async def get_metrics_summary(
+    days: int = 7,
+) -> MetricsSummaryResponse:
+    """
+    Get metrics summary for specified period.
+
+    Args:
+        days: Number of days to include (default 7, max 90).
+    """
+    from datetime import datetime, timedelta
+
+    from src.services.metrics_service import get_metrics_service
+
+    try:
+        metrics = await get_metrics_service()
+
+        # Calculate period
+        end = datetime.now()
+        start = end - timedelta(days=min(days, 90))
+
+        summary = await metrics.get_summary(start=start, end=end)
+
+        return MetricsSummaryResponse(
+            period_start=summary.period_start.isoformat(),
+            period_end=summary.period_end.isoformat(),
+            total_calls=summary.total_calls,
+            total_tokens=summary.total_tokens,
+            successful_calls=summary.successful_calls,
+            avg_tokens_per_second=summary.avg_tokens_per_second,
+            median_duration_seconds=summary.median_duration_seconds,
+            p95_duration_seconds=summary.p95_duration_seconds,
+            success_rate=summary.success_rate,
+            error_breakdown=summary.error_breakdown,
+            fallback_rate=summary.fallback_rate,
+            avg_cpu_percent=summary.avg_cpu_percent,
+            avg_memory_mb=summary.avg_memory_mb,
+            avg_temperature_c=summary.avg_temperature_c,
+        )
+    except Exception as e:
+        logger.error(f"Failed to get metrics summary: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
+    "/metrics/entries",
+    response_model=MetricsEntriesResponse,
+    summary="Get metrics entries",
+    description="Get paginated list of metrics entries with filtering.",
+)
+async def get_metrics_entries(
+    skip: int = 0,
+    limit: int = 50,
+    model: str | None = None,
+    module: str | None = None,
+    success: bool | None = None,
+    sort_by: str = "timestamp",
+    sort_order: str = "desc",
+) -> MetricsEntriesResponse:
+    """
+    Get paginated metrics entries with optional filtering.
+
+    Args:
+        skip: Number of entries to skip.
+        limit: Maximum entries to return (max 100).
+        model: Filter by model name.
+        module: Filter by module name.
+        success: Filter by success status.
+        sort_by: Sort field (timestamp, duration, tokens_per_second).
+        sort_order: Sort order (asc, desc).
+    """
+    from src.services.metrics_service import get_metrics_service
+
+    try:
+        metrics = await get_metrics_service()
+
+        # Get all entries (we'll filter/sort in memory for simplicity)
+        all_entries = metrics._entries.copy()
+
+        # Apply filters
+        if model:
+            all_entries = [e for e in all_entries if e.model == model]
+        if module:
+            all_entries = [e for e in all_entries if e.module == module]
+        if success is not None:
+            all_entries = [e for e in all_entries if e.success == success]
+
+        # Sort entries
+        reverse = sort_order == "desc"
+        if sort_by == "timestamp":
+            all_entries.sort(key=lambda e: e.timestamp, reverse=reverse)
+        elif sort_by == "duration":
+            all_entries.sort(key=lambda e: e.duration_seconds, reverse=reverse)
+        elif sort_by == "tokens_per_second":
+            all_entries.sort(key=lambda e: e.tokens_per_second, reverse=reverse)
+
+        # Paginate
+        total = len(all_entries)
+        limit = min(limit, 100)
+        paginated = all_entries[skip : skip + limit]
+
+        # Convert to response
+        entries = [
+            MetricsEntryResponse(
+                timestamp=e.timestamp.isoformat(),
+                model=e.model,
+                module=e.module,
+                job_id=e.job_id,
+                duration_seconds=e.duration_seconds,
+                prompt_tokens=e.prompt_tokens,
+                completion_tokens=e.completion_tokens,
+                tokens_per_second=e.tokens_per_second,
+                success=e.success,
+                error_type=e.error_type,
+                retry_count=e.retry_count,
+                fallback_used=e.fallback_used,
+                cpu_percent=e.cpu_percent,
+                memory_mb=e.memory_mb,
+                temperature_c=e.temperature_c,
+            )
+            for e in paginated
+        ]
+
+        return MetricsEntriesResponse(
+            entries=entries,
+            total=total,
+            skip=skip,
+            limit=limit,
+        )
+    except Exception as e:
+        logger.error(f"Failed to get metrics entries: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
+    "/metrics/comparison",
+    response_model=MetricsComparisonResponse,
+    summary="Get model comparison",
+    description="Compare performance metrics between different models.",
+)
+async def get_metrics_comparison() -> MetricsComparisonResponse:
+    """Get model comparison statistics."""
+    from src.services.metrics_service import get_metrics_service
+
+    try:
+        metrics = await get_metrics_service()
+        comparison = await metrics.get_model_comparison()
+
+        models = [
+            ModelStatsResponse(
+                model_name=stats.model_name,
+                total_calls=stats.total_calls,
+                success_count=stats.success_count,
+                success_rate=stats.success_rate,
+                total_tokens=stats.total_tokens,
+                total_duration_seconds=stats.total_duration_seconds,
+                avg_tokens_per_second=stats.avg_tokens_per_second,
+                avg_duration_seconds=stats.avg_duration_seconds,
+                error_breakdown=stats.error_breakdown,
+            )
+            for stats in comparison.values()
+        ]
+
+        return MetricsComparisonResponse(models=models)
+    except Exception as e:
+        logger.error(f"Failed to get metrics comparison: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

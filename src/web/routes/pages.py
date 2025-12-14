@@ -11,6 +11,7 @@ Endpoints:
     GET /profiles/{filename} - Profile detail page
     GET /profiles/{filename}/edit - Edit profile page
     GET /applications - Generated applications list page
+    GET /metrics - Performance metrics dashboard
 """
 
 from pathlib import Path
@@ -165,6 +166,31 @@ async def applications_list(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
         request=request,
         name="applications.html",
+    )
+
+
+# =============================================================================
+# METRICS PAGE
+# =============================================================================
+
+
+@router.get("/metrics", response_class=HTMLResponse)
+async def metrics_page(request: Request) -> HTMLResponse:
+    """
+    Render the performance metrics dashboard.
+
+    Shows LLM inference performance metrics including tokens per second,
+    success rates, model comparison, and system resource usage.
+
+    Args:
+        request: FastAPI request object (required for templates).
+
+    Returns:
+        Rendered HTML page.
+    """
+    return templates.TemplateResponse(
+        request=request,
+        name="metrics.html",
     )
 
 

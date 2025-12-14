@@ -30,7 +30,6 @@ from src.services.llm_service import (
     TokenUsage,
     reset_llm_service,
 )
-from src.services.cost_tracker.exceptions import BudgetExceededError
 
 
 # =============================================================================
@@ -186,18 +185,11 @@ class TestLLMHealth:
 
 
 @pytest.fixture
-def mock_cost_tracker() -> Mock:
-    """Create mock Cost Tracker."""
-    tracker = AsyncMock()
-    tracker.can_proceed.return_value = True
-    tracker.record_cost.return_value = Mock()
-    tracker.get_budget_status.return_value = Mock(
-        daily_spent=0.0,
-        daily_limit=10.0,
-        monthly_spent=0.0,
-        monthly_limit=50.0,
-    )
-    return tracker
+def mock_metrics_service() -> Mock:
+    """Create mock Metrics Service."""
+    metrics = AsyncMock()
+    metrics.record_metrics.return_value = Mock()
+    return metrics
 
 
 @pytest.fixture
@@ -231,7 +223,7 @@ def mock_provider() -> AsyncMock:
 
 @pytest.fixture
 async def llm_service(
-    mock_cost_tracker: Mock, mock_cache: AsyncMock, mock_provider: AsyncMock
+    mock_metrics_service: Mock, mock_cache: AsyncMock, mock_provider: AsyncMock
 ) -> LLMService:
     """Create LLM Service for testing."""
     reset_llm_service()
@@ -239,7 +231,7 @@ async def llm_service(
     with patch(
         "src.services.llm_service.service.OllamaProvider", return_value=mock_provider
     ):
-        service = LLMService(mock_cost_tracker, mock_cache)
+        service = LLMService(mock_metrics_service, mock_cache)
         await service.initialize()
 
         # Set up default response for generate
@@ -267,13 +259,13 @@ class TestInitialization:
 
     @pytest.mark.asyncio
     async def test_initialize_success(
-        self, mock_cost_tracker: Mock, mock_cache: AsyncMock, mock_provider: AsyncMock
+        self, mock_metrics_service: Mock, mock_cache: AsyncMock, mock_provider: AsyncMock
     ) -> None:
         """Should initialize successfully with Ollama."""
         with patch(
             "src.services.llm_service.service.OllamaProvider", return_value=mock_provider
         ):
-            service = LLMService(mock_cost_tracker, mock_cache)
+            service = LLMService(mock_metrics_service, mock_cache)
             await service.initialize()
 
             assert service._initialized is True
@@ -282,7 +274,7 @@ class TestInitialization:
 
     @pytest.mark.asyncio
     async def test_initialize_ollama_not_running(
-        self, mock_cost_tracker: Mock, mock_cache: AsyncMock
+        self, mock_metrics_service: Mock, mock_cache: AsyncMock
     ) -> None:
         """Should raise error if Ollama not running."""
         mock_provider = AsyncMock(spec=LLMProvider)
@@ -293,7 +285,7 @@ class TestInitialization:
         with patch(
             "src.services.llm_service.service.OllamaProvider", return_value=mock_provider
         ):
-            service = LLMService(mock_cost_tracker, mock_cache)
+            service = LLMService(mock_metrics_service, mock_cache)
             with pytest.raises(LLMInitializationError, match="Ollama"):
                 await service.initialize()
 
@@ -307,10 +299,10 @@ class TestInitialization:
 
     @pytest.mark.asyncio
     async def test_operation_before_init_raises(
-        self, mock_cost_tracker: Mock, mock_cache: AsyncMock
+        self, mock_metrics_service: Mock, mock_cache: AsyncMock
     ) -> None:
         """Should raise error if not initialized."""
-        service = LLMService(mock_cost_tracker, mock_cache)
+        service = LLMService(mock_metrics_service, mock_cache)
 
         with pytest.raises(LLMError, match="not initialized"):
             await service.generate(
@@ -416,58 +408,59 @@ class TestCaching:
 
 
 # =============================================================================
-# BUDGET TESTS
+# METRICS RECORDING TESTS
 # =============================================================================
 
 
-class TestBudgetEnforcement:
-    """Tests for budget enforcement."""
+class TestMetricsRecording:
+    """Tests for metrics recording."""
 
     @pytest.mark.asyncio
-    async def test_budget_check_before_request(
+    async def test_metrics_recorded_after_success(
         self,
         llm_service: LLMService,
-        mock_cost_tracker: Mock,
+        mock_metrics_service: Mock,
     ) -> None:
-        """Should check budget before making request."""
+        """Should record metrics after successful request."""
         await llm_service.generate(
             messages=[PromptMessage(role=MessageRole.USER, content="test")],
             module="test",
         )
 
-        mock_cost_tracker.can_proceed.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_budget_exceeded_raises(
-        self, llm_service: LLMService, mock_cost_tracker: Mock
-    ) -> None:
-        """Should raise when budget exceeded."""
-        mock_cost_tracker.can_proceed.return_value = False
-
-        with pytest.raises(BudgetExceededError):
-            await llm_service.generate(
-                messages=[PromptMessage(role=MessageRole.USER, content="test")],
-                module="test",
-            )
-
-    @pytest.mark.asyncio
-    async def test_cost_recorded_after_success(
-        self,
-        llm_service: LLMService,
-        mock_cost_tracker: Mock,
-    ) -> None:
-        """Should record cost after successful request."""
-        await llm_service.generate(
-            messages=[PromptMessage(role=MessageRole.USER, content="test")],
-            module="test",
-        )
-
-        mock_cost_tracker.record_cost.assert_called_once()
-        call_kwargs = mock_cost_tracker.record_cost.call_args[1]
-        assert call_kwargs["input_tokens"] == 100
-        assert call_kwargs["output_tokens"] == 50
+        mock_metrics_service.record_metrics.assert_called_once()
+        call_kwargs = mock_metrics_service.record_metrics.call_args[1]
+        assert call_kwargs["prompt_tokens"] == 100
+        assert call_kwargs["completion_tokens"] == 50
         assert call_kwargs["module"] == "test"
-        assert call_kwargs["service_name"] == "ollama"
+        assert call_kwargs["success"] is True
+        assert "duration_seconds" in call_kwargs
+        assert "model" in call_kwargs
+
+    @pytest.mark.asyncio
+    async def test_metrics_tracks_fallback(
+        self,
+        llm_service: LLMService,
+        mock_metrics_service: Mock,
+        mock_provider: AsyncMock,
+    ) -> None:
+        """Should track when fallback model is used."""
+        # Simulate fallback model response
+        mock_provider.generate.return_value = LLMResponse(
+            content="Fallback response",
+            usage=TokenUsage(input_tokens=100, output_tokens=50),
+            cost=0.0,
+            model="gemma2:2b",  # Different from primary model
+            latency_ms=100,
+            request_id="test-123",
+        )
+
+        await llm_service.generate(
+            messages=[PromptMessage(role=MessageRole.USER, content="test")],
+            module="test",
+        )
+
+        call_kwargs = mock_metrics_service.record_metrics.call_args[1]
+        assert call_kwargs["fallback_used"] is True
 
 
 # =============================================================================
@@ -775,10 +768,10 @@ class TestHealthCheck:
 
     @pytest.mark.asyncio
     async def test_health_check_unavailable(
-        self, mock_cost_tracker: Mock, mock_cache: AsyncMock
+        self, mock_metrics_service: Mock, mock_cache: AsyncMock
     ) -> None:
         """Should report unavailable when not initialized."""
-        service = LLMService(mock_cost_tracker, mock_cache)
+        service = LLMService(mock_metrics_service, mock_cache)
         # Don't initialize
 
         health = await service.health_check()
@@ -824,13 +817,13 @@ class TestShutdown:
 
     @pytest.mark.asyncio
     async def test_shutdown_closes_provider(
-        self, mock_cost_tracker: Mock, mock_cache: AsyncMock, mock_provider: AsyncMock
+        self, mock_metrics_service: Mock, mock_cache: AsyncMock, mock_provider: AsyncMock
     ) -> None:
         """Should shutdown provider on shutdown."""
         with patch(
             "src.services.llm_service.service.OllamaProvider", return_value=mock_provider
         ):
-            service = LLMService(mock_cost_tracker, mock_cache)
+            service = LLMService(mock_metrics_service, mock_cache)
             await service.initialize()
             await service.shutdown()
 
@@ -839,10 +832,10 @@ class TestShutdown:
 
     @pytest.mark.asyncio
     async def test_shutdown_idempotent(
-        self, mock_cost_tracker: Mock, mock_cache: AsyncMock
+        self, mock_metrics_service: Mock, mock_cache: AsyncMock
     ) -> None:
         """Should handle multiple shutdown calls gracefully."""
-        service = LLMService(mock_cost_tracker, mock_cache)
+        service = LLMService(mock_metrics_service, mock_cache)
         # Not initialized, shutdown should be safe
         await service.shutdown()
         await service.shutdown()  # Should not raise
@@ -885,7 +878,7 @@ class TestConfiguration:
 
     @pytest.mark.asyncio
     async def test_service_uses_config(
-        self, mock_cost_tracker: Mock, mock_cache: AsyncMock, mock_provider: AsyncMock
+        self, mock_metrics_service: Mock, mock_cache: AsyncMock, mock_provider: AsyncMock
     ) -> None:
         """Should use provided configuration."""
         config = LLMConfig(timeout=60, max_retries=5)
@@ -893,7 +886,7 @@ class TestConfiguration:
         with patch(
             "src.services.llm_service.service.OllamaProvider", return_value=mock_provider
         ):
-            service = LLMService(mock_cost_tracker, mock_cache, config=config)
+            service = LLMService(mock_metrics_service, mock_cache, config=config)
 
             assert service._timeout == 60
             assert service._max_retries == 5

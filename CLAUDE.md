@@ -93,9 +93,9 @@ scout-code/
 │   │   ├── analyzer/           # M3: Semantic matching & scoring
 │   │   ├── creator/            # M4: Tailored content generation
 │   │   └── formatter/          # M5: Document output (PDF/DOCX)
-│   ├── services/               # Services (LLM, Cache, CostTracker, VectorStore)
+│   ├── services/               # Services (LLM, Cache, Metrics, VectorStore)
 │   │   ├── llm_service/        # S1: Ollama local LLM integration
-│   │   ├── cost_tracker/       # S2: Budget & cost tracking
+│   │   ├── metrics_service/    # S2: Performance & reliability tracking
 │   │   ├── cache_service/      # S3: Multi-tier caching
 │   │   └── vector_store/       # S4: ChromaDB vector database
 │   └── web/                    # Web interface (FastAPI entry point, routes, templates)
@@ -147,10 +147,10 @@ Services and modules should be implemented in this order due to dependencies:
 
 ### Phase 1: Foundation Services
 ```
-1. S2 Cost Tracker Service     # No dependencies
-2. S3 Cache Service            # No dependencies  
+1. S2 Metrics Service          # No dependencies (performance tracking)
+2. S3 Cache Service            # No dependencies
 3. S4 Vector Store Service     # No dependencies
-4. S1 LLM Service              # Depends on: Cost Tracker, Cache
+4. S1 LLM Service              # Depends on: Metrics, Cache
 ```
 
 ### Phase 2: Core Modules
@@ -507,7 +507,7 @@ Expect slower inference on Raspberry Pi 5:
 ```
 LLM Service ──────────────────────┐
     │                             │
-    ├──▶ Cost Tracker Service     │
+    ├──▶ Metrics Service          │
     │                             │
     └──▶ Cache Service            │
                                   │
@@ -546,11 +546,11 @@ Vector Store Service ─────────────┤
 
 **Phase:** Phase 3 - Integration (COMPLETE)
 
-### Phase 1: Foundation Services (COMPLETE - 180 tests)
-- ✅ **S2 Cost Tracker Service** - Complete (27 tests)
+### Phase 1: Foundation Services (COMPLETE - 194 tests)
+- ✅ **S2 Metrics Service** - Complete (41 tests) - **Refactored from Cost Tracker**
 - ✅ **S3 Cache Service** - Complete (46 tests)
 - ✅ **S4 Vector Store Service** - Complete (55 tests)
-- ✅ **S1 LLM Service** - Complete (52 tests) - **Refactored for Ollama**
+- ✅ **S1 LLM Service** - Complete (51 tests) - **Refactored for Ollama + Metrics**
 
 ### Phase 2: Core Modules (COMPLETE - 268 tests)
 - ✅ **M1 Collector** - Complete (49 tests)
@@ -565,7 +565,7 @@ Vector Store Service ─────────────┤
 - ✅ **S8 Notification Service** - Complete (40 tests)
 - ✅ **Web Interface** - Complete (26 tests)
 
-**Total Tests:** 609+ passing
+**Total Tests:** 623+ passing
 
 **Learning Documentation:**
 - See `LL-LI.md` for validated patterns (LL-001 to LL-058)
@@ -573,6 +573,12 @@ Vector Store Service ─────────────┤
 
 **Architecture:** Local LLM via Ollama (Qwen 2.5 3B / Gemma 2 2B)
 
+**Metrics Service (S2):**
+- Tracks inference performance (duration, tokens/second)
+- Records reliability (success rate, errors, retries, fallbacks)
+- Collects system metrics (CPU, memory, temperature for Pi 5)
+- 30-day retention with monthly archival
+
 ---
 
-*Last updated: December 13, 2025*
+*Last updated: December 14, 2025*

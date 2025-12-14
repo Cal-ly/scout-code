@@ -4,7 +4,7 @@ LLM Service
 Wrapper around Ollama for local LLM inference with caching.
 
 Usage:
-    llm = LLMService(cost_tracker, cache)
+    llm = LLMService(metrics_service, cache)
     await llm.initialize()
 
     # Simple text generation
@@ -30,7 +30,7 @@ from datetime import datetime
 from typing import Any
 
 from src.services.cache_service import CacheService
-from src.services.cost_tracker import BudgetExceededError, CostTrackerService
+from src.services.metrics_service import MetricsService
 from src.services.llm_service.exceptions import (
     LLMError,
     LLMInitializationError,
@@ -62,14 +62,14 @@ class LLMService:
     - Provider abstraction for flexibility
     - Response caching via Cache Service
     - Retry logic with exponential backoff
-    - Usage metrics tracking
+    - Performance metrics tracking
 
     Attributes:
-        cost_tracker: Cost Tracker Service instance (for metrics).
+        metrics: Metrics Service instance (for performance tracking).
         cache: Cache Service instance.
 
     Example:
-        >>> llm = LLMService(cost_tracker, cache)
+        >>> llm = LLMService(metrics_service, cache)
         >>> await llm.initialize()
         >>>
         >>> # Generate text
@@ -86,7 +86,7 @@ class LLMService:
 
     def __init__(
         self,
-        cost_tracker: CostTrackerService,
+        metrics_service: MetricsService,
         cache: CacheService,
         config: LLMConfig | None = None,
     ):
@@ -94,11 +94,11 @@ class LLMService:
         Initialize LLM Service.
 
         Args:
-            cost_tracker: Cost Tracker Service for usage metrics.
+            metrics_service: Metrics Service for performance tracking.
             cache: Cache Service for response caching.
             config: Optional configuration overrides.
         """
-        self._cost_tracker = cost_tracker
+        self._metrics = metrics_service
         self._cache = cache
         self._provider: LLMProvider | None = None
         self._initialized = False
@@ -222,25 +222,6 @@ class LLMService:
             logger.warning(f"Failed to cache response: {e}")
 
     # =========================================================================
-    # BUDGET CHECK
-    # =========================================================================
-
-    async def _check_budget(self) -> None:
-        """
-        Check if budget allows proceeding with request.
-
-        Raises:
-            BudgetExceededError: If daily or monthly budget exceeded.
-        """
-        can_proceed = await self._cost_tracker.can_proceed()
-        if not can_proceed:
-            status = await self._cost_tracker.get_budget_status()
-            raise BudgetExceededError(
-                f"Budget exceeded. Daily: ${status.daily_spent:.2f}/${status.daily_limit:.2f}, "
-                f"Monthly: ${status.monthly_spent:.2f}/${status.monthly_limit:.2f}"
-            )
-
-    # =========================================================================
     # PROVIDER CALL
     # =========================================================================
 
@@ -334,7 +315,7 @@ class LLMService:
         cache_ttl: int = 3600,
     ) -> LLMResponse:
         """
-        Generate text using Claude.
+        Generate text using local LLM via Ollama.
 
         This is the main method for LLM interactions.
 
@@ -343,7 +324,7 @@ class LLMService:
             system: Optional system prompt.
             temperature: Sampling temperature (0-1).
             max_tokens: Maximum tokens to generate.
-            module: Module making the request (for cost tracking).
+            module: Module making the request (for metrics tracking).
             purpose: Purpose of request (for logging).
             use_cache: Whether to use caching.
             cache_ttl: Cache time-to-live in seconds.
@@ -352,7 +333,6 @@ class LLMService:
             LLMResponse with generated content.
 
         Raises:
-            BudgetExceededError: If budget limit reached.
             LLMError: On generation failure.
 
         Example:
@@ -394,23 +374,19 @@ class LLMService:
             if cached is not None:
                 return cached
 
-        # Check budget before making request
-        await self._check_budget()
-
         # Make API call with retry
         response = await self._call_with_retry(request, request_id)
 
-        # Record usage in cost tracker (cost is 0 for local inference)
-        cost = self._calculate_cost(
-            response.usage.input_tokens, response.usage.output_tokens
-        )
-        await self._cost_tracker.record_cost(
-            service_name="ollama",
-            model=self._model,
-            input_tokens=response.usage.input_tokens,
-            output_tokens=response.usage.output_tokens,
-            cost=cost,  # Will be 0.0 for local inference
+        # Record performance metrics
+        await self._metrics.record_metrics(
+            model=response.model,
+            duration_seconds=response.latency_ms / 1000.0,
+            prompt_tokens=response.usage.input_tokens,
+            completion_tokens=response.usage.output_tokens,
+            success=True,
             module=module,
+            retry_count=response.retry_count,
+            fallback_used=response.model != self._model,
         )
 
         # Update stats
@@ -423,10 +399,11 @@ class LLMService:
         if use_cache:
             await self._store_in_cache(cache_key, response, cache_ttl)
 
+        tps = response.usage.output_tokens / (response.latency_ms / 1000.0) if response.latency_ms > 0 else 0
         logger.info(
             f"LLM response [{request_id}]: "
             f"{response.usage.total_tokens} tokens, "
-            f"${response.cost:.6f}, "
+            f"{tps:.1f} tok/s, "
             f"{response.latency_ms}ms"
         )
 
@@ -584,7 +561,7 @@ async def get_llm_service() -> LLMService:
     Get the LLM Service instance.
 
     Creates and initializes singleton on first call.
-    Requires Cost Tracker and Cache services.
+    Requires Metrics Service and Cache Service.
 
     Returns:
         Initialized LLMService.
@@ -593,12 +570,12 @@ async def get_llm_service() -> LLMService:
 
     if _llm_instance is None:
         from src.services.cache_service import get_cache_service
-        from src.services.cost_tracker import get_cost_tracker
+        from src.services.metrics_service import get_metrics_service
 
-        cost_tracker = await get_cost_tracker()
+        metrics = await get_metrics_service()
         cache = await get_cache_service()
 
-        _llm_instance = LLMService(cost_tracker, cache)
+        _llm_instance = LLMService(metrics, cache)
         await _llm_instance.initialize()
 
     return _llm_instance

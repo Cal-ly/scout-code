@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scout - Performance Metrics</title>
+    <link rel="stylesheet" href="/static/css/common.css">
+    <style>
+        /* Metrics Page Specific Styles */
+        .controls-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .period-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .period-controls label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        .filter-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        /* Model Comparison Section */
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 1.5rem 0 1rem 0;
+            color: #1a1a1a;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .model-comparison {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .model-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1.25rem;
+            border-left: 4px solid #2563eb;
+        }
+        .model-card.secondary {
+            border-left-color: #10b981;
+        }
+        .model-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 1rem;
+        }
+        .model-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+        .model-stat {
+            padding: 0.5rem;
+            background: #f9fafb;
+            border-radius: 6px;
+        }
+        .model-stat-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+        .model-stat-label {
+            font-size: 0.75rem;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        /* System Metrics Section */
+        .system-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .system-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1rem;
+            text-align: center;
+        }
+        .system-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+        .system-value.warning {
+            color: #f59e0b;
+        }
+        .system-value.danger {
+            color: #ef4444;
+        }
+        .system-label {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        .system-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Metrics Table */
+        .metrics-table-container {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .metrics-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .metrics-table th {
+            background: #f9fafb;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+            cursor: pointer;
+            user-select: none;
+        }
+        .metrics-table th:hover {
+            background: #f3f4f6;
+        }
+        .metrics-table th.sorted-asc::after {
+            content: ' \\25B2';
+            font-size: 0.7rem;
+        }
+        .metrics-table th.sorted-desc::after {
+            content: ' \\25BC';
+            font-size: 0.7rem;
+        }
+        .metrics-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.9rem;
+        }
+        .metrics-table tr:hover {
+            background: #f9fafb;
+        }
+        .metrics-table .success {
+            color: #10b981;
+        }
+        .metrics-table .failure {
+            color: #ef4444;
+        }
+        .metrics-table .model-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .metrics-table .model-primary {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .metrics-table .model-fallback {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .tps-value {
+            font-weight: 600;
+        }
+        .tps-fast { color: #10b981; }
+        .tps-normal { color: #2563eb; }
+        .tps-slow { color: #f59e0b; }
+
+        /* Status indicator */
+        .trend-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .trend-improving {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .trend-stable {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .trend-degrading {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding: 1rem;
+        }
+        .pagination-btn {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #fff;
+            color: #374151;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .pagination-btn:hover:not(:disabled) {
+            background: #f3f4f6;
+        }
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Throttling warning */
+        .throttling-warning {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .throttling-warning-icon {
+            font-size: 1.5rem;
+        }
+        .throttling-warning-text {
+            flex: 1;
+        }
+        .throttling-warning-title {
+            font-weight: 600;
+            color: #92400e;
+        }
+        .throttling-warning-message {
+            font-size: 0.9rem;
+            color: #78350f;
+        }
+
+        @media (max-width: 768px) {
+            .system-metrics {
+                grid-template-columns: 1fr;
+            }
+            .model-comparison {
+                grid-template-columns: 1fr;
+            }
+            .metrics-table {
+                font-size: 0.8rem;
+            }
+            .metrics-table th, .metrics-table td {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% include 'partials/navbar.html' %}
+
+    <main class="container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h2>Performance Metrics</h2>
+            <button class="btn btn-secondary" onclick="loadMetrics()">
+                Refresh
+            </button>
+        </div>
+
+        <!-- Throttling Warning (hidden by default) -->
+        <div class="throttling-warning hidden" id="throttling-warning">
+            <div class="throttling-warning-icon">&#9888;</div>
+            <div class="throttling-warning-text">
+                <div class="throttling-warning-title">Temperature Warning</div>
+                <div class="throttling-warning-message">CPU temperature is high. Performance may be throttled.</div>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="summary-stats" id="summary-stats">
+            <div class="summary-stat">
+                <div class="summary-stat-value" id="stat-calls">0</div>
+                <div class="summary-stat-label">Calls Today</div>
+            </div>
+            <div class="summary-stat">
+                <div class="summary-stat-value" id="stat-success">0%</div>
+                <div class="summary-stat-label">Success Rate</div>
+            </div>
+            <div class="summary-stat highlight">
+                <div class="summary-stat-value" id="stat-tps">0</div>
+                <div class="summary-stat-label">Avg Tokens/s</div>
+            </div>
+            <div class="summary-stat">
+                <div class="summary-stat-value" id="stat-trend">-</div>
+                <div class="summary-stat-label">Trend</div>
+            </div>
+        </div>
+
+        <!-- System Metrics Section -->
+        <h3 class="section-title">System Resources</h3>
+        <div class="system-metrics">
+            <div class="system-card">
+                <div class="system-icon">&#128187;</div>
+                <div class="system-value" id="sys-cpu">-</div>
+                <div class="system-label">CPU Usage</div>
+            </div>
+            <div class="system-card">
+                <div class="system-icon">&#128190;</div>
+                <div class="system-value" id="sys-memory">-</div>
+                <div class="system-label">Memory</div>
+            </div>
+            <div class="system-card">
+                <div class="system-icon">&#127777;</div>
+                <div class="system-value" id="sys-temp">-</div>
+                <div class="system-label">Temperature</div>
+            </div>
+        </div>
+
+        <!-- Model Comparison Section -->
+        <h3 class="section-title">Model Comparison</h3>
+        <div class="model-comparison" id="model-comparison">
+            <!-- Models will be inserted here -->
+            <div class="loading">
+                <div class="spinner"></div>
+            </div>
+        </div>
+
+        <!-- Controls Bar -->
+        <h3 class="section-title">Inference History</h3>
+        <div class="controls-bar">
+            <div class="period-controls">
+                <label>Period:</label>
+                <select id="period-select" onchange="loadSummary()">
+                    <option value="1">Today</option>
+                    <option value="7" selected>Last 7 Days</option>
+                    <option value="30">Last 30 Days</option>
+                </select>
+            </div>
+            <div class="filter-controls">
+                <select id="model-filter" onchange="loadEntries()">
+                    <option value="">All Models</option>
+                </select>
+                <select id="module-filter" onchange="loadEntries()">
+                    <option value="">All Modules</option>
+                    <option value="rinser">Rinser</option>
+                    <option value="analyzer">Analyzer</option>
+                    <option value="creator">Creator</option>
+                </select>
+                <label>
+                    <input type="checkbox" id="show-failures" onchange="loadEntries()">
+                    Failures Only
+                </label>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading hidden" id="loading-state">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state hidden" id="empty-state">
+            <div class="empty-state-icon">&#128202;</div>
+            <h3>No Metrics Data</h3>
+            <p>Metrics will appear here after LLM inference calls are made.</p>
+        </div>
+
+        <!-- Metrics Table -->
+        <div class="metrics-table-container hidden" id="metrics-table-container">
+            <table class="metrics-table">
+                <thead>
+                    <tr>
+                        <th data-sort="timestamp" class="sorted-desc">Time</th>
+                        <th data-sort="model">Model</th>
+                        <th data-sort="module">Module</th>
+                        <th data-sort="duration">Duration</th>
+                        <th data-sort="tokens_per_second">Tokens/s</th>
+                        <th>Tokens</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="metrics-tbody">
+                </tbody>
+            </table>
+            <div class="pagination" id="pagination">
+                <button class="pagination-btn" id="prev-btn" onclick="changePage(-1)">&#8592; Previous</button>
+                <span id="page-info"></span>
+                <button class="pagination-btn" id="next-btn" onclick="changePage(1)">Next &#8594;</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/static/js/common.js"></script>
+    <script>
+        // State
+        let currentPage = 1;
+        const pageSize = 20;
+        let sortBy = 'timestamp';
+        let sortOrder = 'desc';
+        let totalEntries = 0;
+
+        // DOM Elements
+        const loadingState = document.getElementById('loading-state');
+        const emptyState = document.getElementById('empty-state');
+        const tableContainer = document.getElementById('metrics-table-container');
+        const tbody = document.getElementById('metrics-tbody');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMetrics();
+            // Setup sort headers
+            document.querySelectorAll('.metrics-table th[data-sort]').forEach(th => {
+                th.addEventListener('click', () => handleSort(th.dataset.sort));
+            });
+            // Refresh every 30 seconds
+            setInterval(loadStatus, 30000);
+        });
+
+        async function loadMetrics() {
+            await Promise.all([
+                loadStatus(),
+                loadComparison(),
+                loadEntries()
+            ]);
+        }
+
+        async function loadStatus() {
+            try {
+                const response = await fetch('/api/metrics/status');
+                if (!response.ok) throw new Error('Failed to load status');
+                const status = await response.json();
+
+                // Update summary stats
+                document.getElementById('stat-calls').textContent = status.calls_today;
+                document.getElementById('stat-success').textContent = status.success_rate_today.toFixed(1) + '%';
+                document.getElementById('stat-tps').textContent = status.avg_tokens_per_second.toFixed(1);
+
+                // Update trend
+                const trendEl = document.getElementById('stat-trend');
+                const trendClass = {
+                    'improving': 'trend-improving',
+                    'stable': 'trend-stable',
+                    'degrading': 'trend-degrading'
+                }[status.performance_trend] || 'trend-stable';
+                const trendIcon = {
+                    'improving': '&#8593;',
+                    'stable': '&#8596;',
+                    'degrading': '&#8595;'
+                }[status.performance_trend] || '&#8596;';
+                trendEl.innerHTML = `<span class="trend-indicator ${trendClass}">${trendIcon} ${capitalizeFirst(status.performance_trend)}</span>`;
+
+                // Update system metrics
+                updateSystemMetric('sys-cpu', status.avg_cpu_percent, '%');
+                updateSystemMetric('sys-memory', status.avg_memory_mb, ' MB', true);
+                updateSystemMetric('sys-temp', status.current_temperature, '°C');
+
+                // Show throttling warning if needed
+                const warningEl = document.getElementById('throttling-warning');
+                if (status.throttling_warning) {
+                    warningEl.classList.remove('hidden');
+                } else {
+                    warningEl.classList.add('hidden');
+                }
+
+            } catch (error) {
+                console.error('Error loading status:', error);
+            }
+        }
+
+        function updateSystemMetric(id, value, suffix, isMemory = false) {
+            const el = document.getElementById(id);
+            if (value === null || value === undefined) {
+                el.textContent = '-';
+                el.className = 'system-value';
+                return;
+            }
+
+            if (isMemory) {
+                el.textContent = value.toFixed(0) + suffix;
+            } else {
+                el.textContent = value.toFixed(1) + suffix;
+            }
+
+            // Add warning classes for temperature
+            if (id === 'sys-temp') {
+                el.className = 'system-value';
+                if (value >= 80) el.classList.add('danger');
+                else if (value >= 70) el.classList.add('warning');
+            }
+        }
+
+        async function loadComparison() {
+            const container = document.getElementById('model-comparison');
+
+            try {
+                const response = await fetch('/api/metrics/comparison');
+                if (!response.ok) throw new Error('Failed to load comparison');
+                const data = await response.json();
+
+                if (data.models.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>No model data available yet.</p></div>';
+                    return;
+                }
+
+                // Update model filter dropdown
+                const modelFilter = document.getElementById('model-filter');
+                const currentValue = modelFilter.value;
+                modelFilter.innerHTML = '<option value="">All Models</option>' +
+                    data.models.map(m => `<option value="${escapeHtml(m.model_name)}">${escapeHtml(m.model_name)}</option>`).join('');
+                modelFilter.value = currentValue;
+
+                container.innerHTML = data.models.map((model, idx) => `
+                    <div class="model-card ${idx > 0 ? 'secondary' : ''}">
+                        <div class="model-name">${escapeHtml(model.model_name)}</div>
+                        <div class="model-stats">
+                            <div class="model-stat">
+                                <div class="model-stat-value">${model.total_calls}</div>
+                                <div class="model-stat-label">Total Calls</div>
+                            </div>
+                            <div class="model-stat">
+                                <div class="model-stat-value">${model.success_rate.toFixed(1)}%</div>
+                                <div class="model-stat-label">Success Rate</div>
+                            </div>
+                            <div class="model-stat">
+                                <div class="model-stat-value">${model.avg_tokens_per_second.toFixed(1)}</div>
+                                <div class="model-stat-label">Avg Tok/s</div>
+                            </div>
+                            <div class="model-stat">
+                                <div class="model-stat-value">${model.avg_duration_seconds.toFixed(1)}s</div>
+                                <div class="model-stat-label">Avg Duration</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Error loading comparison:', error);
+                container.innerHTML = '<div class="empty-state"><p>Failed to load model comparison.</p></div>';
+            }
+        }
+
+        async function loadSummary() {
+            const days = document.getElementById('period-select').value;
+
+            try {
+                const response = await fetch(`/api/metrics/summary?days=${days}`);
+                if (!response.ok) throw new Error('Failed to load summary');
+                const summary = await response.json();
+
+                // Update system metrics from summary averages
+                if (summary.avg_cpu_percent !== null) {
+                    updateSystemMetric('sys-cpu', summary.avg_cpu_percent, '%');
+                }
+                if (summary.avg_memory_mb !== null) {
+                    updateSystemMetric('sys-memory', summary.avg_memory_mb, ' MB', true);
+                }
+                if (summary.avg_temperature_c !== null) {
+                    updateSystemMetric('sys-temp', summary.avg_temperature_c, '°C');
+                }
+
+            } catch (error) {
+                console.error('Error loading summary:', error);
+            }
+
+            // Also reload entries with new period
+            loadEntries();
+        }
+
+        async function loadEntries() {
+            loadingState.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            tableContainer.classList.add('hidden');
+
+            try {
+                const model = document.getElementById('model-filter').value;
+                const module = document.getElementById('module-filter').value;
+                const failuresOnly = document.getElementById('show-failures').checked;
+                const skip = (currentPage - 1) * pageSize;
+
+                let url = `/api/metrics/entries?skip=${skip}&limit=${pageSize}&sort_by=${sortBy}&sort_order=${sortOrder}`;
+                if (model) url += `&model=${encodeURIComponent(model)}`;
+                if (module) url += `&module=${encodeURIComponent(module)}`;
+                if (failuresOnly) url += `&success=false`;
+
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Failed to load entries');
+                const data = await response.json();
+
+                totalEntries = data.total;
+                loadingState.classList.add('hidden');
+
+                if (data.entries.length === 0) {
+                    emptyState.classList.remove('hidden');
+                } else {
+                    tableContainer.classList.remove('hidden');
+                    renderEntries(data.entries);
+                    updatePagination();
+                }
+
+            } catch (error) {
+                console.error('Error loading entries:', error);
+                loadingState.classList.add('hidden');
+                showToast('error', 'Error', 'Failed to load metrics entries');
+            }
+        }
+
+        function renderEntries(entries) {
+            tbody.innerHTML = entries.map(entry => {
+                const date = new Date(entry.timestamp);
+                const timeStr = date.toLocaleTimeString();
+                const dateStr = date.toLocaleDateString();
+
+                const isPrimary = entry.model.includes('qwen');
+                const modelClass = isPrimary ? 'model-primary' : 'model-fallback';
+
+                const tpsClass = entry.tokens_per_second >= 10 ? 'tps-fast' :
+                                 entry.tokens_per_second >= 5 ? 'tps-normal' : 'tps-slow';
+
+                return `
+                    <tr>
+                        <td>
+                            <div style="font-weight: 500;">${timeStr}</div>
+                            <div style="font-size: 0.8rem; color: #666;">${dateStr}</div>
+                        </td>
+                        <td>
+                            <span class="model-badge ${modelClass}">${escapeHtml(entry.model)}</span>
+                            ${entry.fallback_used ? '<span style="color: #f59e0b; font-size: 0.8rem;"> (fallback)</span>' : ''}
+                        </td>
+                        <td>${entry.module ? capitalizeFirst(entry.module) : '-'}</td>
+                        <td>${entry.duration_seconds.toFixed(2)}s</td>
+                        <td><span class="tps-value ${tpsClass}">${entry.tokens_per_second.toFixed(1)}</span></td>
+                        <td>
+                            <span style="color: #666;">${entry.prompt_tokens}</span>
+                            <span style="color: #999;">→</span>
+                            <span style="font-weight: 500;">${entry.completion_tokens}</span>
+                        </td>
+                        <td>
+                            ${entry.success ?
+                                '<span class="success">&#10003; Success</span>' :
+                                `<span class="failure">&#10007; ${entry.error_type || 'Failed'}</span>`}
+                            ${entry.retry_count > 0 ? `<span style="color: #f59e0b; font-size: 0.8rem;"> (${entry.retry_count} retries)</span>` : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function handleSort(field) {
+            // Update sort direction
+            if (sortBy === field) {
+                sortOrder = sortOrder === 'desc' ? 'asc' : 'desc';
+            } else {
+                sortBy = field;
+                sortOrder = 'desc';
+            }
+
+            // Update header classes
+            document.querySelectorAll('.metrics-table th').forEach(th => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+                if (th.dataset.sort === sortBy) {
+                    th.classList.add(sortOrder === 'asc' ? 'sorted-asc' : 'sorted-desc');
+                }
+            });
+
+            currentPage = 1;
+            loadEntries();
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(totalEntries / pageSize);
+            const pagination = document.getElementById('pagination');
+
+            if (totalPages <= 1) {
+                pagination.classList.add('hidden');
+                return;
+            }
+
+            pagination.classList.remove('hidden');
+            document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages} (${totalEntries} entries)`;
+            document.getElementById('prev-btn').disabled = currentPage === 1;
+            document.getElementById('next-btn').disabled = currentPage === totalPages;
+        }
+
+        function changePage(delta) {
+            const totalPages = Math.ceil(totalEntries / pageSize);
+            const newPage = currentPage + delta;
+
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                loadEntries();
+            }
+        }
+    </script>
+</body>
+</html>
