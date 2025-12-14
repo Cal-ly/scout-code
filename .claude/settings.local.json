@@ -20,7 +20,9 @@
       "Bash(pip install:*)",
       "Bash(python -m ruff check:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(mkdir:*)",
+      "Bash(dir /b \"C:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\\docs\\deployment\")"
     ]
   }
 }

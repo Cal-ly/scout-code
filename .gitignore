@@ -568,3 +568,8 @@ cache/
 # Generated documents
 generated_docs/
 output/
+
+# Pre-flight verification test scripts (temporary)
+test_*.py
+test_cache_temp/
+verification_report.txt
