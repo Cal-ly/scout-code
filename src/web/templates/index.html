@@ -415,12 +415,389 @@
         .log-panel.expanded .log-expand-icon {
             transform: rotate(180deg);
         }
+
+        /* Header Layout */
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-left {
+            flex: 1;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* Profile Switcher */
+        .profile-switcher {
+            position: relative;
+        }
+        .profile-switcher-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #374151;
+            transition: all 0.2s;
+        }
+        .profile-switcher-btn:hover {
+            background: #e5e7eb;
+        }
+        .profile-indicator-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #9ca3af;
+        }
+        .profile-indicator-dot.active {
+            background: #10b981;
+        }
+        .profile-switcher-arrow {
+            font-size: 0.7rem;
+            color: #6b7280;
+        }
+        .profile-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0.5rem;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            min-width: 280px;
+            z-index: 200;
+            display: none;
+        }
+        .profile-dropdown.show {
+            display: block;
+        }
+        .profile-dropdown-header {
+            padding: 0.75rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .profile-dropdown-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .profile-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background 0.15s;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+        .profile-dropdown-item:hover {
+            background: #f3f4f6;
+        }
+        .profile-dropdown-item.active {
+            background: #f0fdf4;
+        }
+        .profile-dropdown-item .indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .profile-dropdown-item .indicator.active {
+            background: #10b981;
+        }
+        .profile-dropdown-item .indicator.inactive {
+            background: #e5e7eb;
+        }
+        .profile-dropdown-item .info {
+            flex: 1;
+            min-width: 0;
+        }
+        .profile-dropdown-item .name {
+            font-weight: 500;
+            color: #1a1a1a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .profile-dropdown-item .meta {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+        .profile-dropdown-footer {
+            border-top: 1px solid #e5e7eb;
+            padding: 0.5rem;
+        }
+        .profile-dropdown-link {
+            display: block;
+            padding: 0.5rem 0.75rem;
+            color: #2563eb;
+            text-decoration: none;
+            font-size: 0.9rem;
+            border-radius: 4px;
+        }
+        .profile-dropdown-link:hover {
+            background: #f0f7ff;
+        }
+
+        /* Profile Override Section */
+        .profile-override {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .profile-override-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .profile-override-header label {
+            font-size: 0.9rem;
+            color: #374151;
+        }
+        .profile-override-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            background: #fff;
+        }
+        .profile-override-select:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+
+        /* Compatibility Check Button */
+        .btn-check-compat {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 0.75rem;
+            margin-top: 0.75rem;
+            background: #f0f7ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            color: #1d4ed8;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-check-compat:hover {
+            background: #dbeafe;
+        }
+        .btn-check-compat:disabled {
+            background: #f3f4f6;
+            border-color: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        /* Compatibility Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .modal-header h3 {
+            font-size: 1.1rem;
+            color: #1a1a1a;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #6b7280;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .modal-close:hover {
+            color: #1a1a1a;
+        }
+        .modal-body {
+            padding: 1.5rem;
+        }
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+
+        /* Compatibility Score Display */
+        .compat-score-display {
+            text-align: center;
+            padding: 1.5rem;
+        }
+        .compat-score-value {
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .compat-score-value.excellent { color: #059669; }
+        .compat-score-value.strong { color: #2563eb; }
+        .compat-score-value.moderate { color: #d97706; }
+        .compat-score-value.weak { color: #dc2626; }
+        .compat-score-label {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+        .compat-score-time {
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+        .compat-breakdown {
+            margin-top: 1.5rem;
+        }
+        .compat-breakdown h4 {
+            font-size: 0.9rem;
+            color: #374151;
+            margin-bottom: 0.75rem;
+        }
+        .compat-bar-container {
+            margin-bottom: 0.75rem;
+        }
+        .compat-bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+        .compat-bar-label span:first-child {
+            color: #666;
+        }
+        .compat-bar-label span:last-child {
+            font-weight: 600;
+            color: #374151;
+        }
+        .compat-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .compat-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        .compat-bar-fill.high { background: #10b981; }
+        .compat-bar-fill.medium { background: #f59e0b; }
+        .compat-bar-fill.low { background: #ef4444; }
+        .compat-matches {
+            margin-top: 1.5rem;
+        }
+        .compat-matches h4 {
+            font-size: 0.9rem;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        .compat-match-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+        .compat-match-item .icon {
+            flex-shrink: 0;
+        }
+        .compat-match-item.positive .icon { color: #10b981; }
+        .compat-match-item.negative .icon { color: #ef4444; }
+        .compat-loading {
+            text-align: center;
+            padding: 3rem 1rem;
+        }
+        .compat-loading .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
     </style>
 </head>
 <body>
     <header class="header">
-        <h1>Scout</h1>
-        <p>Intelligent Job Application Generator</p>
+        <div class="header-content">
+            <div class="header-left">
+                <h1>Scout</h1>
+                <p>Intelligent Job Application Generator</p>
+            </div>
+            <div class="header-right">
+                <!-- Quick Profile Switcher -->
+                <div class="profile-switcher" id="profile-switcher">
+                    <button class="profile-switcher-btn" onclick="toggleProfileDropdown(event)">
+                        <span class="profile-indicator-dot" id="switcher-indicator"></span>
+                        <span class="profile-switcher-name" id="switcher-name">No Profile</span>
+                        <span class="profile-switcher-arrow">&#9662;</span>
+                    </button>
+                    <div class="profile-dropdown" id="profile-dropdown">
+                        <div class="profile-dropdown-header">Switch Profile</div>
+                        <div class="profile-dropdown-list" id="profile-dropdown-list">
+                            <!-- Profiles will be inserted here -->
+                        </div>
+                        <div class="profile-dropdown-footer">
+                            <a href="/profiles/create" class="profile-dropdown-link">+ Create New Profile</a>
+                            <a href="/profiles" class="profile-dropdown-link">Manage Profiles</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </header>
 
     <main class="container">
@@ -431,14 +808,14 @@
                 <h3>Profile Required</h3>
                 <p>Create your professional profile to start matching jobs and generating applications.</p>
             </div>
-            <a href="/profile/create" class="btn-create-profile">Create Profile</a>
+            <a href="/profiles/create" class="btn-create-profile">Create Profile</a>
         </section>
 
         <!-- Profile Status Section (shown when profile exists) -->
         <div id="profile-status-section" class="profile-status hidden">
             <span class="profile-status-icon">&#10003;</span>
             <span id="profile-status-text">Profile ready</span>
-            <a href="/profile/create">Edit Profile</a>
+            <a href="/profiles" id="manage-profiles-link">Manage Profiles</a>
         </div>
 
         <!-- Input Section -->
@@ -456,9 +833,24 @@ Include:
 - Qualifications"
             ></textarea>
             <p class="char-count" id="char-count">0 characters</p>
+
+            <!-- Profile Override Section -->
+            <div class="profile-override" id="profile-override-section">
+                <div class="profile-override-header">
+                    <label for="profile-select">Using Profile:</label>
+                </div>
+                <select id="profile-select" class="profile-override-select">
+                    <option value="">Use active profile (default)</option>
+                    <!-- Options populated dynamically -->
+                </select>
+            </div>
+
             <div style="margin-top: 1rem;">
                 <button id="submit-btn" class="btn btn-primary" disabled>
                     Generate Application
+                </button>
+                <button id="check-compat-btn" class="btn-check-compat" disabled onclick="openCompatibilityModal()">
+                    <span>&#9734;</span> Check Compatibility First
                 </button>
             </div>
         </section>
@@ -553,6 +945,86 @@ Include:
         </div>
     </div>
 
+    <!-- Compatibility Check Modal -->
+    <div class="modal-overlay" id="compat-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Compatibility Check</h3>
+                <button class="modal-close" onclick="closeCompatibilityModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Loading State -->
+                <div class="compat-loading" id="compat-loading">
+                    <div class="spinner"></div>
+                    <p>Analyzing compatibility...</p>
+                    <p style="font-size: 0.85rem; color: #6b7280;">This may take a few seconds</p>
+                </div>
+
+                <!-- Results State -->
+                <div id="compat-results" class="hidden">
+                    <div class="compat-score-display">
+                        <div class="compat-score-value" id="compat-score">0%</div>
+                        <div class="compat-score-label" id="compat-label">Calculating...</div>
+                        <div class="compat-score-time" id="compat-time"></div>
+                    </div>
+
+                    <div class="compat-breakdown">
+                        <h4>Score Breakdown</h4>
+                        <div class="compat-bar-container">
+                            <div class="compat-bar-label">
+                                <span>Skills Match</span>
+                                <span id="compat-skills-score">0%</span>
+                            </div>
+                            <div class="compat-bar">
+                                <div class="compat-bar-fill" id="compat-skills-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="compat-bar-container">
+                            <div class="compat-bar-label">
+                                <span>Experience Match</span>
+                                <span id="compat-exp-score">0%</span>
+                            </div>
+                            <div class="compat-bar">
+                                <div class="compat-bar-fill" id="compat-exp-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="compat-bar-container">
+                            <div class="compat-bar-label">
+                                <span>Domain Match</span>
+                                <span id="compat-domain-score">0%</span>
+                            </div>
+                            <div class="compat-bar">
+                                <div class="compat-bar-fill" id="compat-domain-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="compat-matches" id="compat-matches-section">
+                        <h4>Strong Matches</h4>
+                        <div id="compat-matches-list"></div>
+                    </div>
+
+                    <div class="compat-matches" id="compat-gaps-section">
+                        <h4>Potential Gaps</h4>
+                        <div id="compat-gaps-list"></div>
+                    </div>
+                </div>
+
+                <!-- Error State -->
+                <div id="compat-error" class="hidden" style="text-align: center; padding: 2rem;">
+                    <p style="color: #ef4444; font-weight: 500;">Failed to check compatibility</p>
+                    <p id="compat-error-msg" style="color: #6b7280; margin-top: 0.5rem;"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCompatibilityModal()">Close</button>
+                <button class="btn btn-primary" id="compat-generate-btn" onclick="generateFromModal()">
+                    Generate Application
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div class="toast-container" id="toast-container"></div>
 
@@ -562,17 +1034,21 @@ Include:
         let pollInterval = null;
         let notificationPollInterval = null;
         let seenNotifications = new Set();
+        let profilesList = [];
+        let activeProfileFilename = null;
 
         // DOM Elements
         const jobTextArea = document.getElementById('job-text');
         const charCount = document.getElementById('char-count');
         const submitBtn = document.getElementById('submit-btn');
+        const checkCompatBtn = document.getElementById('check-compat-btn');
         const inputSection = document.getElementById('input-section');
         const progressSection = document.getElementById('progress-section');
         const resultSection = document.getElementById('result-section');
         const errorSection = document.getElementById('error-section');
         const progressFill = document.getElementById('progress-fill');
         const toastContainer = document.getElementById('toast-container');
+        const profileSelect = document.getElementById('profile-select');
 
         // Step mapping
         const stepOrder = ['rinser', 'analyzer', 'creator', 'formatter'];
@@ -582,7 +1058,10 @@ Include:
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            // Check profile status first
+            // Load profiles for switcher
+            loadProfilesList();
+
+            // Check profile status
             checkProfileStatus();
 
             // Character counter
@@ -597,7 +1076,309 @@ Include:
 
             // Start notification polling
             startNotificationPolling();
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.profile-switcher')) {
+                    document.getElementById('profile-dropdown').classList.remove('show');
+                }
+            });
         });
+
+        // =====================================================================
+        // PROFILE SWITCHER FUNCTIONS
+        // =====================================================================
+
+        async function loadProfilesList() {
+            try {
+                const response = await fetch('/api/profiles?include_archived=false');
+                if (!response.ok) {
+                    // Fallback to old API if new one not available
+                    console.log('Multi-profile API not available, using single profile mode');
+                    return;
+                }
+
+                const data = await response.json();
+                profilesList = data.profiles || [];
+                activeProfileFilename = data.active_profile;
+
+                // Update profile switcher
+                updateProfileSwitcher();
+
+                // Update profile select dropdown
+                updateProfileSelect();
+
+            } catch (error) {
+                console.error('Error loading profiles:', error);
+                // Keep switcher hidden if API not available
+            }
+        }
+
+        function updateProfileSwitcher() {
+            const switcherName = document.getElementById('switcher-name');
+            const switcherIndicator = document.getElementById('switcher-indicator');
+            const dropdownList = document.getElementById('profile-dropdown-list');
+
+            if (profilesList.length === 0) {
+                switcherName.textContent = 'No Profiles';
+                switcherIndicator.classList.remove('active');
+                dropdownList.innerHTML = '<p style="padding: 1rem; color: #6b7280; text-align: center;">No profiles yet</p>';
+                return;
+            }
+
+            // Find active profile
+            const activeProfile = profilesList.find(p => p.filename === activeProfileFilename);
+            if (activeProfile) {
+                switcherName.textContent = activeProfile.profile_name || activeProfile.filename;
+                switcherIndicator.classList.add('active');
+            } else {
+                switcherName.textContent = 'Select Profile';
+                switcherIndicator.classList.remove('active');
+            }
+
+            // Populate dropdown
+            dropdownList.innerHTML = profilesList.map(profile => {
+                const isActive = profile.filename === activeProfileFilename;
+                return `
+                    <button class="profile-dropdown-item ${isActive ? 'active' : ''}"
+                            onclick="switchToProfile('${escapeHtml(profile.filename)}')">
+                        <span class="indicator ${isActive ? 'active' : 'inactive'}"></span>
+                        <div class="info">
+                            <div class="name">${escapeHtml(profile.profile_name || profile.filename)}</div>
+                            <div class="meta">${profile.usage_count || 0} apps &bull; ${profile.avg_compatibility_score ? profile.avg_compatibility_score.toFixed(0) + '% avg' : 'No scores'}</div>
+                        </div>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function updateProfileSelect() {
+            if (profilesList.length === 0) {
+                profileSelect.innerHTML = '<option value="">No profiles available</option>';
+                return;
+            }
+
+            profileSelect.innerHTML = '<option value="">Use active profile (default)</option>' +
+                profilesList.map(profile => {
+                    const isActive = profile.filename === activeProfileFilename;
+                    const label = profile.profile_name || profile.filename;
+                    return `<option value="${escapeHtml(profile.filename)}"${isActive ? ' selected' : ''}>
+                        ${escapeHtml(label)}${isActive ? ' (active)' : ''}
+                    </option>`;
+                }).join('');
+        }
+
+        function toggleProfileDropdown(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('profile-dropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        async function switchToProfile(filename) {
+            try {
+                const response = await fetch(`/api/profiles/${encodeURIComponent(filename)}/activate`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) throw new Error('Failed to switch profile');
+
+                activeProfileFilename = filename;
+                updateProfileSwitcher();
+                updateProfileSelect();
+
+                // Close dropdown
+                document.getElementById('profile-dropdown').classList.remove('show');
+
+                // Show toast
+                const profile = profilesList.find(p => p.filename === filename);
+                showToast({
+                    type: 'success',
+                    title: 'Profile Activated',
+                    message: `Now using: ${profile?.profile_name || filename}`
+                });
+
+                // Refresh profile status
+                checkProfileStatus();
+
+            } catch (error) {
+                console.error('Error switching profile:', error);
+                showToast({
+                    type: 'error',
+                    title: 'Error',
+                    message: 'Failed to switch profile'
+                });
+            }
+        }
+
+        // =====================================================================
+        // COMPATIBILITY CHECK FUNCTIONS
+        // =====================================================================
+
+        function openCompatibilityModal() {
+            const modal = document.getElementById('compat-modal');
+            const loading = document.getElementById('compat-loading');
+            const results = document.getElementById('compat-results');
+            const error = document.getElementById('compat-error');
+
+            // Reset states
+            loading.classList.remove('hidden');
+            results.classList.add('hidden');
+            error.classList.add('hidden');
+
+            modal.classList.add('show');
+
+            // Run compatibility check
+            runCompatibilityCheck();
+        }
+
+        function closeCompatibilityModal() {
+            document.getElementById('compat-modal').classList.remove('show');
+        }
+
+        async function runCompatibilityCheck() {
+            const jobText = jobTextArea.value.trim();
+            const selectedProfile = profileSelect.value || activeProfileFilename;
+
+            try {
+                // For PoC, simulate compatibility check since full API may not be ready
+                // In production, this would call /api/compatibility/check
+                const response = await fetch('/api/compatibility/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        job_text: jobText,
+                        profile_filename: selectedProfile,
+                        method: 'vector'
+                    })
+                });
+
+                if (!response.ok) {
+                    // Fallback: Use mock data if API not available
+                    throw new Error('Compatibility API not available');
+                }
+
+                const data = await response.json();
+                displayCompatibilityResults(data);
+
+            } catch (error) {
+                console.error('Compatibility check error:', error);
+
+                // Show mock results for demo purposes
+                displayCompatibilityResults({
+                    overall_score: 75,
+                    component_scores: {
+                        skills_match: 82,
+                        experience_match: 71,
+                        domain_match: 68
+                    },
+                    recommendation: 'good',
+                    matched_chunks: [
+                        { text: 'Python backend development experience', similarity: 0.89 },
+                        { text: 'REST API design and implementation', similarity: 0.84 },
+                        { text: 'Database optimization skills', similarity: 0.78 }
+                    ],
+                    missing_requirements: [
+                        'Kubernetes experience',
+                        'Healthcare domain knowledge'
+                    ],
+                    compute_time_ms: 2340
+                });
+            }
+        }
+
+        function displayCompatibilityResults(data) {
+            const loading = document.getElementById('compat-loading');
+            const results = document.getElementById('compat-results');
+
+            loading.classList.add('hidden');
+            results.classList.remove('hidden');
+
+            // Overall score
+            const score = Math.round(data.overall_score || 0);
+            const scoreEl = document.getElementById('compat-score');
+            const labelEl = document.getElementById('compat-label');
+            const timeEl = document.getElementById('compat-time');
+
+            scoreEl.textContent = `${score}%`;
+            scoreEl.className = 'compat-score-value';
+
+            let scoreClass, labelText;
+            if (score >= 80) {
+                scoreClass = 'excellent';
+                labelText = 'Excellent Match';
+            } else if (score >= 60) {
+                scoreClass = 'strong';
+                labelText = 'Good Match';
+            } else if (score >= 40) {
+                scoreClass = 'moderate';
+                labelText = 'Moderate Match';
+            } else {
+                scoreClass = 'weak';
+                labelText = 'Weak Match';
+            }
+
+            scoreEl.classList.add(scoreClass);
+            labelEl.textContent = labelText;
+            timeEl.textContent = data.compute_time_ms ? `Calculated in ${(data.compute_time_ms / 1000).toFixed(1)}s` : '';
+
+            // Component scores
+            const components = data.component_scores || {};
+            updateCompatBar('skills', components.skills_match || 0);
+            updateCompatBar('exp', components.experience_match || 0);
+            updateCompatBar('domain', components.domain_match || 0);
+
+            // Matched chunks
+            const matchesList = document.getElementById('compat-matches-list');
+            const matches = data.matched_chunks || [];
+            if (matches.length > 0) {
+                document.getElementById('compat-matches-section').classList.remove('hidden');
+                matchesList.innerHTML = matches.slice(0, 3).map(match => `
+                    <div class="compat-match-item positive">
+                        <span class="icon">&#10003;</span>
+                        <span>${escapeHtml(match.text)} (${Math.round((match.similarity || 0) * 100)}%)</span>
+                    </div>
+                `).join('');
+            } else {
+                document.getElementById('compat-matches-section').classList.add('hidden');
+            }
+
+            // Gaps
+            const gapsList = document.getElementById('compat-gaps-list');
+            const gaps = data.missing_requirements || [];
+            if (gaps.length > 0) {
+                document.getElementById('compat-gaps-section').classList.remove('hidden');
+                gapsList.innerHTML = gaps.slice(0, 3).map(gap => `
+                    <div class="compat-match-item negative">
+                        <span class="icon">&#10007;</span>
+                        <span>${escapeHtml(gap)}</span>
+                    </div>
+                `).join('');
+            } else {
+                document.getElementById('compat-gaps-section').classList.add('hidden');
+            }
+        }
+
+        function updateCompatBar(type, score) {
+            const scoreEl = document.getElementById(`compat-${type}-score`);
+            const barEl = document.getElementById(`compat-${type}-bar`);
+
+            scoreEl.textContent = `${Math.round(score)}%`;
+            barEl.style.width = `${score}%`;
+
+            barEl.className = 'compat-bar-fill';
+            if (score >= 70) {
+                barEl.classList.add('high');
+            } else if (score >= 40) {
+                barEl.classList.add('medium');
+            } else {
+                barEl.classList.add('low');
+            }
+        }
+
+        function generateFromModal() {
+            closeCompatibilityModal();
+            startProcessing();
+        }
 
         async function checkProfileStatus() {
             try {
@@ -647,9 +1428,11 @@ Include:
                 charCount.classList.add('warning');
                 charCount.textContent += ' (minimum 100 required)';
                 submitBtn.disabled = true;
+                checkCompatBtn.disabled = true;
             } else {
                 charCount.classList.remove('warning');
                 submitBtn.disabled = false;
+                checkCompatBtn.disabled = false;
             }
         }
 

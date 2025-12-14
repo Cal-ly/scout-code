@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scout - Create Profile</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .header {
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-left h1 {
+            font-size: 1.5rem;
+            color: #1a1a1a;
+        }
+        .header-left p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .back-link {
+            color: #2563eb;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        .card .description {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        .btn {
+            padding: 0.75rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-primary {
+            background: #2563eb;
+            color: #fff;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: #1d4ed8;
+        }
+        .btn-primary:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+        .btn-success {
+            background: #10b981;
+            color: #fff;
+        }
+        .btn-success:hover {
+            background: #059669;
+        }
+        .btn-sm {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        /* Method selection */
+        .method-tabs {
+            display: flex;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 1.5rem;
+        }
+        .method-tab {
+            padding: 0.75rem 1.5rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #666;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: -2px;
+        }
+        .method-tab:hover {
+            color: #2563eb;
+        }
+        .method-tab.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+
+        /* Form sections */
+        .method-content {
+            display: none;
+        }
+        .method-content.active {
+            display: block;
+        }
+
+        /* YAML Editor */
+        .yaml-editor-container {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+        .yaml-editor {
+            width: 100%;
+            min-height: 400px;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            resize: vertical;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            tab-size: 2;
+        }
+        .yaml-editor:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+        .yaml-editor::placeholder {
+            color: #6b7280;
+        }
+
+        /* File upload */
+        .upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fafafa;
+        }
+        .upload-area:hover {
+            border-color: #2563eb;
+            background: #f0f7ff;
+        }
+        .upload-area.dragover {
+            border-color: #2563eb;
+            background: #e0f0ff;
+        }
+        .upload-icon {
+            font-size: 3rem;
+            color: #9ca3af;
+            margin-bottom: 1rem;
+        }
+        .upload-area h3 {
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        .upload-area p {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        .upload-area input[type="file"] {
+            display: none;
+        }
+
+        /* Templates */
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .template-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .template-card:hover {
+            border-color: #2563eb;
+            background: #f0f7ff;
+        }
+        .template-card.selected {
+            border-color: #2563eb;
+            background: #e0f0ff;
+        }
+        .template-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .template-name {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.25rem;
+        }
+        .template-description {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        /* Form fields */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+        .form-hint {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+
+        /* Validation feedback */
+        .validation-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        .validation-status.valid {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .validation-status.invalid {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .validation-status.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .btn-group .btn-primary {
+            flex: 2;
+        }
+        .btn-group .btn-secondary {
+            flex: 1;
+        }
+
+        /* Checkbox */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #2563eb;
+        }
+        .checkbox-group label {
+            font-size: 0.9rem;
+            color: #374151;
+            cursor: pointer;
+        }
+
+        /* Loading state */
+        .loading-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 2rem;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Success state */
+        .success-state {
+            text-align: center;
+            padding: 2rem;
+        }
+        .success-icon {
+            font-size: 3rem;
+            color: #10b981;
+            margin-bottom: 1rem;
+        }
+        .success-state h3 {
+            color: #065f46;
+            margin-bottom: 0.5rem;
+        }
+        .success-state p {
+            color: #047857;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Error message */
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .toast {
+            min-width: 300px;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-success { background: #10b981; color: #fff; }
+        .toast-error { background: #ef4444; color: #fff; }
+        .toast-info { background: #2563eb; color: #fff; }
+        .toast-content { flex: 1; }
+        .toast-title { font-weight: 600; }
+        .toast-message { font-size: 0.9rem; opacity: 0.9; margin-top: 0.25rem; }
+        .toast-close {
+            background: none;
+            border: none;
+            color: inherit;
+            opacity: 0.7;
+            cursor: pointer;
+            font-size: 1.25rem;
+            line-height: 1;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <h1>Scout</h1>
+            <p id="header-subtitle">Create Profile</p>
+        </div>
+        <div class="header-right">
+            <a href="/" class="back-link">Dashboard</a>
+            <a href="/profiles" class="back-link">&#8592; Back to Profiles</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Form Section -->
+        <section id="form-section" class="card">
+            <h2 id="page-title">Create New Profile</h2>
+            <p class="description">
+                Create a profile in YAML format to use for job matching and application generation.
+                You can use a template, upload an existing file, or write from scratch.
+            </p>
+
+            <!-- Method Tabs -->
+            <div class="method-tabs">
+                <button class="method-tab active" data-method="editor" onclick="switchMethod('editor')">YAML Editor</button>
+                <button class="method-tab" data-method="upload" onclick="switchMethod('upload')">Upload File</button>
+                <button class="method-tab" data-method="template" onclick="switchMethod('template')">Use Template</button>
+            </div>
+
+            <!-- Error Container -->
+            <div id="error-container" class="error-message hidden"></div>
+
+            <!-- YAML Editor Method -->
+            <div class="method-content active" id="method-editor">
+                <div class="form-group">
+                    <label for="filename-input">Filename</label>
+                    <input type="text" id="filename-input" placeholder="my_profile.yaml" />
+                    <p class="form-hint">Must end with .yaml. Leave blank to auto-generate.</p>
+                </div>
+
+                <div class="yaml-editor-container">
+                    <textarea id="yaml-editor" class="yaml-editor" placeholder="name: &quot;Your Name&quot;
+email: &quot;your.email@example.com&quot;
+title: &quot;Your Job Title&quot;
+years_experience: 5.0
+
+skills:
+  - Python
+  - JavaScript
+  - SQL
+
+experience:
+  - title: &quot;Software Engineer&quot;
+    company: &quot;Company Name&quot;
+    start_date: &quot;2020-01&quot;
+    end_date: &quot;Present&quot;
+    description: &quot;Description of your role and achievements&quot;
+
+education:
+  - degree: &quot;Bachelor of Science&quot;
+    field: &quot;Computer Science&quot;
+    institution: &quot;University Name&quot;
+    year: 2019"></textarea>
+                </div>
+
+                <div id="validation-status" class="validation-status hidden">
+                    <span id="validation-icon"></span>
+                    <span id="validation-message"></span>
+                </div>
+            </div>
+
+            <!-- Upload Method -->
+            <div class="method-content" id="method-upload">
+                <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+                    <div class="upload-icon">&#128196;</div>
+                    <h3>Click or drag YAML file here</h3>
+                    <p>Supports .yaml and .yml files</p>
+                    <input type="file" id="file-input" accept=".yaml,.yml" onchange="handleFileSelect(event)" />
+                </div>
+                <p id="upload-filename" class="hidden" style="margin-top: 1rem; color: #065f46; font-weight: 500;"></p>
+            </div>
+
+            <!-- Template Method -->
+            <div class="method-content" id="method-template">
+                <p style="color: #666; margin-bottom: 1rem;">Select a template as a starting point:</p>
+                <div class="template-grid">
+                    <div class="template-card" onclick="selectTemplate('junior')">
+                        <div class="template-icon">&#127793;</div>
+                        <div class="template-name">Junior Developer</div>
+                        <div class="template-description">0-2 years experience</div>
+                    </div>
+                    <div class="template-card" onclick="selectTemplate('senior')">
+                        <div class="template-icon">&#128187;</div>
+                        <div class="template-name">Senior Developer</div>
+                        <div class="template-description">5+ years experience</div>
+                    </div>
+                    <div class="template-card" onclick="selectTemplate('lead')">
+                        <div class="template-icon">&#128105;&#8205;&#128188;</div>
+                        <div class="template-name">Tech Lead</div>
+                        <div class="template-description">Leadership & management</div>
+                    </div>
+                    <div class="template-card" onclick="selectTemplate('freelancer')">
+                        <div class="template-icon">&#127968;</div>
+                        <div class="template-name">Freelancer</div>
+                        <div class="template-description">Independent contractor</div>
+                    </div>
+                </div>
+                <div id="template-selected" class="hidden" style="margin-top: 1rem;">
+                    <p style="color: #065f46; font-weight: 500;">
+                        Template loaded! Switch to "YAML Editor" tab to customize.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Options -->
+            <div class="checkbox-group">
+                <input type="checkbox" id="set-active" />
+                <label for="set-active">Set as active profile</label>
+            </div>
+
+            <!-- Buttons -->
+            <div class="btn-group">
+                <button id="submit-btn" class="btn btn-primary" onclick="saveProfile()">
+                    Save &amp; Index Profile
+                </button>
+                <a href="/profiles" class="btn btn-secondary" style="text-align: center;">Cancel</a>
+            </div>
+        </section>
+
+        <!-- Loading Section -->
+        <section id="loading-section" class="card hidden">
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <span>Saving and indexing your profile...</span>
+            </div>
+        </section>
+
+        <!-- Success Section -->
+        <section id="success-section" class="card hidden">
+            <div class="success-state">
+                <div class="success-icon">&#10003;</div>
+                <h3 id="success-title">Profile Created Successfully!</h3>
+                <p id="success-message">Your profile has been indexed and is ready for job matching.</p>
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <a href="#" id="view-profile-btn" class="btn btn-success">View Profile</a>
+                    <a href="/profiles" class="btn btn-secondary">View All Profiles</a>
+                    <a href="/" class="btn btn-primary">Go to Dashboard</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        // Get mode from URL (create or edit)
+        const pathParts = window.location.pathname.split('/');
+        const isEditMode = pathParts.includes('edit');
+        const editFilename = isEditMode ? decodeURIComponent(pathParts[pathParts.length - 2]) : null;
+
+        // State
+        let currentMethod = 'editor';
+        let yamlContent = '';
+        let validationTimeout = null;
+
+        // DOM Elements
+        const formSection = document.getElementById('form-section');
+        const loadingSection = document.getElementById('loading-section');
+        const successSection = document.getElementById('success-section');
+        const yamlEditor = document.getElementById('yaml-editor');
+        const filenameInput = document.getElementById('filename-input');
+        const errorContainer = document.getElementById('error-container');
+        const validationStatus = document.getElementById('validation-status');
+        const toastContainer = document.getElementById('toast-container');
+
+        // Templates
+        const templates = {
+            junior: `name: "Your Name"
+email: "your.email@example.com"
+title: "Junior Software Developer"
+years_experience: 1.5
+
+skills:
+  - Python
+  - JavaScript
+  - HTML/CSS
+  - Git
+  - SQL
+
+experience:
+  - title: "Junior Developer"
+    company: "Tech Startup"
+    start_date: "2023-06"
+    end_date: "Present"
+    description: "Developing web applications using modern frameworks. Collaborating with senior developers on feature implementation."
+  - title: "Software Development Intern"
+    company: "Software Company"
+    start_date: "2023-01"
+    end_date: "2023-05"
+    description: "Assisted in building internal tools and testing applications."
+
+education:
+  - degree: "Bachelor of Science"
+    field: "Computer Science"
+    institution: "University Name"
+    year: 2023
+
+certifications:
+  - "AWS Cloud Practitioner"
+`,
+            senior: `name: "Your Name"
+email: "your.email@example.com"
+title: "Senior Software Engineer"
+years_experience: 7.0
+
+skills:
+  - Python
+  - JavaScript/TypeScript
+  - React
+  - Node.js
+  - PostgreSQL
+  - Redis
+  - Docker
+  - Kubernetes
+  - AWS
+  - System Design
+  - Team Leadership
+
+experience:
+  - title: "Senior Software Engineer"
+    company: "Tech Company"
+    start_date: "2021-03"
+    end_date: "Present"
+    description: "Lead backend development for core platform services. Architected microservices handling 10M+ daily requests. Mentored team of 4 junior developers."
+  - title: "Software Engineer"
+    company: "Previous Company"
+    start_date: "2018-06"
+    end_date: "2021-02"
+    description: "Built and maintained REST APIs and data pipelines. Improved system performance by 40% through optimization."
+  - title: "Junior Developer"
+    company: "First Company"
+    start_date: "2017-01"
+    end_date: "2018-05"
+    description: "Full-stack development using Python and React."
+
+education:
+  - degree: "Master of Science"
+    field: "Computer Science"
+    institution: "Graduate University"
+    year: 2017
+  - degree: "Bachelor of Science"
+    field: "Software Engineering"
+    institution: "Undergraduate University"
+    year: 2015
+
+certifications:
+  - "AWS Solutions Architect Professional"
+  - "Kubernetes Administrator (CKA)"
+`,
+            lead: `name: "Your Name"
+email: "your.email@example.com"
+title: "Engineering Manager / Tech Lead"
+years_experience: 10.0
+
+skills:
+  - Technical Leadership
+  - Team Management
+  - System Architecture
+  - Python
+  - Java
+  - Go
+  - Microservices
+  - Cloud Infrastructure (AWS/GCP)
+  - Agile/Scrum
+  - Strategic Planning
+  - Stakeholder Management
+  - Mentoring
+
+experience:
+  - title: "Engineering Manager"
+    company: "Large Tech Company"
+    start_date: "2022-01"
+    end_date: "Present"
+    description: "Leading team of 12 engineers across 3 squads. Drove architectural decisions for platform modernization. Established engineering best practices and improved deployment frequency by 300%."
+  - title: "Tech Lead"
+    company: "Growing Startup"
+    start_date: "2019-06"
+    end_date: "2021-12"
+    description: "Led technical direction for product engineering. Built and scaled team from 3 to 8 engineers. Designed system architecture supporting 100x growth."
+  - title: "Senior Software Engineer"
+    company: "Established Company"
+    start_date: "2016-03"
+    end_date: "2019-05"
+    description: "Core contributor to distributed systems platform. Led major refactoring initiatives and performance optimization projects."
+
+education:
+  - degree: "Master of Business Administration"
+    field: "Technology Management"
+    institution: "Business School"
+    year: 2021
+  - degree: "Bachelor of Science"
+    field: "Computer Science"
+    institution: "Technical University"
+    year: 2014
+
+certifications:
+  - "AWS Solutions Architect Professional"
+  - "Certified Scrum Master"
+  - "Engineering Management Certificate"
+`,
+            freelancer: `name: "Your Name"
+email: "your.email@example.com"
+title: "Freelance Software Developer"
+years_experience: 5.0
+
+skills:
+  - Full-Stack Development
+  - Python
+  - JavaScript/TypeScript
+  - React/Vue.js
+  - Node.js
+  - PostgreSQL/MongoDB
+  - API Development
+  - DevOps
+  - Client Communication
+  - Project Management
+  - Agile Methodologies
+
+experience:
+  - title: "Freelance Software Developer"
+    company: "Self-Employed"
+    start_date: "2021-01"
+    end_date: "Present"
+    description: "Delivering custom software solutions for clients across various industries. Completed 20+ projects ranging from web applications to API integrations. Maintained 100% client satisfaction rating."
+  - title: "Contract Developer"
+    company: "Various Clients"
+    start_date: "2019-06"
+    end_date: "2020-12"
+    description: "Worked on contract basis for startups and established businesses. Specialized in rapid MVP development and legacy system modernization."
+  - title: "Software Developer"
+    company: "Software Agency"
+    start_date: "2018-01"
+    end_date: "2019-05"
+    description: "Developed client projects as part of agency team. Gained experience across diverse technology stacks and business domains."
+
+education:
+  - degree: "Bachelor of Science"
+    field: "Information Technology"
+    institution: "University Name"
+    year: 2018
+
+certifications:
+  - "AWS Certified Developer"
+  - "Google Cloud Professional"
+
+portfolio:
+  - "E-commerce platform for retail client"
+  - "Healthcare appointment booking system"
+  - "Real-time analytics dashboard"
+  - "Mobile app backend API"
+`
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            if (isEditMode) {
+                document.getElementById('page-title').textContent = 'Edit Profile';
+                document.getElementById('header-subtitle').textContent = 'Edit Profile';
+                loadExistingProfile();
+            }
+
+            // YAML editor input handler
+            yamlEditor.addEventListener('input', () => {
+                clearTimeout(validationTimeout);
+                validationTimeout = setTimeout(validateYaml, 500);
+            });
+
+            // Tab key handling for YAML editor
+            yamlEditor.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const start = yamlEditor.selectionStart;
+                    const end = yamlEditor.selectionEnd;
+                    yamlEditor.value = yamlEditor.value.substring(0, start) + '  ' + yamlEditor.value.substring(end);
+                    yamlEditor.selectionStart = yamlEditor.selectionEnd = start + 2;
+                }
+            });
+
+            // Drag and drop
+            const uploadArea = document.getElementById('upload-area');
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file) handleFile(file);
+            });
+        });
+
+        async function loadExistingProfile() {
+            try {
+                const response = await fetch(`/api/profiles/${encodeURIComponent(editFilename)}`);
+                if (!response.ok) throw new Error('Profile not found');
+
+                const data = await response.json();
+                yamlEditor.value = data.yaml_content || '';
+                filenameInput.value = editFilename;
+                filenameInput.disabled = true;
+
+                validateYaml();
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                showError('Failed to load profile: ' + error.message);
+            }
+        }
+
+        function switchMethod(method) {
+            currentMethod = method;
+
+            // Update tabs
+            document.querySelectorAll('.method-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.method === method);
+            });
+
+            // Update content
+            document.querySelectorAll('.method-content').forEach(content => {
+                content.classList.toggle('active', content.id === `method-${method}`);
+            });
+        }
+
+        function selectTemplate(templateName) {
+            const template = templates[templateName];
+            if (template) {
+                yamlEditor.value = template;
+                validateYaml();
+
+                // Visual feedback
+                document.querySelectorAll('.template-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                event.currentTarget.classList.add('selected');
+                document.getElementById('template-selected').classList.remove('hidden');
+
+                // Auto-switch to editor
+                setTimeout(() => switchMethod('editor'), 500);
+            }
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) handleFile(file);
+        }
+
+        function handleFile(file) {
+            if (!file.name.endsWith('.yaml') && !file.name.endsWith('.yml')) {
+                showError('Please select a YAML file (.yaml or .yml)');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                yamlEditor.value = e.target.result;
+                if (!isEditMode && !filenameInput.value) {
+                    filenameInput.value = file.name;
+                }
+                document.getElementById('upload-filename').textContent = `Loaded: ${file.name}`;
+                document.getElementById('upload-filename').classList.remove('hidden');
+                validateYaml();
+
+                // Switch to editor
+                setTimeout(() => switchMethod('editor'), 300);
+            };
+            reader.readAsText(file);
+        }
+
+        function validateYaml() {
+            const content = yamlEditor.value.trim();
+
+            if (!content) {
+                validationStatus.classList.add('hidden');
+                return;
+            }
+
+            try {
+                // Basic YAML validation (check for common issues)
+                const lines = content.split('\n');
+                let hasName = false;
+                let hasEmail = false;
+                let hasSkills = false;
+
+                for (const line of lines) {
+                    if (line.match(/^name:\s*.+/)) hasName = true;
+                    if (line.match(/^email:\s*.+/)) hasEmail = true;
+                    if (line.match(/^skills:\s*$/)) hasSkills = true;
+                }
+
+                validationStatus.classList.remove('hidden');
+
+                if (!hasName || !hasEmail || !hasSkills) {
+                    validationStatus.className = 'validation-status warning';
+                    document.getElementById('validation-icon').textContent = '!';
+                    const missing = [];
+                    if (!hasName) missing.push('name');
+                    if (!hasEmail) missing.push('email');
+                    if (!hasSkills) missing.push('skills');
+                    document.getElementById('validation-message').textContent =
+                        `Missing recommended fields: ${missing.join(', ')}`;
+                } else {
+                    validationStatus.className = 'validation-status valid';
+                    document.getElementById('validation-icon').textContent = '✓';
+                    document.getElementById('validation-message').textContent = 'YAML structure looks valid';
+                }
+            } catch (error) {
+                validationStatus.classList.remove('hidden');
+                validationStatus.className = 'validation-status invalid';
+                document.getElementById('validation-icon').textContent = '✕';
+                document.getElementById('validation-message').textContent = 'Invalid YAML syntax';
+            }
+        }
+
+        function showError(message) {
+            errorContainer.textContent = message;
+            errorContainer.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorContainer.classList.add('hidden');
+        }
+
+        async function saveProfile() {
+            const content = yamlEditor.value.trim();
+            let filename = filenameInput.value.trim();
+
+            if (!content) {
+                showError('Please enter profile content');
+                return;
+            }
+
+            // Auto-add .yaml extension if missing
+            if (filename && !filename.endsWith('.yaml') && !filename.endsWith('.yml')) {
+                filename += '.yaml';
+            }
+
+            hideError();
+
+            // Show loading
+            formSection.classList.add('hidden');
+            loadingSection.classList.remove('hidden');
+
+            try {
+                let response;
+                const setActive = document.getElementById('set-active').checked;
+
+                if (isEditMode) {
+                    // Update existing profile
+                    response = await fetch(`/api/profiles/${encodeURIComponent(editFilename)}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            yaml_content: content,
+                            set_as_active: setActive
+                        })
+                    });
+                } else {
+                    // Create new profile
+                    const body = {
+                        yaml_content: content,
+                        set_as_active: setActive
+                    };
+                    if (filename) {
+                        body.filename = filename;
+                    }
+
+                    response = await fetch('/api/profiles', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                }
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to save profile');
+                }
+
+                const result = await response.json();
+
+                // Show success
+                loadingSection.classList.add('hidden');
+                successSection.classList.remove('hidden');
+
+                // Set the view profile button link
+                const profileFilename = isEditMode ? editFilename : result.filename;
+                document.getElementById('view-profile-btn').href = `/profiles/${encodeURIComponent(profileFilename)}`;
+
+                if (isEditMode) {
+                    document.getElementById('success-title').textContent = 'Profile Updated Successfully!';
+                    document.getElementById('success-message').textContent =
+                        `Your profile has been updated and re-indexed.`;
+                } else {
+                    document.getElementById('success-title').textContent = 'Profile Created Successfully!';
+                    document.getElementById('success-message').textContent =
+                        `Profile "${result.filename}" has been created and indexed.`;
+                }
+
+            } catch (error) {
+                loadingSection.classList.add('hidden');
+                formSection.classList.remove('hidden');
+                showError(error.message);
+            }
+        }
+
+        function showToast(type, title, message) {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <div class="toast-title">${escapeHtml(title)}</div>
+                    <div class="toast-message">${escapeHtml(message)}</div>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+            `;
+            toastContainer.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
