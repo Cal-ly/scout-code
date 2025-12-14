@@ -166,3 +166,28 @@ async def applications_list(request: Request) -> HTMLResponse:
         request=request,
         name="applications.html",
     )
+
+
+# =============================================================================
+# LOGS PAGE
+# =============================================================================
+
+
+@router.get("/logs", response_class=HTMLResponse)
+async def logs_page(request: Request) -> HTMLResponse:
+    """
+    Render the application logs page.
+
+    Provides a dedicated page for viewing and monitoring application logs
+    with filtering, search, and auto-refresh capabilities.
+
+    Args:
+        request: FastAPI request object (required for templates).
+
+    Returns:
+        Rendered HTML page.
+    """
+    return templates.TemplateResponse(
+        request=request,
+        name="logs.html",
+    )

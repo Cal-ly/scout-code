@@ -1,0 +1,35 @@
+<!-- Scout Navigation Bar -->
+<nav class="navbar">
+    <a href="/" class="navbar-brand">
+        <div class="navbar-brand-icon">S</div>
+        <span class="navbar-brand-text">Scout</span>
+    </a>
+
+    <div class="navbar-nav">
+        <a href="/" class="nav-link" data-page="dashboard">Dashboard</a>
+        <a href="/profiles" class="nav-link" data-page="profiles">Profiles</a>
+        <a href="/applications" class="nav-link" data-page="applications">Applications</a>
+        <a href="/logs" class="nav-link" data-page="logs">Logs</a>
+    </div>
+
+    <div class="navbar-right">
+        <!-- Profile Switcher -->
+        <div class="navbar-profile-switcher">
+            <button class="navbar-profile-btn" onclick="toggleProfileDropdown(event)">
+                <span class="profile-indicator-dot" id="navbar-profile-indicator"></span>
+                <span id="navbar-profile-name">Loading...</span>
+                <span class="navbar-profile-arrow">&#9662;</span>
+            </button>
+            <div class="profile-dropdown" id="navbar-profile-dropdown">
+                <div class="profile-dropdown-header">Switch Profile</div>
+                <div class="profile-dropdown-list" id="navbar-profile-list">
+                    <!-- Profiles populated by JS -->
+                </div>
+                <div class="profile-dropdown-footer">
+                    <a href="/profiles/create" class="profile-dropdown-link">+ Create New Profile</a>
+                    <a href="/profiles" class="profile-dropdown-link">Manage Profiles</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>

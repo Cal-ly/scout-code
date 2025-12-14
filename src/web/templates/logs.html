@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scout - Application Logs</title>
+    <link rel="stylesheet" href="/static/css/common.css">
+    <style>
+        /* Logs Page Specific Styles */
+        .logs-container {
+            background: #1a1a2e;
+            border-radius: 8px;
+            overflow: hidden;
+            min-height: calc(100vh - 200px);
+        }
+
+        .logs-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            background: #16213e;
+            border-bottom: 1px solid #2d2d44;
+        }
+
+        .logs-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #e0e0e0;
+            font-weight: 600;
+        }
+
+        .logs-status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+
+        .logs-status.error { background: #ef4444; }
+        .logs-status.warning { background: #f59e0b; }
+
+        .logs-controls {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .logs-filter {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #374151;
+            border-radius: 6px;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+        }
+
+        .logs-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            background: #374151;
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.15s;
+        }
+
+        .logs-btn:hover {
+            background: #4b5563;
+        }
+
+        .logs-btn-danger {
+            background: #7f1d1d;
+        }
+
+        .logs-btn-danger:hover {
+            background: #991b1b;
+        }
+
+        .logs-content {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            color: #e0e0e0;
+            padding: 1rem 1.5rem;
+            max-height: calc(100vh - 280px);
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            padding: 0.35rem 0;
+            border-bottom: 1px solid #2d2d44;
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-entry.level-ERROR { color: #f87171; }
+        .log-entry.level-WARNING { color: #fbbf24; }
+        .log-entry.level-INFO { color: #60a5fa; }
+        .log-entry.level-DEBUG { color: #9ca3af; }
+
+        .log-timestamp {
+            color: #6b7280;
+            margin-right: 0.5rem;
+        }
+
+        .log-level {
+            display: inline-block;
+            min-width: 70px;
+            margin-right: 0.5rem;
+        }
+
+        .logs-empty {
+            color: #6b7280;
+            font-style: italic;
+            padding: 3rem;
+            text-align: center;
+        }
+
+        .logs-stats {
+            display: flex;
+            gap: 2rem;
+            padding: 1rem 1.5rem;
+            background: #16213e;
+            border-top: 1px solid #2d2d44;
+            font-size: 0.85rem;
+            color: #9ca3af;
+        }
+
+        .logs-stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logs-stat-value {
+            color: #e0e0e0;
+            font-weight: 600;
+        }
+
+        .logs-stat-value.error { color: #f87171; }
+        .logs-stat-value.warning { color: #fbbf24; }
+
+        /* Auto-refresh indicator */
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        .auto-refresh-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .auto-refresh.paused .auto-refresh-dot {
+            background: #6b7280;
+            animation: none;
+        }
+    </style>
+</head>
+<body>
+    {% include 'partials/navbar.html' %}
+
+    <main class="container" style="max-width: 1200px;">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h2>Application Logs</h2>
+            <div class="auto-refresh" id="auto-refresh-indicator">
+                <span class="auto-refresh-dot"></span>
+                <span>Auto-refreshing every 2s</span>
+            </div>
+        </div>
+
+        <!-- Logs Container -->
+        <div class="logs-container">
+            <div class="logs-header">
+                <div class="logs-title">
+                    <span class="logs-status" id="logs-status"></span>
+                    <span>Live Logs</span>
+                    <span id="logs-count">(0 entries)</span>
+                </div>
+                <div class="logs-controls">
+                    <select class="logs-filter" id="log-level-filter" onchange="fetchLogs()">
+                        <option value="">All Levels</option>
+                        <option value="ERROR">Errors Only</option>
+                        <option value="WARNING">Warnings+</option>
+                        <option value="INFO">Info+</option>
+                        <option value="DEBUG">Debug (All)</option>
+                    </select>
+                    <input type="text" class="logs-filter" id="log-search"
+                           placeholder="Search logs..." style="width: 200px;"
+                           oninput="debounceSearch()">
+                    <button class="logs-btn" onclick="toggleAutoRefresh()" id="auto-refresh-btn">
+                        Pause
+                    </button>
+                    <button class="logs-btn" onclick="fetchLogs()">Refresh</button>
+                    <button class="logs-btn" onclick="copyLogs()">Copy All</button>
+                    <button class="logs-btn logs-btn-danger" onclick="clearLogs()">Clear</button>
+                </div>
+            </div>
+
+            <div class="logs-content" id="logs-content">
+                <div class="logs-empty">Loading logs...</div>
+            </div>
+
+            <div class="logs-stats">
+                <div class="logs-stat">
+                    <span>Total:</span>
+                    <span class="logs-stat-value" id="stat-total">0</span>
+                </div>
+                <div class="logs-stat">
+                    <span>Errors:</span>
+                    <span class="logs-stat-value error" id="stat-errors">0</span>
+                </div>
+                <div class="logs-stat">
+                    <span>Warnings:</span>
+                    <span class="logs-stat-value warning" id="stat-warnings">0</span>
+                </div>
+                <div class="logs-stat">
+                    <span>Last updated:</span>
+                    <span class="logs-stat-value" id="stat-updated">-</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/static/js/common.js"></script>
+    <script>
+        // State
+        let logPollInterval = null;
+        let autoRefreshEnabled = true;
+        let allLogs = [];
+        let searchTimeout = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchLogs();
+            startLogPolling();
+        });
+
+        function startLogPolling() {
+            if (logPollInterval) clearInterval(logPollInterval);
+            logPollInterval = setInterval(fetchLogs, 2000);
+        }
+
+        function stopLogPolling() {
+            if (logPollInterval) {
+                clearInterval(logPollInterval);
+                logPollInterval = null;
+            }
+        }
+
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            const btn = document.getElementById('auto-refresh-btn');
+            const indicator = document.getElementById('auto-refresh-indicator');
+
+            if (autoRefreshEnabled) {
+                btn.textContent = 'Pause';
+                indicator.classList.remove('paused');
+                startLogPolling();
+            } else {
+                btn.textContent = 'Resume';
+                indicator.classList.add('paused');
+                stopLogPolling();
+            }
+        }
+
+        function debounceSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(filterLogs, 300);
+        }
+
+        async function fetchLogs() {
+            const levelFilter = document.getElementById('log-level-filter').value;
+            const logsContent = document.getElementById('logs-content');
+            const logsStatus = document.getElementById('logs-status');
+
+            try {
+                let url = '/api/logs?limit=500';
+                if (levelFilter) {
+                    url += `&level=${levelFilter}`;
+                }
+
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Failed to fetch logs');
+
+                const data = await response.json();
+                allLogs = data.entries || [];
+
+                // Update stats
+                const errors = allLogs.filter(e => e.level === 'ERROR').length;
+                const warnings = allLogs.filter(e => e.level === 'WARNING').length;
+
+                document.getElementById('stat-total').textContent = data.total || allLogs.length;
+                document.getElementById('stat-errors').textContent = errors;
+                document.getElementById('stat-warnings').textContent = warnings;
+                document.getElementById('stat-updated').textContent = new Date().toLocaleTimeString();
+                document.getElementById('logs-count').textContent = `(${allLogs.length} entries)`;
+
+                // Update status indicator
+                logsStatus.classList.remove('error', 'warning');
+                if (errors > 0) {
+                    logsStatus.classList.add('error');
+                } else if (warnings > 0) {
+                    logsStatus.classList.add('warning');
+                }
+
+                // Apply search filter and render
+                filterLogs();
+
+            } catch (error) {
+                console.error('Log fetch error:', error);
+                logsContent.innerHTML = '<div class="logs-empty">Error loading logs</div>';
+            }
+        }
+
+        function filterLogs() {
+            const searchQuery = document.getElementById('log-search').value.toLowerCase().trim();
+            const logsContent = document.getElementById('logs-content');
+
+            let filteredLogs = allLogs;
+            if (searchQuery) {
+                filteredLogs = allLogs.filter(entry =>
+                    entry.message.toLowerCase().includes(searchQuery)
+                );
+            }
+
+            if (filteredLogs.length === 0) {
+                logsContent.innerHTML = '<div class="logs-empty">No log entries matching filter</div>';
+            } else {
+                logsContent.innerHTML = filteredLogs.map(entry => {
+                    const timestamp = entry.timestamp ?
+                        new Date(entry.timestamp).toLocaleTimeString() : '';
+                    return `<div class="log-entry level-${entry.level}">` +
+                        `<span class="log-timestamp">${timestamp}</span>` +
+                        `<span class="log-level">[${entry.level}]</span>` +
+                        `${escapeHtml(entry.message)}</div>`;
+                }).join('');
+
+                // Auto-scroll to bottom
+                logsContent.scrollTop = logsContent.scrollHeight;
+            }
+        }
+
+        async function clearLogs() {
+            if (!confirm('Clear all logs? This cannot be undone.')) return;
+
+            try {
+                await fetch('/api/logs', { method: 'DELETE' });
+                allLogs = [];
+                fetchLogs();
+                showToast('success', 'Cleared', 'All logs have been cleared');
+            } catch (error) {
+                console.error('Failed to clear logs:', error);
+                showToast('error', 'Error', 'Failed to clear logs');
+            }
+        }
+
+        async function copyLogs() {
+            try {
+                const logText = allLogs.map(e => {
+                    const ts = e.timestamp ? new Date(e.timestamp).toISOString() : '';
+                    return `${ts} [${e.level}] ${e.message}`;
+                }).join('\n');
+
+                await navigator.clipboard.writeText(logText);
+                showToast('success', 'Copied', 'Logs copied to clipboard');
+            } catch (error) {
+                console.error('Failed to copy logs:', error);
+                showToast('error', 'Error', 'Failed to copy logs to clipboard');
+            }
+        }
+    </script>
+</body>
+</html>
