@@ -31,7 +31,12 @@
       "Bash(python:*)",
       "Bash(git push:*)",
       "Bash(git branch:*)",
-      "Bash(git worktree:*)"
+      "Bash(git worktree:*)",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File \".\\scripts\\deploy.ps1\" -SkipCommit)",
+      "Bash(git rm:*)",
+      "Bash(git mv:*)",
+      "Bash(dir:*)",
+      "Bash(cat:*)"
     ]
   }
 }
