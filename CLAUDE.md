@@ -362,6 +362,50 @@ mypy src/path/file.py --ignore-missing-imports
 pytest tests/test_<service>.py -v
 ```
 
+### Deployment to Raspberry Pi
+
+The project includes deployment scripts to automate pushing changes to the Raspberry Pi:
+
+```powershell
+# Windows PowerShell
+.\scripts\deploy.ps1                           # Interactive mode
+.\scripts\deploy.ps1 -Message "Fix bug"        # Commit with message and deploy
+.\scripts\deploy.ps1 -SkipCommit               # Deploy without committing
+.\scripts\deploy.ps1 -NoRestart                # Deploy without restarting service
+```
+
+```bash
+# Bash (Linux/Mac/WSL/Git Bash)
+./scripts/deploy.sh                            # Interactive mode
+./scripts/deploy.sh "Fix bug"                  # Commit with message and deploy
+./scripts/deploy.sh --skip-commit              # Deploy without committing
+./scripts/deploy.sh --no-restart               # Deploy without restarting service
+```
+
+**Raspberry Pi Configuration:**
+| Setting | Value |
+|---------|-------|
+| Host | 192.168.1.21 |
+| User | cally |
+| Project Path | /home/cally/projects/scout-code |
+| Service | scout.service |
+| Web URL | http://192.168.1.21:8000/ |
+
+**Manual Deployment (if scripts unavailable):**
+```bash
+# 1. Push changes to GitHub
+git add -A && git commit -m "message" && git push origin main
+
+# 2. SSH to Pi and pull
+ssh cally@192.168.1.21 "cd /home/cally/projects/scout-code && git stash && git pull"
+
+# 3. Restart service
+ssh cally@192.168.1.21 "sudo systemctl restart scout.service"
+
+# 4. Verify
+ssh cally@192.168.1.21 "curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/"
+```
+
 ---
 
 ## Common Gotchas
@@ -454,6 +498,7 @@ Expect slower inference on Raspberry Pi 5:
 | Tests | `tests/test_[service].py` (flat structure for PoC) |
 | Project Config | `pyproject.toml`, `.env.example` |
 | Dependencies | `requirements.txt`, `requirements-dev.txt` |
+| **Deployment Scripts** | `scripts/deploy.ps1` (Windows), `scripts/deploy.sh` (Bash) |
 
 > **Note on Spec Filenames:** Specification files use mixed naming (some with spaces, some with underscores). Use glob patterns like `docs/services/S4*` to find files reliably.
 

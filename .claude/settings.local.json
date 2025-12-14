@@ -29,7 +29,9 @@
       "Bash(find:*)",
       "Bash(grep:*)",
       "Bash(python:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git branch:*)",
+      "Bash(git worktree:*)"
     ]
   }
 }
