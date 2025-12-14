@@ -13,6 +13,7 @@ Endpoints:
     GET /api/metrics/summary - Get metrics summary for period
     GET /api/metrics/entries - Get paginated metrics entries
     GET /api/metrics/comparison - Get model comparison data
+    GET /api/metrics/system-history - Get system metrics time-series for graphs
 """
 
 import asyncio
@@ -927,6 +928,24 @@ class MetricsComparisonResponse(BaseModel):
     models: list[ModelStatsResponse]
 
 
+class SystemMetricsPointResponse(BaseModel):
+    """Single system metrics data point."""
+
+    timestamp: str
+    cpu_percent: float | None
+    memory_percent: float | None
+    memory_mb: float | None
+    temperature_c: float | None
+
+
+class SystemMetricsHistoryResponse(BaseModel):
+    """System metrics time-series history for graphing."""
+
+    points: list[SystemMetricsPointResponse]
+    minutes: int
+    count: int
+
+
 @router.get(
     "/metrics/status",
     response_model=MetricsStatusResponse,
@@ -1128,4 +1147,47 @@ async def get_metrics_comparison() -> MetricsComparisonResponse:
         return MetricsComparisonResponse(models=models)
     except Exception as e:
         logger.error(f"Failed to get metrics comparison: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
+    "/metrics/system-history",
+    response_model=SystemMetricsHistoryResponse,
+    summary="Get system metrics history",
+    description="Get CPU, memory, and temperature history for time-series graphs.",
+)
+async def get_system_metrics_history(
+    minutes: int = 15,
+) -> SystemMetricsHistoryResponse:
+    """
+    Get system metrics time-series history.
+
+    Args:
+        minutes: Number of minutes of history (default 15, max 1440/24h).
+
+    Returns:
+        Time-series data for CPU, memory, and temperature graphs.
+    """
+    from src.services.metrics_service import get_metrics_service
+
+    try:
+        metrics = await get_metrics_service()
+        points = await metrics.get_system_metrics_history(minutes=minutes)
+
+        return SystemMetricsHistoryResponse(
+            points=[
+                SystemMetricsPointResponse(
+                    timestamp=p.timestamp.isoformat(),
+                    cpu_percent=p.cpu_percent,
+                    memory_percent=p.memory_percent,
+                    memory_mb=p.memory_mb,
+                    temperature_c=p.temperature_c,
+                )
+                for p in points
+            ],
+            minutes=minutes,
+            count=len(points),
+        )
+    except Exception as e:
+        logger.error(f"Failed to get system metrics history: {e}")
         raise HTTPException(status_code=500, detail=str(e))

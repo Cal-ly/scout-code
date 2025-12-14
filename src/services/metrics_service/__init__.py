@@ -35,6 +35,7 @@ from src.services.metrics_service.models import (
     ModuleStats,
     PerformanceStatus,
     PerformanceSummary,
+    SystemMetricsPoint,
 )
 from src.services.metrics_service.service import (
     MetricsService,
@@ -58,6 +59,7 @@ __all__ = [
     "ModuleStats",
     "PerformanceStatus",
     "PerformanceSummary",
+    "SystemMetricsPoint",
     # System Collector
     "SystemCollector",
     "SystemSnapshot",

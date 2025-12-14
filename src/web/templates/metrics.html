@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scout - Performance Metrics</title>
     <link rel="stylesheet" href="/static/css/common.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
         /* Metrics Page Specific Styles */
         .controls-bar {
@@ -114,6 +115,54 @@
         .system-icon {
             font-size: 1.5rem;
             margin-bottom: 0.5rem;
+        }
+
+        /* System Metrics Charts */
+        .charts-section {
+            margin-bottom: 1.5rem;
+        }
+        .chart-controls {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .chart-controls label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-right: 0.25rem;
+        }
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1rem;
+        }
+        .chart-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1rem;
+        }
+        .chart-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .chart-container {
+            position: relative;
+            height: 200px;
+        }
+        .chart-no-data {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: #999;
+            font-size: 0.9rem;
         }
 
         /* Metrics Table */
@@ -266,6 +315,9 @@
             .model-comparison {
                 grid-template-columns: 1fr;
             }
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
             .metrics-table {
                 font-size: 0.8rem;
             }
@@ -333,6 +385,39 @@
                 <div class="system-icon">&#127777;</div>
                 <div class="system-value" id="sys-temp">-</div>
                 <div class="system-label">Temperature</div>
+            </div>
+        </div>
+
+        <!-- System Metrics Charts -->
+        <div class="charts-section">
+            <div class="chart-controls">
+                <label>Time Range:</label>
+                <select id="chart-period" onchange="loadCharts()">
+                    <option value="15" selected>15 minutes</option>
+                    <option value="60">1 hour</option>
+                    <option value="240">4 hours</option>
+                    <option value="1440">24 hours</option>
+                </select>
+            </div>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-title">&#128187; CPU Usage (%)</div>
+                    <div class="chart-container">
+                        <canvas id="cpu-chart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">&#128190; Memory Usage (%)</div>
+                    <div class="chart-container">
+                        <canvas id="memory-chart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">&#127777; Temperature (&deg;C)</div>
+                    <div class="chart-container">
+                        <canvas id="temp-chart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -422,6 +507,11 @@
         let sortOrder = 'desc';
         let totalEntries = 0;
 
+        // Chart instances
+        let cpuChart = null;
+        let memoryChart = null;
+        let tempChart = null;
+
         // DOM Elements
         const loadingState = document.getElementById('loading-state');
         const emptyState = document.getElementById('empty-state');
@@ -435,16 +525,177 @@
             document.querySelectorAll('.metrics-table th[data-sort]').forEach(th => {
                 th.addEventListener('click', () => handleSort(th.dataset.sort));
             });
+            // Load charts
+            loadCharts();
             // Refresh every 30 seconds
-            setInterval(loadStatus, 30000);
+            setInterval(() => {
+                loadStatus();
+                loadCharts();
+            }, 30000);
         });
 
         async function loadMetrics() {
             await Promise.all([
                 loadStatus(),
                 loadComparison(),
-                loadEntries()
+                loadEntries(),
+                loadCharts()
             ]);
+        }
+
+        // =================================================================
+        // CHART FUNCTIONS
+        // =================================================================
+
+        function createChartConfig(label, color, yMax = null) {
+            return {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: label,
+                        data: [],
+                        borderColor: color,
+                        backgroundColor: color + '20',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: true,
+                            callbacks: {
+                                title: function(context) {
+                                    return context[0].label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxTicksLimit: 6,
+                                font: { size: 10 }
+                            }
+                        },
+                        y: {
+                            display: true,
+                            beginAtZero: true,
+                            max: yMax,
+                            grid: {
+                                color: '#e5e7eb'
+                            },
+                            ticks: {
+                                font: { size: 10 }
+                            }
+                        }
+                    }
+                }
+            };
+        }
+
+        function initCharts() {
+            // Initialize charts if not already done
+            if (!cpuChart) {
+                const cpuCtx = document.getElementById('cpu-chart').getContext('2d');
+                cpuChart = new Chart(cpuCtx, createChartConfig('CPU %', '#2563eb', 100));
+            }
+            if (!memoryChart) {
+                const memCtx = document.getElementById('memory-chart').getContext('2d');
+                memoryChart = new Chart(memCtx, createChartConfig('Memory %', '#10b981', 100));
+            }
+            if (!tempChart) {
+                const tempCtx = document.getElementById('temp-chart').getContext('2d');
+                tempChart = new Chart(tempCtx, createChartConfig('Temp °C', '#f59e0b'));
+            }
+        }
+
+        async function loadCharts() {
+            const minutes = document.getElementById('chart-period').value;
+
+            try {
+                const response = await fetch(`/api/metrics/system-history?minutes=${minutes}`);
+                if (!response.ok) throw new Error('Failed to load system history');
+                const data = await response.json();
+
+                // Initialize charts on first call
+                initCharts();
+
+                if (data.points.length === 0) {
+                    // No data yet - show empty state
+                    updateChartNoData();
+                    return;
+                }
+
+                // Format data for charts
+                const labels = data.points.map(p => {
+                    const date = new Date(p.timestamp);
+                    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                });
+
+                const cpuData = data.points.map(p => p.cpu_percent);
+                const memoryData = data.points.map(p => p.memory_percent);
+                const tempData = data.points.map(p => p.temperature_c);
+
+                // Update CPU chart
+                cpuChart.data.labels = labels;
+                cpuChart.data.datasets[0].data = cpuData;
+                cpuChart.update('none');
+
+                // Update Memory chart
+                memoryChart.data.labels = labels;
+                memoryChart.data.datasets[0].data = memoryData;
+                memoryChart.update('none');
+
+                // Update Temperature chart
+                tempChart.data.labels = labels;
+                tempChart.data.datasets[0].data = tempData;
+                // Dynamically set max for temperature (add 10 to max value)
+                const maxTemp = Math.max(...tempData.filter(t => t !== null));
+                if (maxTemp > 0) {
+                    tempChart.options.scales.y.max = Math.ceil((maxTemp + 10) / 10) * 10;
+                }
+                tempChart.update('none');
+
+            } catch (error) {
+                console.error('Error loading charts:', error);
+            }
+        }
+
+        function updateChartNoData() {
+            // Clear charts when no data
+            if (cpuChart) {
+                cpuChart.data.labels = [];
+                cpuChart.data.datasets[0].data = [];
+                cpuChart.update('none');
+            }
+            if (memoryChart) {
+                memoryChart.data.labels = [];
+                memoryChart.data.datasets[0].data = [];
+                memoryChart.update('none');
+            }
+            if (tempChart) {
+                tempChart.data.labels = [];
+                tempChart.data.datasets[0].data = [];
+                tempChart.update('none');
+            }
         }
 
         async function loadStatus() {

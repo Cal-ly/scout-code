@@ -5,8 +5,10 @@ Tracks LLM inference performance, reliability, and system metrics.
 Designed for local Ollama inference on Raspberry Pi 5.
 
 Uses file-based persistence (JSON) with 30-day retention and archival.
+Includes background collection of system metrics for time-series graphs.
 """
 
+import asyncio
 import json
 import logging
 import statistics
@@ -22,6 +24,7 @@ from src.services.metrics_service.models import (
     ModuleStats,
     PerformanceStatus,
     PerformanceSummary,
+    SystemMetricsPoint,
 )
 from src.services.metrics_service.system_collector import (
     THROTTLING_THRESHOLD,
@@ -32,6 +35,12 @@ logger = logging.getLogger(__name__)
 
 # Default retention period in days
 DEFAULT_RETENTION_DAYS = 30
+
+# System metrics collection interval (seconds)
+SYSTEM_METRICS_INTERVAL = 10
+
+# Maximum age of system metrics data (hours)
+SYSTEM_METRICS_MAX_AGE_HOURS = 24
 
 
 class MetricsService:
@@ -68,6 +77,7 @@ class MetricsService:
         data_dir: Path | None = None,
         retention_days: int = DEFAULT_RETENTION_DAYS,
         enable_system_metrics: bool = True,
+        system_metrics_interval: int = SYSTEM_METRICS_INTERVAL,
     ) -> None:
         """
         Initialize Metrics Service.
@@ -76,21 +86,29 @@ class MetricsService:
             data_dir: Directory for data files (defaults to data/metrics).
             retention_days: Days to keep active data before archiving.
             enable_system_metrics: Whether to collect system metrics.
+            system_metrics_interval: Interval for background collection (seconds).
         """
         self.data_dir = data_dir or Path("data/metrics")
         self.retention_days = retention_days
         self._enable_system_metrics = enable_system_metrics
+        self._system_metrics_interval = system_metrics_interval
 
         self._initialized = False
         self._entries: list[MetricsEntry] = []
         self._current_month: tuple[int, int] | None = None
         self._system_collector: SystemCollector | None = None
 
+        # System metrics time-series
+        self._system_metrics_points: list[SystemMetricsPoint] = []
+        self._collection_task: asyncio.Task | None = None
+        self._stop_collection = False
+
     async def initialize(self) -> None:
         """
         Initialize the service.
 
-        Creates data directories, loads persisted state, and archives old data.
+        Creates data directories, loads persisted state, archives old data,
+        and starts background system metrics collection.
 
         Raises:
             MetricsInitializationError: If initialization fails.
@@ -115,12 +133,28 @@ class MetricsService:
             # Load current month's data
             await self._load_current_month()
 
+            # Load system metrics time-series
+            await self._load_system_metrics()
+
             # Archive old entries
             await self._archive_old_data()
 
             self._initialized = True
+
+            # Start background collection task
+            if self._enable_system_metrics:
+                self._stop_collection = False
+                self._collection_task = asyncio.create_task(
+                    self._collect_system_metrics_loop()
+                )
+                logger.info(
+                    f"Started system metrics collection "
+                    f"(interval: {self._system_metrics_interval}s)"
+                )
+
             logger.info(
-                f"Metrics Service initialized with {len(self._entries)} entries"
+                f"Metrics Service initialized with {len(self._entries)} entries, "
+                f"{len(self._system_metrics_points)} system metrics points"
             )
 
         except Exception as e:
@@ -134,7 +168,21 @@ class MetricsService:
             return
 
         try:
+            # Stop background collection task
+            if self._collection_task is not None:
+                self._stop_collection = True
+                self._collection_task.cancel()
+                try:
+                    await self._collection_task
+                except asyncio.CancelledError:
+                    pass
+                self._collection_task = None
+                logger.debug("Stopped system metrics collection task")
+
+            # Save data
             await self._save_current_month()
+            await self._save_system_metrics()
+
             self._initialized = False
             logger.info("Metrics Service shut down successfully")
         except Exception as e:
@@ -690,6 +738,156 @@ class MetricsService:
         # Remove archived entries from active data
         self._entries = [e for e in self._entries if e.timestamp.date() >= cutoff]
         await self._save_current_month()
+
+    # =========================================================================
+    # SYSTEM METRICS TIME-SERIES
+    # =========================================================================
+
+    @property
+    def _system_metrics_file(self) -> Path:
+        """Path to system metrics time-series file."""
+        return self.data_dir / "system_metrics.json"
+
+    async def _collect_system_metrics_loop(self) -> None:
+        """
+        Background task that collects system metrics periodically.
+
+        Runs until shutdown() is called or the task is cancelled.
+        Saves to disk every 5 minutes to ensure persistence.
+        """
+        save_counter = 0
+        save_interval = 30  # Save every 30 collections (~5 min at 10s interval)
+
+        while not self._stop_collection:
+            try:
+                # Collect metrics
+                if self._system_collector is not None:
+                    point = SystemMetricsPoint(
+                        timestamp=datetime.now(),
+                        cpu_percent=self._system_collector.get_cpu_percent(),
+                        memory_percent=self._system_collector.get_memory_percent(),
+                        memory_mb=self._system_collector.get_memory_mb(),
+                        temperature_c=self._system_collector.get_temperature(),
+                    )
+                    self._system_metrics_points.append(point)
+
+                    # Prune old data
+                    await self._prune_old_system_metrics()
+
+                    # Periodic save
+                    save_counter += 1
+                    if save_counter >= save_interval:
+                        await self._save_system_metrics()
+                        save_counter = 0
+
+                # Wait for next collection
+                await asyncio.sleep(self._system_metrics_interval)
+
+            except asyncio.CancelledError:
+                # Task cancelled, exit gracefully
+                break
+            except Exception as e:
+                logger.warning(f"Error in system metrics collection: {e}")
+                await asyncio.sleep(self._system_metrics_interval)
+
+    async def _prune_old_system_metrics(self) -> None:
+        """Remove system metrics older than max age."""
+        cutoff = datetime.now() - timedelta(hours=SYSTEM_METRICS_MAX_AGE_HOURS)
+        self._system_metrics_points = [
+            p for p in self._system_metrics_points if p.timestamp >= cutoff
+        ]
+
+    async def _load_system_metrics(self) -> None:
+        """Load system metrics time-series from file."""
+        if not self._system_metrics_file.exists():
+            logger.debug("No existing system metrics file")
+            return
+
+        try:
+            with open(self._system_metrics_file) as f:
+                data = json.load(f)
+
+            # Load points
+            self._system_metrics_points = [
+                SystemMetricsPoint(
+                    timestamp=datetime.fromisoformat(p["timestamp"]),
+                    cpu_percent=p.get("cpu_percent"),
+                    memory_percent=p.get("memory_percent"),
+                    memory_mb=p.get("memory_mb"),
+                    temperature_c=p.get("temperature_c"),
+                )
+                for p in data.get("points", [])
+            ]
+
+            # Prune old data on load
+            await self._prune_old_system_metrics()
+
+            logger.info(
+                f"Loaded {len(self._system_metrics_points)} system metrics points"
+            )
+
+        except Exception as e:
+            logger.error(f"Error loading system metrics file: {e}")
+            # Continue with empty state
+
+    async def _save_system_metrics(self) -> None:
+        """Save system metrics time-series to file."""
+        try:
+            data = {
+                "updated_at": datetime.now().isoformat(),
+                "interval_seconds": self._system_metrics_interval,
+                "max_age_hours": SYSTEM_METRICS_MAX_AGE_HOURS,
+                "points": [
+                    {
+                        "timestamp": p.timestamp.isoformat(),
+                        "cpu_percent": p.cpu_percent,
+                        "memory_percent": p.memory_percent,
+                        "memory_mb": p.memory_mb,
+                        "temperature_c": p.temperature_c,
+                    }
+                    for p in self._system_metrics_points
+                ],
+            }
+
+            # Atomic write using temp file
+            temp_file = self._system_metrics_file.with_suffix(".tmp")
+            with open(temp_file, "w") as f:
+                json.dump(data, f)
+
+            temp_file.replace(self._system_metrics_file)
+            logger.debug(
+                f"Saved {len(self._system_metrics_points)} system metrics points"
+            )
+
+        except Exception as e:
+            logger.error(f"Error saving system metrics file: {e}")
+            raise
+
+    async def get_system_metrics_history(
+        self, minutes: int = 15
+    ) -> list[SystemMetricsPoint]:
+        """
+        Get system metrics history for graphing.
+
+        Args:
+            minutes: Number of minutes of history to return (default 15, max 1440).
+
+        Returns:
+            List of SystemMetricsPoint objects sorted by timestamp ascending.
+        """
+        self._ensure_initialized()
+
+        # Limit to max 24 hours
+        minutes = min(minutes, 1440)
+        cutoff = datetime.now() - timedelta(minutes=minutes)
+
+        # Filter and sort
+        points = [
+            p for p in self._system_metrics_points if p.timestamp >= cutoff
+        ]
+        points.sort(key=lambda p: p.timestamp)
+
+        return points
 
     def _ensure_initialized(self) -> None:
         """Ensure service is initialized."""

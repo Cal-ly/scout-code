@@ -247,3 +247,41 @@ class PerformanceSummary(BaseModel):
     avg_cpu_percent: float | None = None
     avg_memory_mb: float | None = None
     avg_temperature_c: float | None = None
+
+
+class SystemMetricsPoint(BaseModel):
+    """
+    Single point in system metrics time-series.
+
+    Collected periodically for continuous monitoring graphs.
+
+    Attributes:
+        timestamp: When the measurement was taken.
+        cpu_percent: CPU usage percentage (0-100).
+        memory_percent: Memory usage percentage (0-100).
+        memory_mb: Memory usage in megabytes.
+        temperature_c: CPU temperature in Celsius.
+    """
+
+    timestamp: datetime = Field(default_factory=datetime.now)
+    cpu_percent: float | None = None
+    memory_percent: float | None = None
+    memory_mb: float | None = None
+    temperature_c: float | None = None
+
+
+class SystemMetricsHistory(BaseModel):
+    """
+    Collection of system metrics time-series data.
+
+    Stores up to 24 hours of data at configurable intervals.
+
+    Attributes:
+        points: List of time-series data points.
+        collection_interval_seconds: Interval between collections.
+        max_age_hours: Maximum age of data to retain.
+    """
+
+    points: list[SystemMetricsPoint] = Field(default_factory=list)
+    collection_interval_seconds: int = 10
+    max_age_hours: int = 24
