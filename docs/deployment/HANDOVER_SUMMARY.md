@@ -155,6 +155,12 @@ Ollama connection failures on dev machine are expected and documented as non-blo
 ## 🔄 Next Steps
 
 ### Immediate (Now)
+
+**SSH Access Configured:**
+- ✅ Passwordless SSH to Pi 5 (cally@192.168.1.21)
+- ✅ SSH key authentication working
+- ✅ Claude Code can deploy when verification passes
+
 **Copy this to Claude Code:**
 
 ```
@@ -243,6 +249,7 @@ This division maximizes efficiency - each tool does what it does best.
 - [x] Verification documents created
 - [x] Claude Code start prompt written
 - [x] Scripts directory created
+- [x] SSH key configured (passwordless to Pi 5)
 - [x] Status documented
 - [ ] Verification execution (Claude Code task)
 - [ ] Results analysis (After Claude Code)

@@ -14,6 +14,37 @@ Scout is a job application automation system using local Ollama LLM inference (n
 - Created verification documentation
 - Aligned deployment guide with PoC scope
 
+## SSH Access to Raspberry Pi 5
+
+**IMPORTANT: You have passwordless SSH access to the target deployment machine.**
+
+**Connection Details:**
+- Host: `192.168.1.21`
+- User: `cally`
+- Authentication: SSH key (passwordless)
+- OS: Ubuntu Server 24.04 LTS (ARM64)
+
+**SSH Commands:**
+```bash
+# Connect to Pi 5
+ssh cally@192.168.1.21
+
+# Execute remote command
+ssh cally@192.168.1.21 "command here"
+
+# Copy files to Pi 5
+scp local_file cally@192.168.1.21:/path/on/pi/
+```
+
+**When to Use SSH:**
+- You do NOT need SSH for pre-flight verification (Phases 1-8)
+- Pre-flight tests run on LOCAL development machine (Windows 11)
+- SSH will be needed for actual deployment (after verification completes)
+- The deployment guide references SSH extensively
+
+**For This Session:**
+You are performing PRE-FLIGHT verification on the local Windows machine. Do NOT connect to the Pi 5 yet. All test scripts run locally to validate the codebase before deployment.
+
 ## Your Task
 
 Work through the comprehensive verification document systematically, creating test scripts and validating each aspect of the codebase before Pi 5 deployment.
