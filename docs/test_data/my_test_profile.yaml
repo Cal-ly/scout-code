@@ -1,0 +1,32 @@
+name: "Your Name"
+email: "your.email@example.com"
+title: "Junior Software Developer"
+years_experience: 1.5
+
+skills:
+  - Python
+  - JavaScript
+  - HTML/CSS
+  - Git
+  - SQL
+
+experience:
+  - title: "Junior Developer"
+    company: "Tech Startup"
+    start_date: "2023-06"
+    end_date: "Present"
+    description: "Developing web applications using modern frameworks. Collaborating with senior developers on feature implementation."
+  - title: "Software Development Intern"
+    company: "Software Company"
+    start_date: "2023-01"
+    end_date: "2023-05"
+    description: "Assisted in building internal tools and testing applications."
+
+education:
+  - degree: "Bachelor of Science"
+    field: "Computer Science"
+    institution: "University Name"
+    year: 2023
+
+certifications:
+  - "AWS Cloud Practitioner"

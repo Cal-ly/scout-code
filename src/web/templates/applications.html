@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scout - Generated Applications</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .header {
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-left h1 {
+            font-size: 1.5rem;
+            color: #1a1a1a;
+        }
+        .header-left p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .back-link {
+            color: #2563eb;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .page-header h2 {
+            font-size: 1.5rem;
+            color: #1a1a1a;
+        }
+        .btn {
+            padding: 0.75rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-primary {
+            background: #2563eb;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+        .btn-sm {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.85rem;
+        }
+        .btn-cv {
+            background: #2563eb;
+            color: #fff;
+        }
+        .btn-cv:hover {
+            background: #1d4ed8;
+        }
+        .btn-cover {
+            background: #10b981;
+            color: #fff;
+        }
+        .btn-cover:hover {
+            background: #059669;
+        }
+
+        /* Summary stats */
+        .summary-stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .summary-stat {
+            background: #fff;
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            min-width: 140px;
+            flex: 1;
+        }
+        .summary-stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+        .summary-stat-label {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        .summary-stat.highlight {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        }
+        .summary-stat.highlight .summary-stat-value {
+            color: #1e40af;
+        }
+
+        /* Controls bar */
+        .controls-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .sort-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .sort-controls label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        .sort-controls select {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background: #fff;
+        }
+        .filter-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .filter-controls label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: #666;
+            cursor: pointer;
+        }
+        .search-box {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            width: 200px;
+        }
+        .search-box:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        /* Application cards */
+        .applications-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .application-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1.25rem;
+            display: flex;
+            gap: 1rem;
+            transition: all 0.2s;
+            border-left: 4px solid transparent;
+        }
+        .application-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .application-card.status-completed {
+            border-left-color: #10b981;
+        }
+        .application-card.status-processing {
+            border-left-color: #2563eb;
+        }
+        .application-card.status-failed {
+            border-left-color: #ef4444;
+        }
+        .application-card.status-pending {
+            border-left-color: #f59e0b;
+        }
+        .score-indicator {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .score-indicator.excellent {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+        }
+        .score-indicator.strong {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            color: #1e40af;
+        }
+        .score-indicator.moderate {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+        }
+        .score-indicator.weak {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+        }
+        .score-indicator.pending {
+            background: #f3f4f6;
+            color: #6b7280;
+            font-size: 1.5rem;
+        }
+        .application-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .application-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+            gap: 1rem;
+        }
+        .application-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+        .application-company {
+            color: #666;
+            font-size: 0.95rem;
+        }
+        .application-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 0.75rem 0;
+        }
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.85rem;
+            color: #666;
+        }
+        .meta-icon {
+            font-size: 0.9rem;
+        }
+        .meta-value {
+            font-weight: 500;
+            color: #374151;
+        }
+        .application-badges {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-completed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .badge-processing {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .badge-failed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .badge-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .application-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: flex-end;
+        }
+        .download-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .empty-state h3 {
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        .empty-state p {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Loading spinner */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .spinner-sm {
+            width: 16px;
+            height: 16px;
+            border-width: 2px;
+        }
+
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .toast {
+            min-width: 300px;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-success { background: #10b981; color: #fff; }
+        .toast-error { background: #ef4444; color: #fff; }
+        .toast-warning { background: #f59e0b; color: #1a1a1a; }
+        .toast-info { background: #2563eb; color: #fff; }
+        .toast-content { flex: 1; }
+        .toast-title { font-weight: 600; }
+        .toast-message { font-size: 0.9rem; opacity: 0.9; margin-top: 0.25rem; }
+        .toast-close {
+            background: none;
+            border: none;
+            color: inherit;
+            opacity: 0.7;
+            cursor: pointer;
+            font-size: 1.25rem;
+            line-height: 1;
+        }
+        .toast-close:hover { opacity: 1; }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        .pagination-btn {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #fff;
+            color: #374151;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .pagination-btn:hover:not(:disabled) {
+            background: #f3f4f6;
+        }
+        .pagination-btn.active {
+            background: #2563eb;
+            color: #fff;
+            border-color: #2563eb;
+        }
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <h1>Scout</h1>
+            <p>Generated Applications</p>
+        </div>
+        <div class="header-right">
+            <a href="/profiles" class="back-link">Profiles</a>
+            <a href="/" class="back-link">&#8592; Dashboard</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h2>Your Applications</h2>
+            <a href="/" class="btn btn-primary">
+                <span>+</span> New Application
+            </a>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="summary-stats" id="summary-stats">
+            <div class="summary-stat">
+                <div class="summary-stat-value" id="stat-total">0</div>
+                <div class="summary-stat-label">Total Applications</div>
+            </div>
+            <div class="summary-stat">
+                <div class="summary-stat-value" id="stat-completed">0</div>
+                <div class="summary-stat-label">Completed</div>
+            </div>
+            <div class="summary-stat">
+                <div class="summary-stat-value" id="stat-processing">0</div>
+                <div class="summary-stat-label">Processing</div>
+            </div>
+            <div class="summary-stat highlight">
+                <div class="summary-stat-value" id="stat-avg-score">-</div>
+                <div class="summary-stat-label">Avg Compatibility</div>
+            </div>
+        </div>
+
+        <!-- Controls Bar -->
+        <div class="controls-bar">
+            <div class="sort-controls">
+                <label>Sort by:</label>
+                <select id="sort-select" onchange="loadApplications()">
+                    <option value="date">Date Created</option>
+                    <option value="score">Compatibility Score</option>
+                    <option value="company">Company Name</option>
+                    <option value="status">Status</option>
+                </select>
+                <select id="sort-order" onchange="loadApplications()">
+                    <option value="desc">Newest First</option>
+                    <option value="asc">Oldest First</option>
+                </select>
+            </div>
+            <div class="filter-controls">
+                <input type="text" class="search-box" id="search-input" placeholder="Search jobs..." oninput="debounceSearch()">
+                <label>
+                    <input type="checkbox" id="show-failed" onchange="loadApplications()">
+                    Show Failed
+                </label>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading" id="loading-state">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state hidden" id="empty-state">
+            <div class="empty-state-icon">&#128203;</div>
+            <h3>No Applications Yet</h3>
+            <p>Generate your first tailored application by pasting a job posting on the dashboard.</p>
+            <a href="/" class="btn btn-primary">Create Application</a>
+        </div>
+
+        <!-- Applications Grid -->
+        <div class="applications-grid hidden" id="applications-grid">
+            <!-- Applications will be inserted here -->
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination hidden" id="pagination">
+            <button class="pagination-btn" id="prev-btn" onclick="changePage(-1)">&#8592; Previous</button>
+            <span id="page-info"></span>
+            <button class="pagination-btn" id="next-btn" onclick="changePage(1)">Next &#8594;</button>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        // State
+        let applications = [];
+        let currentPage = 1;
+        const pageSize = 10;
+        let searchTimeout = null;
+
+        // DOM Elements
+        const loadingState = document.getElementById('loading-state');
+        const emptyState = document.getElementById('empty-state');
+        const applicationsGrid = document.getElementById('applications-grid');
+        const pagination = document.getElementById('pagination');
+        const toastContainer = document.getElementById('toast-container');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadApplications();
+            // Refresh every 30 seconds for processing jobs
+            setInterval(loadApplications, 30000);
+        });
+
+        function debounceSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(loadApplications, 300);
+        }
+
+        async function loadApplications() {
+            loadingState.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            applicationsGrid.classList.add('hidden');
+            pagination.classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/jobs');
+                if (!response.ok) throw new Error('Failed to load applications');
+
+                const data = await response.json();
+                applications = data.jobs || [];
+
+                // Apply search filter
+                const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+                if (searchQuery) {
+                    applications = applications.filter(app =>
+                        (app.job_title || '').toLowerCase().includes(searchQuery) ||
+                        (app.company_name || '').toLowerCase().includes(searchQuery)
+                    );
+                }
+
+                // Apply status filter
+                const showFailed = document.getElementById('show-failed').checked;
+                if (!showFailed) {
+                    applications = applications.filter(app => app.status !== 'failed');
+                }
+
+                // Sort applications
+                const sortBy = document.getElementById('sort-select').value;
+                const sortOrder = document.getElementById('sort-order').value;
+                sortApplications(sortBy, sortOrder);
+
+                // Update stats
+                updateStats(data.jobs || []);
+
+                loadingState.classList.add('hidden');
+
+                if (applications.length === 0) {
+                    emptyState.classList.remove('hidden');
+                } else {
+                    applicationsGrid.classList.remove('hidden');
+                    renderApplications();
+                    updatePagination();
+                }
+
+            } catch (error) {
+                console.error('Error loading applications:', error);
+                loadingState.classList.add('hidden');
+                showToast('error', 'Error', 'Failed to load applications');
+            }
+        }
+
+        function sortApplications(sortBy, sortOrder) {
+            applications.sort((a, b) => {
+                let comparison = 0;
+                switch (sortBy) {
+                    case 'date':
+                        comparison = new Date(a.created_at || 0) - new Date(b.created_at || 0);
+                        break;
+                    case 'score':
+                        comparison = (a.compatibility_score || 0) - (b.compatibility_score || 0);
+                        break;
+                    case 'company':
+                        comparison = (a.company_name || '').localeCompare(b.company_name || '');
+                        break;
+                    case 'status':
+                        comparison = (a.status || '').localeCompare(b.status || '');
+                        break;
+                }
+                return sortOrder === 'desc' ? -comparison : comparison;
+            });
+        }
+
+        function updateStats(allJobs) {
+            const completed = allJobs.filter(j => j.status === 'completed').length;
+            const processing = allJobs.filter(j => j.status === 'processing' || j.status === 'pending').length;
+            const scores = allJobs.filter(j => j.compatibility_score > 0).map(j => j.compatibility_score);
+            const avgScore = scores.length > 0
+                ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+                : null;
+
+            document.getElementById('stat-total').textContent = allJobs.length;
+            document.getElementById('stat-completed').textContent = completed;
+            document.getElementById('stat-processing').textContent = processing;
+            document.getElementById('stat-avg-score').textContent = avgScore ? `${avgScore}%` : '-';
+        }
+
+        function renderApplications() {
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const pageApps = applications.slice(start, end);
+
+            applicationsGrid.innerHTML = pageApps.map(app => {
+                const score = app.compatibility_score || 0;
+                const scoreClass = getScoreClass(score);
+                const statusClass = app.status || 'pending';
+                const date = app.created_at ? formatDate(app.created_at) : 'Unknown';
+
+                return `
+                    <div class="application-card status-${statusClass}" data-job-id="${escapeHtml(app.job_id)}">
+                        <div class="score-indicator ${app.status === 'completed' ? scoreClass : 'pending'}">
+                            ${app.status === 'completed' ? score + '%' : '&#8987;'}
+                        </div>
+                        <div class="application-content">
+                            <div class="application-header">
+                                <div>
+                                    <div class="application-title">${escapeHtml(app.job_title || 'Untitled Job')}</div>
+                                    <div class="application-company">${escapeHtml(app.company_name || 'Unknown Company')}</div>
+                                </div>
+                            </div>
+                            <div class="application-meta">
+                                <div class="meta-item">
+                                    <span class="meta-icon">&#128197;</span>
+                                    <span class="meta-value">${date}</span>
+                                </div>
+                                ${app.profile_used ? `
+                                <div class="meta-item">
+                                    <span class="meta-icon">&#128100;</span>
+                                    <span class="meta-value">${escapeHtml(app.profile_used)}</span>
+                                </div>
+                                ` : ''}
+                                ${app.processing_time_ms ? `
+                                <div class="meta-item">
+                                    <span class="meta-icon">&#9201;</span>
+                                    <span class="meta-value">${(app.processing_time_ms / 1000).toFixed(1)}s</span>
+                                </div>
+                                ` : ''}
+                            </div>
+                            <div class="application-badges">
+                                <span class="badge badge-${statusClass}">${capitalizeFirst(app.status || 'pending')}</span>
+                                ${app.status === 'completed' && score >= 70 ? '<span class="badge badge-completed">Strong Match</span>' : ''}
+                            </div>
+                        </div>
+                        <div class="application-actions">
+                            ${app.status === 'completed' ? `
+                            <div class="download-buttons">
+                                <a href="/api/download/${app.job_id}/cv" class="btn btn-sm btn-cv" title="Download CV">
+                                    &#128196; CV
+                                </a>
+                                <a href="/api/download/${app.job_id}/cover_letter" class="btn btn-sm btn-cover" title="Download Cover Letter">
+                                    &#128221; Cover
+                                </a>
+                            </div>
+                            ` : app.status === 'processing' ? `
+                            <div class="spinner spinner-sm"></div>
+                            ` : app.status === 'failed' ? `
+                            <button class="btn btn-sm btn-secondary" onclick="retryJob('${app.job_id}')">Retry</button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getScoreClass(score) {
+            if (score >= 80) return 'excellent';
+            if (score >= 60) return 'strong';
+            if (score >= 40) return 'moderate';
+            return 'weak';
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0) {
+                return 'Today';
+            } else if (diffDays === 1) {
+                return 'Yesterday';
+            } else if (diffDays < 7) {
+                return `${diffDays} days ago`;
+            } else {
+                return date.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+                });
+            }
+        }
+
+        function capitalizeFirst(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(applications.length / pageSize);
+
+            if (totalPages <= 1) {
+                pagination.classList.add('hidden');
+                return;
+            }
+
+            pagination.classList.remove('hidden');
+            document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages}`;
+            document.getElementById('prev-btn').disabled = currentPage === 1;
+            document.getElementById('next-btn').disabled = currentPage === totalPages;
+        }
+
+        function changePage(delta) {
+            const totalPages = Math.ceil(applications.length / pageSize);
+            const newPage = currentPage + delta;
+
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                renderApplications();
+                updatePagination();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        async function retryJob(jobId) {
+            showToast('info', 'Retrying', 'Attempting to retry the job...');
+            // Note: This would need a retry API endpoint
+            // For now, redirect to dashboard to create a new application
+            window.location.href = '/';
+        }
+
+        function showToast(type, title, message) {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <div class="toast-title">${escapeHtml(title)}</div>
+                    <div class="toast-message">${escapeHtml(message)}</div>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+            `;
+            toastContainer.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

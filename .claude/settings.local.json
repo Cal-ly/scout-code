@@ -28,7 +28,8 @@
       "Bash(curl:*)",
       "Bash(find:*)",
       "Bash(grep:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(git push:*)"
     ]
   }
 }

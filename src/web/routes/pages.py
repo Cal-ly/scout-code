@@ -10,6 +10,7 @@ Endpoints:
     GET /profiles/create - Create new profile
     GET /profiles/{filename} - Profile detail page
     GET /profiles/{filename}/edit - Edit profile page
+    GET /applications - Generated applications list page
 """
 
 from pathlib import Path
@@ -139,4 +140,29 @@ async def profile_edit(request: Request, filename: str) -> HTMLResponse:
     return templates.TemplateResponse(
         request=request,
         name="profile_edit.html",
+    )
+
+
+# =============================================================================
+# APPLICATIONS / GENERATED DOCUMENTS
+# =============================================================================
+
+
+@router.get("/applications", response_class=HTMLResponse)
+async def applications_list(request: Request) -> HTMLResponse:
+    """
+    Render the generated applications list page.
+
+    Shows all generated job applications with stats, compatibility scores,
+    and download links for CVs and cover letters.
+
+    Args:
+        request: FastAPI request object (required for templates).
+
+    Returns:
+        Rendered HTML page.
+    """
+    return templates.TemplateResponse(
+        request=request,
+        name="applications.html",
     )
