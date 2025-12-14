@@ -637,37 +637,51 @@
             try {
                 const sortBy = document.getElementById('sort-select').value;
                 const sortOrder = document.getElementById('sort-order').value;
-                const includeArchived = document.getElementById('show-archived').checked;
+                // Use existing single-profile API
+                // First check if profile exists
+                const statusResponse = await fetch('/api/profile/status');
+                if (!statusResponse.ok) throw new Error('Failed to check profile status');
 
-                const params = new URLSearchParams({
-                    sort_by: sortBy,
-                    sort_order: sortOrder,
-                    include_archived: includeArchived
-                });
+                const status = await statusResponse.json();
 
-                const response = await fetch(`/api/profiles?${params}`);
-                if (!response.ok) throw new Error('Failed to load profiles');
+                if (status.exists) {
+                    // Get the profile data
+                    const profileResponse = await fetch('/api/profile/retrieve');
+                    if (profileResponse.ok) {
+                        const profileData = await profileResponse.json();
 
-                const data = await response.json();
-                profiles = data.profiles;
-                activeProfile = data.active_profile;
+                        // Create a single profile entry
+                        profiles = [{
+                            filename: 'profile.yaml',
+                            profile_name: extractName(profileData.profile_text) || 'My Profile',
+                            title: extractTitle(profileData.profile_text) || '',
+                            is_indexed: status.is_indexed,
+                            chunk_count: status.chunk_count || 0,
+                            usage_count: 0,
+                            avg_compatibility_score: null,
+                            is_archived: false,
+                            created_at: null,
+                            updated_at: null
+                        }];
+                        activeProfile = 'profile.yaml';
+                    }
+                } else {
+                    profiles = [];
+                    activeProfile = null;
+                }
 
                 // Update stats
-                document.getElementById('stat-total').textContent = data.total_count;
-                document.getElementById('stat-archived').textContent = data.archived_count;
-                document.getElementById('stat-usage').textContent =
-                    profiles.reduce((sum, p) => sum + (p.usage_count || 0), 0);
+                document.getElementById('stat-total').textContent = profiles.length;
+                document.getElementById('stat-archived').textContent = 0;
+                document.getElementById('stat-usage').textContent = 0;
 
                 // Update active banner
-                if (activeProfile) {
-                    const active = profiles.find(p => p.filename === activeProfile);
-                    if (active) {
-                        activeBanner.classList.remove('hidden');
-                        document.getElementById('active-profile-name').textContent =
-                            active.profile_name || 'Profile';
-                        document.getElementById('active-profile-filename').textContent =
-                            active.filename;
-                    }
+                if (activeProfile && profiles.length > 0) {
+                    activeBanner.classList.remove('hidden');
+                    document.getElementById('active-profile-name').textContent =
+                        profiles[0].profile_name || 'Profile';
+                    document.getElementById('active-profile-filename').textContent =
+                        profiles[0].filename;
                 } else {
                     activeBanner.classList.add('hidden');
                 }
@@ -686,6 +700,20 @@
                 loadingState.classList.add('hidden');
                 showToast('error', 'Error', 'Failed to load profiles');
             }
+        }
+
+        // Helper to extract name from profile text
+        function extractName(text) {
+            if (!text) return null;
+            const match = text.match(/^name:\s*["']?([^"'\n]+)["']?/mi);
+            return match ? match[1].trim() : null;
+        }
+
+        // Helper to extract title from profile text
+        function extractTitle(text) {
+            if (!text) return null;
+            const match = text.match(/^title:\s*["']?([^"'\n]+)["']?/mi);
+            return match ? match[1].trim() : null;
         }
 
         function renderProfiles() {
@@ -733,41 +761,8 @@
                         </div>
                         <div class="profile-actions">
                             <div class="actions-row">
-                                <a href="/profiles/${encodeURIComponent(profile.filename)}" class="btn btn-sm btn-secondary">View</a>
-                                ${!profile.is_archived ? `
-                                <a href="/profiles/${encodeURIComponent(profile.filename)}/edit" class="btn btn-sm btn-secondary">Edit</a>
-                                ` : ''}
-                            </div>
-                            <div class="dropdown">
-                                <button class="dropdown-toggle" onclick="toggleDropdown(event, '${escapeHtml(profile.filename)}')">&#8942;</button>
-                                <div class="dropdown-menu" id="dropdown-${escapeHtml(profile.filename)}">
-                                    ${!isActive && !profile.is_archived ? `
-                                    <button class="dropdown-item" onclick="activateProfile('${escapeHtml(profile.filename)}')">
-                                        Set as Active
-                                    </button>
-                                    ` : ''}
-                                    ${!profile.is_archived ? `
-                                    <button class="dropdown-item" onclick="duplicateProfile('${escapeHtml(profile.filename)}')">
-                                        Duplicate
-                                    </button>
-                                    <button class="dropdown-item" onclick="reindexProfile('${escapeHtml(profile.filename)}')">
-                                        Re-index
-                                    </button>
-                                    <div class="dropdown-divider"></div>
-                                    <button class="dropdown-item" onclick="archiveProfile('${escapeHtml(profile.filename)}')">
-                                        Archive
-                                    </button>
-                                    ` : `
-                                    <button class="dropdown-item" onclick="restoreProfile('${escapeHtml(profile.filename)}')">
-                                        Restore
-                                    </button>
-                                    `}
-                                    ${!isActive ? `
-                                    <button class="dropdown-item danger" onclick="showDeleteModal('${escapeHtml(profile.filename)}')">
-                                        Delete
-                                    </button>
-                                    ` : ''}
-                                </div>
+                                <a href="/profiles/create" class="btn btn-sm btn-secondary">View / Edit</a>
+                                <button class="btn btn-sm btn-secondary" onclick="reindexProfile()">Re-index</button>
                             </div>
                         </div>
                     </div>
@@ -819,12 +814,24 @@
             }
         }
 
-        async function reindexProfile(filename) {
+        async function reindexProfile() {
             try {
                 showToast('info', 'Indexing', 'Re-indexing profile...');
 
-                const response = await fetch(`/api/diagnostics/profiles/${encodeURIComponent(filename)}/reindex`, {
-                    method: 'POST'
+                // First get the profile ID from status
+                const statusResponse = await fetch('/api/profile/status');
+                if (!statusResponse.ok) throw new Error('Failed to get profile status');
+                const status = await statusResponse.json();
+
+                if (!status.profile_id) {
+                    throw new Error('No profile found to reindex');
+                }
+
+                // Then reindex using the profile ID
+                const response = await fetch('/api/profile/index', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profile_id: status.profile_id })
                 });
                 if (!response.ok) throw new Error('Failed to reindex profile');
 
