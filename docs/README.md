@@ -1,56 +1,93 @@
 # Scout Documentation Index
 
-This directory contains comprehensive specifications for all Scout modules and services.
+This directory contains specifications, guides, and documentation for Scout - an intelligent job application system.
+
+## Project Status
+
+**All phases complete.** Scout is a working PoC with 609+ tests passing.
+
+- **Architecture:** Local LLM via Ollama (Qwen 2.5 3B / Gemma 2 2B)
+- **Deployment:** Raspberry Pi 5 (16GB) with Ubuntu 24.04
 
 ## Directory Structure
 
-- **modules/** - Core processing modules (M1-M5)
-- **services/** - Supporting services (S1-S8)
-- **architecture/** - System design and configuration docs
-- **guides/** - Development guides and checklists
+```
+docs/
+├── current_state/    # Current implementation documentation (START HERE)
+├── deployment/       # Raspberry Pi deployment guides
+├── guides/           # Development guides and scope documents
+├── modules/          # Module specifications (M1-M5)
+├── services/         # Service specifications (S1-S8)
+└── archive/          # Deferred feature specs
+```
 
-## Module Specifications
+## Current State Documentation
 
-### Core Modules
-- [Module 1: Collector](modules/M1_Collector.md) - Profile management and indexing
-- [Module 2: Rinser](modules/M2_Rinser.md) - Job text sanitization and extraction
-- [Module 3: Analyzer](modules/M3_Analyzer.md) - Semantic matching and scoring
-- [Module 4: Creator](modules/M4_Creator.md) - Tailored content generation
-- [Module 5: Formatter](modules/M5_Formatter.md) - Document formatting and PDF generation
+For **accurate, up-to-date** documentation of the implemented system:
+
+| Document | Description |
+|----------|-------------|
+| [Overview](current_state/README.md) | Architecture diagram and component summary |
+| [Services](current_state/services.md) | S1-S4, S6, S8 implementation details |
+| [Modules](current_state/modules.md) | M1-M5 module documentation |
+| [Web Interface](current_state/web_interface.md) | FastAPI, templates, static files |
+| [API Routes](current_state/api_routes.md) | REST endpoint reference |
+
+## Deployment Guides
+
+| Document | Description |
+|----------|-------------|
+| [Raspberry Pi 5 Deployment](deployment/Raspberry_Pi_5_Deployment_Guide.md) | Complete deployment guide |
+| [User Guide](deployment/User_Guide.md) | End-user documentation |
+| [Performance Benchmarks](deployment/Performance_Benchmarks.md) | Pipeline timing data |
+
+## Development Guides
+
+| Document | Description |
+|----------|-------------|
+| [PoC Scope Document](guides/Scout_PoC_Scope_Document.md) | Authoritative scope reference |
+| [Local LLM Transition](guides/Local_LLM_Transition_Guide.md) | Anthropic to Ollama migration |
+| [Claude Code Guide](guides/Scout_Claude_Code_Development_Guide.md) | Development workflow |
+
+## Specifications (Historical Reference)
+
+Original specifications used during development. For current implementation, see `current_state/`.
+
+### Modules
+- Module 1: Collector - Profile management
+- Module 2: Rinser - Job text extraction
+- Module 3: Analyzer - Semantic matching
+- Module 4: Creator - Content generation
+- Module 5: Formatter - PDF generation
 
 ### Services
-- [S1: LLM Service](services/S1_LLM_Service.md) - Claude API integration
-- [S2: Cost Tracker](services/S2_Cost_Tracker.md) - Budget management
-- [S3: Cache Service](services/S3_Cache_Service.md) - Multi-tier caching
-- [S4: Vector Store](services/S4_Vector_Store.md) - ChromaDB integration
-- [S6: Pipeline Orchestrator](services/S6_Pipeline_Orchestrator.md) - Module coordination
-- [S7: Content Optimizer](services/S7_Content_Optimizer.md) - Output quality enhancement
-- [S8: Notification Service](services/S8_Notification_Service.md) - User notifications
-- [Web Interface](services/Web_Interface.md) - User interface specification
+- S1: LLM Service - Ollama integration
+- S2: Cost Tracker - Usage metrics
+- S3: Cache Service - Memory + file caching
+- S4: Vector Store - ChromaDB embeddings
+- S6: Pipeline Orchestrator - Module coordination
+- S8: Notification Service - In-app notifications
 
-### Architecture & Guides
-- [Scout PoC Scope](architecture/Scout_PoC_Scope.md) - Project scope and boundaries
-- [Project Structure](architecture/Project_Structure.md) - Complete system architecture
-- [Implementation Checklist](guides/Implementation_Checklist.md) - Step-by-step development guide
-- [Development Guide](guides/Development_Guide.md) - Code patterns and standards
-- [CLAUDE.md](guides/CLAUDE.md) - Claude Code interaction guide
+### Deferred (see `archive/`)
+- S7: Content Optimizer - Deferred to post-PoC
 
-## Implementation Order
+## Implementation Phases (Complete)
 
-1. **Phase 1: Foundation Services** (S2 → S3 → S4 → S1)
-2. **Phase 2: Core Modules** (M1 → M2 → M3 → M4 → M5)
-3. **Phase 3: Integration** (S6 → API → S8 → Web)
+| Phase | Components | Tests |
+|-------|------------|-------|
+| Phase 1: Foundation | S2, S3, S4, S1 | 180 |
+| Phase 2: Modules | M1, M2, M3, M4, M5 | 268 |
+| Phase 3: Integration | S6, API, S8, Web | 161 |
+| **Total** | **All components** | **609+** |
 
-See [Implementation Checklist](guides/Implementation_Checklist.md) for detailed steps.
+## Key Files
 
-## Using These Specifications
+| File | Purpose |
+|------|---------|
+| `CLAUDE.md` (project root) | Claude Code context and patterns |
+| `LL-LI.md` (project root) | Lessons learned during development |
+| `HANDOVER.md` (project root) | Session continuity notes |
 
-Each specification document contains:
-- **Context & Objective** - What the component does
-- **Technical Requirements** - Dependencies and file structure
-- **Data Models** - Pydantic models to implement
-- **Implementation** - Core logic and patterns
-- **Testing** - Test requirements and examples
-- **Success Criteria** - Acceptance criteria
+---
 
-Follow the implementation checklist for systematic development with Claude Code.
+*Last updated: December 14, 2025*

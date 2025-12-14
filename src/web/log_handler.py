@@ -79,7 +79,7 @@ class MemoryLogHandler(logging.Handler):
             logger_filter: Filter by logger name (partial match).
 
         Returns:
-            List of log entries, most recent first.
+            List of log entries, oldest first (chronological order).
         """
         entries = list(self._entries)
 
@@ -90,8 +90,11 @@ class MemoryLogHandler(logging.Handler):
         if logger_filter:
             entries = [e for e in entries if logger_filter in e.logger]
 
-        # Return most recent first, limited
-        return list(reversed(entries))[:limit]
+        # Return oldest first (chronological), newest at end for terminal-style display
+        # Limit from the end to keep most recent entries
+        if len(entries) > limit:
+            entries = entries[-limit:]
+        return entries
 
     def clear(self) -> None:
         """Clear all log entries."""

@@ -799,118 +799,99 @@ These features should be considered for the next phase:
 
 ---
 
-## Appendix A: File Structure (PoC)
+## Appendix A: File Structure (Implemented)
+
+> **Updated December 2025:** This reflects the actual implemented structure.
 
 ```
-scout/
-├── app/
-│   ├── __init__.py
-│   ├── main.py
-│   ├── api/
-│   │   ├── __init__.py
-│   │   ├── routes/
+scout-code/
+├── src/
+│   ├── modules/                    # Core processing modules (M1-M5)
+│   │   ├── collector/              # M1: Profile management
 │   │   │   ├── __init__.py
-│   │   │   ├── health.py
-│   │   │   ├── profile.py
-│   │   │   ├── jobs.py
-│   │   │   └── generation.py
-│   │   └── dependencies.py
-│   ├── core/
+│   │   │   ├── models.py
+│   │   │   ├── exceptions.py
+│   │   │   └── collector.py
+│   │   ├── rinser/                 # M2: Job text extraction
+│   │   ├── analyzer/               # M3: Semantic matching
+│   │   ├── creator/                # M4: Content generation
+│   │   └── formatter/              # M5: PDF generation
+│   ├── services/                   # Supporting services
+│   │   ├── llm_service/            # S1: Ollama LLM integration
+│   │   │   ├── __init__.py
+│   │   │   ├── models.py
+│   │   │   ├── exceptions.py
+│   │   │   ├── service.py
+│   │   │   └── providers/
+│   │   │       ├── base.py
+│   │   │       └── ollama_provider.py
+│   │   ├── cost_tracker/           # S2: Usage metrics
+│   │   ├── cache_service/          # S3: Memory + file cache
+│   │   ├── vector_store/           # S4: ChromaDB embeddings
+│   │   ├── pipeline/               # S6: Pipeline orchestrator
+│   │   ├── notification/           # S8: In-app notifications
+│   │   └── profile/                # Profile service
+│   ├── web/                        # FastAPI web interface
 │   │   ├── __init__.py
-│   │   ├── collector.py
-│   │   ├── rinser.py
-│   │   ├── analyzer.py
-│   │   ├── creator.py
-│   │   ├── formatter.py
-│   │   └── pipeline.py
-│   ├── models/
-│   │   ├── __init__.py
-│   │   ├── profile.py
-│   │   ├── job.py
-│   │   ├── analysis.py
-│   │   ├── generation.py
-│   │   └── common.py
-│   ├── services/
-│   │   ├── __init__.py
-│   │   ├── llm.py
-│   │   ├── cost_tracker.py
-│   │   ├── cache.py
-│   │   ├── vector_store.py
-│   │   └── notification.py
-│   ├── config/
-│   │   ├── __init__.py
-│   │   ├── settings.py
-│   │   └── logging.py
-│   └── utils/
-│       ├── __init__.py
-│       ├── validators.py
-│       └── exceptions.py
-├── templates/
-│   ├── base/
-│   │   └── layout.html
-│   ├── pages/
-│   │   ├── dashboard.html
-│   │   ├── profile.html
-│   │   ├── jobs.html
-│   │   ├── analysis.html
-│   │   ├── generation.html
-│   │   └── download.html
-│   ├── components/
-│   │   ├── alerts.html
-│   │   ├── navigation.html
-│   │   └── progress.html
-│   └── documents/
-│       ├── cv_modern.html
-│       └── cover_letter.html
-├── static/
-│   ├── css/
-│   │   └── main.css
-│   └── js/
-│       └── app.js
-├── prompts/
-│   ├── extraction/
-│   │   └── job_structure.txt
-│   ├── analysis/
-│   │   ├── gap_analysis.txt
-│   │   └── strategy.txt
-│   └── generation/
-│       ├── cv.txt
-│       └── cover_letter.txt
-├── data/
-│   ├── profile.yaml
-│   ├── profile.example.yaml
-│   ├── vectors/
-│   ├── cache/
-│   ├── exports/
-│   └── cost_tracker.json
-├── tests/
-│   ├── __init__.py
+│   │   ├── main.py                 # FastAPI application
+│   │   ├── dependencies.py
+│   │   ├── schemas.py
+│   │   ├── routes/
+│   │   │   ├── api.py              # Core API endpoints
+│   │   │   ├── profile.py          # Profile endpoints
+│   │   │   ├── notifications.py
+│   │   │   └── pages.py            # HTML page routes
+│   │   ├── templates/              # Jinja2 templates
+│   │   │   ├── base.html
+│   │   │   ├── index.html
+│   │   │   ├── profiles_list.html
+│   │   │   ├── profile_edit.html
+│   │   │   ├── applications.html
+│   │   │   └── components/
+│   │   └── static/                 # CSS, JS, images
+│   │       ├── css/
+│   │       └── js/
+│   └── config/
+│       └── settings.py
+├── tests/                          # Flat test structure (609+ tests)
 │   ├── conftest.py
-│   ├── unit/
-│   │   ├── test_collector.py
-│   │   ├── test_rinser.py
-│   │   ├── test_analyzer.py
-│   │   ├── test_creator.py
-│   │   ├── test_formatter.py
-│   │   └── services/
-│   │       ├── test_llm.py
-│   │       ├── test_cache.py
-│   │       ├── test_cost_tracker.py
-│   │       └── test_vector_store.py
-│   ├── integration/
-│   │   ├── test_pipeline.py
-│   │   └── test_api.py
-│   └── fixtures/
-│       ├── sample_job.txt
-│       └── sample_profile.yaml
+│   ├── test_cache.py
+│   ├── test_cost_tracker.py
+│   ├── test_vector_store.py
+│   ├── test_llm.py
+│   ├── test_collector.py
+│   ├── test_rinser.py
+│   ├── test_analyzer.py
+│   ├── test_creator.py
+│   ├── test_formatter.py
+│   ├── test_pipeline.py
+│   ├── test_api.py
+│   └── test_notification.py
+├── docs/                           # Documentation
+│   ├── current_state/              # Implementation docs
+│   ├── deployment/                 # Deployment guides
+│   ├── guides/                     # Development guides
+│   ├── modules/                    # Module specifications
+│   ├── services/                   # Service specifications
+│   └── archive/                    # Deferred features
+├── scripts/                        # Deployment scripts
+│   ├── deploy.ps1                  # Windows PowerShell
+│   └── deploy.sh                   # Bash
+├── data/                           # Runtime data (gitignored)
+│   ├── profiles/                   # User profiles (YAML)
+│   ├── chroma_data/                # Vector embeddings
+│   ├── cache/                      # File cache
+│   └── outputs/                    # Generated PDFs
+├── venv/                           # Virtual environment
 ├── .env.example
 ├── .gitignore
 ├── pyproject.toml
+├── requirements.txt
+├── requirements-dev.txt
 ├── Makefile
-├── README.md
-└── docker/
-    ├── Dockerfile
-    └── docker-compose.yml
+├── CLAUDE.md                       # Claude Code context
+├── LL-LI.md                        # Lessons learned
+└── README.md
 ```
 
 ---
@@ -960,6 +941,7 @@ LOG_LEVEL=INFO
 |---------|------|---------|
 | 1.0 | 2025-11-26 | Initial approved scope document |
 | 1.1 | 2025-12-13 | Changed LLM provider from Anthropic API to local Ollama (Qwen 2.5 3B / Gemma 2 2B) |
+| 1.2 | 2025-12-14 | Updated Appendix A with correct implemented file structure (src/ not app/) |
 
 ---
 
