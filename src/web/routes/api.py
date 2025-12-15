@@ -307,13 +307,13 @@ async def quick_score(
         # Extract top matches (skills that matched well)
         top_matches = []
         for skill_match in analysis.skill_matches[:5]:
-            if skill_match.similarity >= 0.6:
-                top_matches.append(skill_match.requirement)
+            if skill_match.score >= 0.6:
+                top_matches.append(skill_match.requirement_text)
 
         # Extract key gaps
         key_gaps = []
         for gap in analysis.gaps[:3]:
-            if gap.priority.value in ["must_have", "should_have"]:
+            if gap.importance in ["must_have", "should_have"]:
                 key_gaps.append(gap.requirement)
 
         # Generate recommendation based on score
