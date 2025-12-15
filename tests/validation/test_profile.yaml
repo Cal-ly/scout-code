@@ -2,16 +2,20 @@
 # =================================
 # This profile represents a typical senior Python developer
 # Used for consistent validation testing across all test cases
+# 
+# Schema: Matches src/modules/collector/models.py UserProfile
 
-name: "Alex Andersen"
-title: "Senior Software Engineer"
+# Basic Info
+full_name: "Alex Andersen"
 email: "alex.andersen@example.com"
 phone: "+45 12 34 56 78"
 location: "Copenhagen, Denmark"
-linkedin: "https://linkedin.com/in/alexandersen"
-github: "https://github.com/alexandersen"
+linkedin_url: "https://linkedin.com/in/alexandersen"
+github_url: "https://github.com/alexandersen"
 
 # Professional Summary
+title: "Senior Software Engineer"
+years_experience: 7.0
 summary: |
   Senior Software Engineer with 7+ years of experience building scalable 
   backend systems and APIs. Specialized in Python ecosystem with deep 
@@ -19,70 +23,79 @@ summary: |
   about clean code, test-driven development, and mentoring engineering teams.
   
   Currently leading backend development for a fintech startup, responsible 
-  for designing microservices processing 1M+ daily transactions. Strong 
-  track record of delivering high-quality software on time while maintaining 
-  technical excellence.
+  for designing microservices processing 1M+ daily transactions.
 
-# Skills (categorized for matching)
+# Skills (flat list with level and years)
 skills:
-  # Primary/Expert skills
-  expert:
-    - name: "Python"
-      years: 7
-      context: "Primary language for all backend development"
-    - name: "FastAPI"
-      years: 3
-      context: "Built multiple production APIs serving 100k+ requests/day"
-    - name: "PostgreSQL"
-      years: 6
-      context: "Database design, optimization, migrations"
-    - name: "Docker"
-      years: 5
-      context: "Containerization for all services"
+  # Expert level
+  - name: "Python"
+    level: "expert"
+    years: 7.0
+    keywords: ["python3", "asyncio", "typing"]
   
-  # Proficient skills
-  proficient:
-    - name: "AWS"
-      years: 4
-      context: "EC2, RDS, S3, Lambda, ECS"
-    - name: "Redis"
-      years: 4
-      context: "Caching, session management, pub/sub"
-    - name: "Kubernetes"
-      years: 2
-      context: "Container orchestration, Helm charts"
-    - name: "Django"
-      years: 5
-      context: "Full-stack web applications"
-    - name: "TypeScript"
-      years: 2
-      context: "Frontend development with React"
-    - name: "React"
-      years: 2
-      context: "Internal dashboards and admin tools"
+  - name: "FastAPI"
+    level: "expert"
+    years: 3.0
+    keywords: ["REST API", "async", "pydantic"]
   
-  # Familiar/Learning
-  familiar:
-    - name: "Go"
-      years: 1
-      context: "CLI tools and performance-critical services"
-    - name: "Kafka"
-      years: 1
-      context: "Event streaming for data pipelines"
-    - name: "GraphQL"
-      years: 1
-      context: "API layer for mobile applications"
-    - name: "Terraform"
-      years: 1
-      context: "Infrastructure as code"
+  - name: "PostgreSQL"
+    level: "expert"
+    years: 6.0
+    keywords: ["SQL", "database", "RDBMS"]
+  
+  - name: "Docker"
+    level: "expert"
+    years: 5.0
+    keywords: ["containers", "containerization", "docker-compose"]
+  
+  # Advanced level
+  - name: "AWS"
+    level: "advanced"
+    years: 4.0
+    keywords: ["EC2", "RDS", "S3", "Lambda", "ECS", "cloud"]
+  
+  - name: "Redis"
+    level: "advanced"
+    years: 4.0
+    keywords: ["caching", "in-memory", "pub/sub"]
+  
+  - name: "Kubernetes"
+    level: "advanced"
+    years: 2.0
+    keywords: ["k8s", "orchestration", "helm"]
+  
+  - name: "Django"
+    level: "advanced"
+    years: 5.0
+    keywords: ["web framework", "ORM", "REST"]
+  
+  # Intermediate level
+  - name: "TypeScript"
+    level: "intermediate"
+    years: 2.0
+    keywords: ["javascript", "frontend", "node"]
+  
+  - name: "React"
+    level: "intermediate"
+    years: 2.0
+    keywords: ["frontend", "UI", "components"]
+  
+  - name: "Go"
+    level: "intermediate"
+    years: 1.0
+    keywords: ["golang", "CLI", "performance"]
+  
+  - name: "Kafka"
+    level: "intermediate"
+    years: 1.0
+    keywords: ["streaming", "events", "message queue"]
 
 # Work Experience
 experiences:
-  - role: "Senior Software Engineer"
-    company: "FinTech Startup ApS"
-    location: "Copenhagen, Denmark"
-    start_date: "2022-03"
-    end_date: null  # Current position
+  - company: "FinTech Startup ApS"
+    role: "Senior Software Engineer"
+    start_date: "2022-03-01"
+    end_date: null
     current: true
     description: |
       Lead backend engineer for a B2B payments platform. Responsible for 
@@ -102,11 +115,10 @@ experiences:
       - "AWS"
       - "Kubernetes"
 
-  - role: "Software Engineer"
-    company: "TechCorp Danmark"
-    location: "Copenhagen, Denmark"
-    start_date: "2019-06"
-    end_date: "2022-02"
+  - company: "TechCorp Danmark"
+    role: "Software Engineer"
+    start_date: "2019-06-01"
+    end_date: "2022-02-28"
     current: false
     description: |
       Full-stack developer working on enterprise SaaS platform for HR management.
@@ -124,11 +136,10 @@ experiences:
       - "TypeScript"
       - "AWS"
 
-  - role: "Junior Developer"
-    company: "WebAgency A/S"
-    location: "Aarhus, Denmark"
-    start_date: "2017-08"
-    end_date: "2019-05"
+  - company: "WebAgency A/S"
+    role: "Junior Developer"
+    start_date: "2017-08-01"
+    end_date: "2019-05-31"
     current: false
     description: |
       Entry-level position developing web applications for various clients.
@@ -142,59 +153,48 @@ experiences:
       - "Django"
       - "JavaScript"
       - "PostgreSQL"
-      - "HTML/CSS"
+      - "HTML"
+      - "CSS"
 
 # Education
 education:
-  - degree: "M.Sc. Computer Science"
-    institution: "University of Copenhagen"
-    location: "Copenhagen, Denmark"
-    start_date: "2015-09"
-    end_date: "2017-06"
-    gpa: "10.5/12"
-    focus: "Distributed Systems"
-    thesis: "Scalable Event Processing in Cloud Environments"
+  - institution: "University of Copenhagen"
+    degree: "M.Sc. Computer Science"
+    field: "Distributed Systems"
+    start_date: "2015-09-01"
+    end_date: "2017-06-30"
+    gpa: 10.5
+    relevant_courses:
+      - "Distributed Systems"
+      - "Cloud Computing"
+      - "Advanced Algorithms"
+      - "Machine Learning"
 
-  - degree: "B.Sc. Software Engineering"
-    institution: "Aarhus University"
-    location: "Aarhus, Denmark"
-    start_date: "2012-09"
-    end_date: "2015-06"
-    gpa: "9.8/12"
+  - institution: "Aarhus University"
+    degree: "B.Sc. Software Engineering"
+    field: "Software Engineering"
+    start_date: "2012-09-01"
+    end_date: "2015-06-30"
+    gpa: 9.8
+    relevant_courses:
+      - "Data Structures"
+      - "Database Systems"
+      - "Software Architecture"
+      - "Web Development"
 
 # Certifications
 certifications:
   - name: "AWS Solutions Architect - Associate"
     issuer: "Amazon Web Services"
-    date: "2023-04"
-    expires: "2026-04"
+    date_obtained: "2023-04-15"
+    expiry_date: "2026-04-15"
+    credential_id: "AWS-SAA-12345"
   
   - name: "Kubernetes Application Developer (CKAD)"
     issuer: "Cloud Native Computing Foundation"
-    date: "2023-09"
-    expires: "2026-09"
+    date_obtained: "2023-09-20"
+    expiry_date: "2026-09-20"
+    credential_id: "CKAD-67890"
 
-# Languages
-languages:
-  - language: "Danish"
-    proficiency: "Native"
-  - language: "English"
-    proficiency: "Fluent"
-  - language: "German"
-    proficiency: "Basic"
-
-# Additional Information
-additional:
-  interests:
-    - "Open source contribution"
-    - "Technical blogging"
-    - "Conference speaking"
-  
-  open_source:
-    - project: "fastapi-cache"
-      role: "Contributor"
-      description: "Added Redis backend support"
-    
-  speaking:
-    - event: "PyCon Denmark 2023"
-      topic: "Building Resilient Microservices with FastAPI"
+# Metadata
+profile_version: "1.0"
