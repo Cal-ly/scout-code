@@ -26,6 +26,7 @@ from typing import Any
 
 import yaml
 
+from src.modules.collector.assessment import ProfileAssessment, assess_profile
 from src.modules.collector.exceptions import (
     CollectorError,
     IndexingError,
@@ -39,6 +40,10 @@ from src.modules.collector.models import (
     SearchMatch,
     SkillMatch,
     UserProfile,
+)
+from src.modules.collector.skill_aliases import (
+    expand_skill_query,
+    normalize_skill_name,
 )
 from src.services.vector_store import VectorStoreService
 
@@ -213,6 +218,21 @@ class Collector:
             last_updated=profile.last_updated,
         )
 
+    def assess_profile_completeness(self) -> ProfileAssessment:
+        """
+        Assess the completeness and quality of the loaded profile.
+
+        Returns:
+            ProfileAssessment with scores and improvement suggestions.
+
+        Raises:
+            CollectorError: If no profile is loaded.
+        """
+        if not self._profile:
+            raise CollectorError("No profile loaded. Call load_profile() first.")
+
+        return assess_profile(self._profile)
+
     # =========================================================================
     # INDEXING
     # =========================================================================
@@ -235,16 +255,31 @@ class Collector:
         documents_indexed = 0
 
         try:
-            # Index skills
+            # Index skills with alias information
             for i, skill in enumerate(profile.skills):
                 doc_id = f"skill_{self._profile_hash}_{i}"
+
+                # Normalize skill name and get aliases for better matching
+                canonical_name = normalize_skill_name(skill.name)
+                aliases = expand_skill_query(skill.name)
+
+                # Create enhanced searchable text that includes aliases
+                searchable_text = skill.to_searchable_text()
+                if len(aliases) > 1:
+                    alias_text = f" Also known as: {', '.join(aliases)}"
+                    enhanced_text = searchable_text + alias_text
+                else:
+                    enhanced_text = searchable_text
+
                 await self._vector_store.add(
                     collection_name=COLLECTION_NAME,
                     document_id=doc_id,
-                    content=skill.to_searchable_text(),
+                    content=enhanced_text,
                     metadata={
                         "type": "skill",
                         "name": skill.name,
+                        "canonical_name": canonical_name,
+                        "aliases": ",".join(aliases),
                         "level": skill.level.value,
                         "years": skill.years or 0.0,
                         "profile_hash": self._profile_hash or "",
@@ -358,8 +393,11 @@ class Collector:
         """
         Search for relevant skills.
 
+        Expands the query to include skill aliases for better matching
+        (e.g., "k8s" will also match "kubernetes").
+
         Args:
-            query: Search query (e.g., "machine learning").
+            query: Search query (e.g., "machine learning", "k8s").
             n_results: Maximum number of results.
 
         Returns:
@@ -368,7 +406,16 @@ class Collector:
         Raises:
             SearchError: If search fails.
         """
-        return await self._search_by_type(query, "skill", n_results)
+        # Expand query to include aliases for better matching
+        expanded_terms = expand_skill_query(query)
+
+        # Create enhanced query with all variants
+        if len(expanded_terms) > 1:
+            enhanced_query = f"{query} ({', '.join(expanded_terms)})"
+        else:
+            enhanced_query = query
+
+        return await self._search_by_type(enhanced_query, "skill", n_results)
 
     async def search_education(
         self,
@@ -457,6 +504,9 @@ class Collector:
         """
         Match job requirements against user skills.
 
+        Expands requirements to include skill aliases for better matching
+        (e.g., "k8s" will also match "kubernetes").
+
         Args:
             requirements: List of skill requirements to match.
             threshold: Minimum similarity score (0-1).
@@ -471,10 +521,17 @@ class Collector:
 
         for requirement in requirements:
             try:
+                # Expand requirement to include aliases
+                expanded_terms = expand_skill_query(requirement)
+                if len(expanded_terms) > 1:
+                    enhanced_query = f"{requirement} ({', '.join(expanded_terms)})"
+                else:
+                    enhanced_query = requirement
+
                 # Search skills for this requirement
                 response = await self._vector_store.search(
                     collection_name=COLLECTION_NAME,
-                    query=requirement,
+                    query=enhanced_query,
                     top_k=3,
                     metadata_filter={"type": "skill"},
                 )

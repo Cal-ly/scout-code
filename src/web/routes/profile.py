@@ -8,12 +8,16 @@ Endpoints:
     POST /api/profile/create - Create or update profile
     POST /api/profile/index - Chunk and embed profile
     GET /api/profile/retrieve - Get current profile data
+    GET /api/profile/assessment - Get profile completeness assessment
+    GET /api/profile/completeness-summary - Get quick profile summary with score
 """
 
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from src.modules.collector import ProfileAssessment, get_collector
+from src.modules.collector.collector import Collector
 from src.services.profile import (
     ProfileCreateRequest,
     ProfileCreateResponse,
@@ -34,13 +38,18 @@ router = APIRouter(prefix="/api/profile", tags=["profile"])
 
 
 # =============================================================================
-# DEPENDENCY
+# DEPENDENCIES
 # =============================================================================
 
 
 async def get_profile_svc() -> ProfileService:
     """Get profile service dependency."""
     return await get_profile_service()
+
+
+async def get_collector_dep() -> Collector:
+    """Get collector module dependency."""
+    return await get_collector()
 
 
 # =============================================================================
@@ -212,3 +221,82 @@ async def get_profile(
             status_code=500,
             detail=f"Failed to retrieve profile: {e}",
         )
+
+
+# =============================================================================
+# PROFILE ASSESSMENT ENDPOINTS (using Collector module)
+# =============================================================================
+
+
+@router.get(
+    "/assessment",
+    response_model=ProfileAssessment,
+    responses={
+        500: {"model": ErrorResponse, "description": "Assessment failed"},
+    },
+    summary="Get profile assessment",
+    description="Get assessment of current profile completeness with scores and suggestions.",
+)
+async def get_profile_assessment(
+    collector: Collector = Depends(get_collector_dep),
+) -> ProfileAssessment:
+    """
+    Get assessment of current profile completeness.
+
+    Returns:
+        ProfileAssessment with overall score, section scores, and suggestions.
+    """
+    try:
+        # Ensure profile is loaded
+        try:
+            collector.get_profile()
+        except Exception:
+            # Try to load default profile
+            await collector.load_profile()
+
+        assessment = collector.assess_profile_completeness()
+        return assessment
+
+    except Exception as e:
+        logger.error(f"Assessment failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Assessment failed: {e}")
+
+
+@router.get(
+    "/completeness-summary",
+    responses={
+        500: {"model": ErrorResponse, "description": "Summary failed"},
+    },
+    summary="Get profile completeness summary",
+    description="Get quick profile summary with assessment score.",
+)
+async def get_profile_completeness_summary(
+    collector: Collector = Depends(get_collector_dep),
+) -> dict:
+    """
+    Get quick profile summary with assessment score.
+
+    Returns a simplified view with name, title, score, and top suggestion.
+    """
+    try:
+        # Ensure profile is loaded
+        try:
+            profile = collector.get_profile()
+        except Exception:
+            await collector.load_profile()
+            profile = collector.get_profile()
+
+        assessment = collector.assess_profile_completeness()
+
+        return {
+            "name": profile.full_name,
+            "title": profile.title,
+            "completeness_score": assessment.overall_score,
+            "grade": assessment.grade.value,
+            "is_job_ready": assessment.is_job_ready,
+            "top_suggestion": assessment.top_suggestions[0] if assessment.top_suggestions else None,
+        }
+
+    except Exception as e:
+        logger.error(f"Summary failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

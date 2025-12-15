@@ -16,6 +16,12 @@ Usage:
     await collector.initialize()
 """
 
+from src.modules.collector.assessment import (
+    ProfileAssessment,
+    ProfileGrade,
+    SectionScore,
+    assess_profile,
+)
 from src.modules.collector.collector import (
     Collector,
     get_collector,
@@ -41,6 +47,14 @@ from src.modules.collector.models import (
     SkillMatch,
     UserProfile,
 )
+from src.modules.collector.skill_aliases import (
+    SKILL_ALIASES,
+    expand_skill_query,
+    get_all_canonical_skills,
+    get_canonical_name,
+    is_known_skill,
+    normalize_skill_name,
+)
 
 __all__ = [
     # Module
@@ -58,6 +72,18 @@ __all__ = [
     "ProfileSummary",
     "SearchMatch",
     "SkillMatch",
+    # Assessment
+    "ProfileAssessment",
+    "ProfileGrade",
+    "SectionScore",
+    "assess_profile",
+    # Skill Aliases
+    "SKILL_ALIASES",
+    "normalize_skill_name",
+    "expand_skill_query",
+    "get_all_canonical_skills",
+    "get_canonical_name",
+    "is_known_skill",
     # Exceptions
     "CollectorError",
     "ProfileNotFoundError",
