@@ -291,17 +291,18 @@ async def quick_score(
         analyzer = await get_analyzer()
 
         # Process job text (extract requirements)
+        # Each step gets the full timeout since LLM inference on Pi can be slow
         logger.info("Quick score: Processing job text with Rinser")
         processed_job = await asyncio.wait_for(
             rinser.process_job(job_text, index=False),
-            timeout=QUICK_SCORE_TIMEOUT_SECONDS / 2,
+            timeout=QUICK_SCORE_TIMEOUT_SECONDS,
         )
 
         # Analyze compatibility (without LLM strategy for speed)
         logger.info("Quick score: Analyzing compatibility")
         analysis = await asyncio.wait_for(
             analyzer.analyze(processed_job, generate_strategy=False),
-            timeout=QUICK_SCORE_TIMEOUT_SECONDS / 2,
+            timeout=QUICK_SCORE_TIMEOUT_SECONDS,
         )
 
         # Extract top matches (skills that matched well)

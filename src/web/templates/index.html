@@ -415,7 +415,7 @@ Include:
             <div id="quick-score-container" class="hidden">
                 <div id="quick-score-loading" class="quick-score-result quick-score-loading hidden">
                     <span class="spinner">&#8635;</span>
-                    <span>Analyzing compatibility (1-3 min on Pi)...</span>
+                    <span id="quick-score-loading-text">Analyzing compatibility... (timeout: 5:00)</span>
                 </div>
                 <div id="quick-score-result" class="quick-score-result hidden">
                     <div class="quick-score-header">
@@ -923,6 +923,9 @@ Include:
         // QUICK SCORE
         // =====================================================================
 
+        let quickScoreCountdown = null;
+        const QUICK_SCORE_TIMEOUT_SECONDS = 300; // 5 minutes per step, matches backend
+
         async function calculateQuickScore() {
             const jobText = jobTextArea.value.trim();
             if (jobText.length < 100) return;
@@ -932,7 +935,11 @@ Include:
             quickScoreLoading.classList.remove('hidden');
             quickScoreResult.classList.add('hidden');
             quickScoreBtn.disabled = true;
+            submitBtn.disabled = true; // Disable generate button during quick score
             quickScoreBtn.textContent = 'Analyzing...';
+
+            // Start countdown timer
+            startQuickScoreCountdown();
 
             try {
                 const response = await fetch('/api/quick-score', {
@@ -952,8 +959,44 @@ Include:
                 showToast('error', 'Quick Score Failed', error.message);
                 quickScoreContainer.classList.add('hidden');
             } finally {
+                stopQuickScoreCountdown();
                 quickScoreBtn.disabled = false;
                 quickScoreBtn.textContent = 'Quick Score';
+                // Re-enable submit button only if text is long enough
+                if (jobTextArea.value.length >= 100) {
+                    submitBtn.disabled = false;
+                }
+            }
+        }
+
+        function startQuickScoreCountdown() {
+            let remaining = QUICK_SCORE_TIMEOUT_SECONDS;
+            const loadingText = document.getElementById('quick-score-loading-text');
+
+            updateCountdownText(loadingText, remaining);
+
+            quickScoreCountdown = setInterval(() => {
+                remaining--;
+                if (remaining <= 0) {
+                    stopQuickScoreCountdown();
+                    loadingText.textContent = 'Analysis timed out...';
+                } else {
+                    updateCountdownText(loadingText, remaining);
+                }
+            }, 1000);
+        }
+
+        function updateCountdownText(element, seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            const timeStr = mins > 0 ? `${mins}:${secs.toString().padStart(2, '0')}` : `${secs}s`;
+            element.textContent = `Analyzing compatibility... (timeout: ${timeStr})`;
+        }
+
+        function stopQuickScoreCountdown() {
+            if (quickScoreCountdown) {
+                clearInterval(quickScoreCountdown);
+                quickScoreCountdown = null;
             }
         }
 
@@ -1008,6 +1051,7 @@ Include:
         }
 
         function clearQuickScore() {
+            stopQuickScoreCountdown();
             quickScoreContainer.classList.add('hidden');
             quickScoreLoading.classList.add('hidden');
             quickScoreResult.classList.add('hidden');
