@@ -634,18 +634,22 @@ class TestSearch:
     async def test_search_skills(
         self, collector: Collector, mock_vector_store: AsyncMock
     ) -> None:
-        """Should search for skills."""
+        """Should search for skills with alias expansion."""
         await collector.initialize()
 
         results = await collector.search_skills("machine learning")
 
         assert isinstance(results, list)
-        mock_vector_store.search.assert_called_with(
-            collection_name="user_profiles",
-            query="machine learning",
-            top_k=5,
-            metadata_filter={"type": "skill"},
-        )
+        # Skill search expands query with aliases for better matching
+        # "machine learning" expands to include "ml", "machine-learning"
+        call_args = mock_vector_store.search.call_args
+        assert call_args.kwargs["collection_name"] == "user_profiles"
+        assert call_args.kwargs["top_k"] == 5
+        assert call_args.kwargs["metadata_filter"] == {"type": "skill"}
+        # Query should contain the original term and be expanded with aliases
+        query = call_args.kwargs["query"]
+        assert "machine learning" in query
+        assert "ml" in query  # Alias is included
 
     @pytest.mark.asyncio
     async def test_search_education(
