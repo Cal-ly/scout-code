@@ -212,6 +212,7 @@
                     </button>
                     <button class="logs-btn" onclick="fetchLogs()">Refresh</button>
                     <button class="logs-btn" onclick="copyLogs()">Copy All</button>
+                    <button class="logs-btn" onclick="downloadLogs()">Download</button>
                     <button class="logs-btn logs-btn-danger" onclick="clearLogs()">Clear</button>
                 </div>
             </div>
@@ -249,6 +250,7 @@
         // State
         let logPollInterval = null;
         let autoRefreshEnabled = true;
+        let autoScrollEnabled = true;
         let allLogs = [];
         let searchTimeout = null;
 
@@ -256,7 +258,38 @@
         document.addEventListener('DOMContentLoaded', () => {
             fetchLogs();
             startLogPolling();
+
+            // Detect user scroll to pause auto-scroll
+            const logsContent = document.getElementById('logs-content');
+            logsContent.addEventListener('scroll', handleScroll);
         });
+
+        function handleScroll() {
+            const logsContent = document.getElementById('logs-content');
+            // Check if user is near the bottom (within 50px)
+            const isNearBottom = logsContent.scrollHeight - logsContent.scrollTop - logsContent.clientHeight < 50;
+
+            if (!isNearBottom && autoScrollEnabled) {
+                // User scrolled up - pause auto-scroll
+                autoScrollEnabled = false;
+                updateScrollIndicator();
+            } else if (isNearBottom && !autoScrollEnabled) {
+                // User scrolled back to bottom - resume auto-scroll
+                autoScrollEnabled = true;
+                updateScrollIndicator();
+            }
+        }
+
+        function updateScrollIndicator() {
+            const indicator = document.getElementById('auto-refresh-indicator');
+            if (!autoRefreshEnabled) {
+                indicator.querySelector('span:last-child').textContent = 'Auto-refresh paused';
+            } else if (!autoScrollEnabled) {
+                indicator.querySelector('span:last-child').textContent = 'Auto-scroll paused (scroll to bottom to resume)';
+            } else {
+                indicator.querySelector('span:last-child').textContent = 'Auto-refreshing every 2s';
+            }
+        }
 
         function startLogPolling() {
             if (logPollInterval) clearInterval(logPollInterval);
@@ -284,6 +317,7 @@
                 indicator.classList.add('paused');
                 stopLogPolling();
             }
+            updateScrollIndicator();
         }
 
         function debounceSearch() {
@@ -358,8 +392,10 @@
                         `${escapeHtml(entry.message)}</div>`;
                 }).join('');
 
-                // Auto-scroll to bottom
-                logsContent.scrollTop = logsContent.scrollHeight;
+                // Only auto-scroll to bottom if enabled
+                if (autoScrollEnabled) {
+                    logsContent.scrollTop = logsContent.scrollHeight;
+                }
             }
         }
 
@@ -377,18 +413,91 @@
             }
         }
 
-        async function copyLogs() {
-            try {
-                const logText = allLogs.map(e => {
-                    const ts = e.timestamp ? new Date(e.timestamp).toISOString() : '';
-                    return `${ts} [${e.level}] ${e.message}`;
-                }).join('\n');
+        function getLogsAsText() {
+            return allLogs.map(e => {
+                const ts = e.timestamp ? new Date(e.timestamp).toISOString() : '';
+                return `${ts} [${e.level}] ${e.message}`;
+            }).join('\n');
+        }
 
-                await navigator.clipboard.writeText(logText);
-                showToast('success', 'Copied', 'Logs copied to clipboard');
+        async function copyLogs() {
+            const logText = getLogsAsText();
+
+            if (!logText) {
+                showToast('warning', 'Empty', 'No logs to copy');
+                return;
+            }
+
+            // Try modern clipboard API first
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                try {
+                    await navigator.clipboard.writeText(logText);
+                    showToast('success', 'Copied', 'Logs copied to clipboard');
+                    return;
+                } catch (error) {
+                    console.warn('Clipboard API failed, trying fallback:', error);
+                }
+            }
+
+            // Fallback: Use textarea trick
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = logText;
+                textarea.style.position = 'fixed';
+                textarea.style.left = '-9999px';
+                textarea.style.top = '0';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+
+                const success = document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                if (success) {
+                    showToast('success', 'Copied', 'Logs copied to clipboard');
+                } else {
+                    throw new Error('execCommand failed');
+                }
             } catch (error) {
-                console.error('Failed to copy logs:', error);
-                showToast('error', 'Error', 'Failed to copy logs to clipboard');
+                console.error('All clipboard methods failed:', error);
+                showToast('error', 'Error', 'Failed to copy - try downloading instead');
+            }
+        }
+
+        function downloadLogs() {
+            const logText = getLogsAsText();
+
+            if (!logText) {
+                showToast('warning', 'Empty', 'No logs to download');
+                return;
+            }
+
+            try {
+                // Create filename with timestamp
+                const now = new Date();
+                const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                const filename = `scout-logs-${timestamp}.log`;
+
+                // Create blob and download link
+                const blob = new Blob([logText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                link.style.display = 'none';
+
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                // Clean up the URL object
+                URL.revokeObjectURL(url);
+
+                showToast('success', 'Downloaded', `Saved as ${filename}`);
+            } catch (error) {
+                console.error('Failed to download logs:', error);
+                showToast('error', 'Error', 'Failed to download logs');
             }
         }
     </script>

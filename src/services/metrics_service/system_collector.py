@@ -56,10 +56,16 @@ class SystemCollector:
         """Detect available metrics sources."""
         # Check for psutil
         try:
-            import psutil  # noqa: F401
+            import psutil
 
             self._psutil_available = True
-            logger.debug("psutil available for system metrics")
+            # Prime CPU measurement - first call with interval=None returns 0.0
+            # because there's no baseline. This call establishes the baseline.
+            psutil.cpu_percent(interval=None)
+            logger.info(
+                f"psutil {psutil.__version__} available for system metrics "
+                f"(CPU: yes, Memory: yes)"
+            )
         except ImportError:
             logger.warning("psutil not available, CPU/memory metrics disabled")
 

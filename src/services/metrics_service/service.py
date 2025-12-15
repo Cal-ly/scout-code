@@ -325,10 +325,14 @@ class MetricsService:
             (len(fallback_entries) / calls_today * 100) if calls_today > 0 else 0.0
         )
 
-        # Current temperature and throttling check
+        # Current system metrics
+        current_cpu: float | None = None
+        current_memory: float | None = None
         current_temp: float | None = None
         throttling_warning = False
         if self._system_collector is not None:
+            current_cpu = self._system_collector.get_cpu_percent()
+            current_memory = self._system_collector.get_memory_percent()
             current_temp = self._system_collector.get_temperature()
             throttling_warning = self._system_collector.is_throttling_risk()
 
@@ -342,6 +346,8 @@ class MetricsService:
             avg_duration_seconds=avg_duration,
             primary_model_success_rate=primary_success_rate,
             fallback_usage_rate=fallback_rate,
+            current_cpu_percent=current_cpu,
+            current_memory_percent=current_memory,
             current_temperature=current_temp,
             throttling_warning=throttling_warning,
             performance_trend=trend,

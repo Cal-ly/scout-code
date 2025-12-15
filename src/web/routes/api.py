@@ -49,6 +49,32 @@ router = APIRouter(prefix="/api", tags=["api"])
 # Local inference on Raspberry Pi 5 can take 15-30 min for full pipeline
 PIPELINE_TIMEOUT_SECONDS = 900
 
+# Quick score timeout (2 minutes - just rinser + analyzer without LLM strategy)
+QUICK_SCORE_TIMEOUT_SECONDS = 120
+
+
+# =============================================================================
+# QUICK SCORE MODELS
+# =============================================================================
+
+
+class QuickScoreRequest(BaseModel):
+    """Request for quick compatibility score."""
+
+    job_text: str
+
+
+class QuickScoreResponse(BaseModel):
+    """Response with quick compatibility score."""
+
+    score: int
+    level: str
+    job_title: str | None
+    company_name: str | None
+    top_matches: list[str]
+    key_gaps: list[str]
+    recommendation: str
+
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -219,6 +245,111 @@ async def apply(
     )
 
     return ApplyResponse(job_id=job_id, status="running")
+
+
+@router.post(
+    "/quick-score",
+    response_model=QuickScoreResponse,
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid request"},
+        500: {"model": ErrorResponse, "description": "Server error"},
+    },
+    summary="Get quick compatibility score",
+    description="Get a quick compatibility score without generating full application.",
+)
+async def quick_score(
+    request: QuickScoreRequest,
+) -> QuickScoreResponse:
+    """
+    Calculate quick compatibility score.
+
+    This endpoint runs only the Rinser and Analyzer (without LLM strategy)
+    to provide a fast compatibility assessment.
+
+    Args:
+        request: Job text to analyze.
+
+    Returns:
+        QuickScoreResponse with score and key insights.
+
+    Raises:
+        HTTPException: If analysis fails.
+    """
+    from src.modules.analyzer import get_analyzer
+    from src.modules.rinser import get_rinser
+
+    job_text = request.job_text.strip()
+    if len(job_text) < 100:
+        raise HTTPException(
+            status_code=400,
+            detail="Job text must be at least 100 characters",
+        )
+
+    try:
+        # Get modules
+        rinser = await get_rinser()
+        analyzer = await get_analyzer()
+
+        # Process job text (extract requirements)
+        logger.info("Quick score: Processing job text with Rinser")
+        processed_job = await asyncio.wait_for(
+            rinser.process(job_text),
+            timeout=QUICK_SCORE_TIMEOUT_SECONDS / 2,
+        )
+
+        # Analyze compatibility (without LLM strategy for speed)
+        logger.info("Quick score: Analyzing compatibility")
+        analysis = await asyncio.wait_for(
+            analyzer.analyze(processed_job, generate_strategy=False),
+            timeout=QUICK_SCORE_TIMEOUT_SECONDS / 2,
+        )
+
+        # Extract top matches (skills that matched well)
+        top_matches = []
+        for skill_match in analysis.skill_matches[:5]:
+            if skill_match.similarity >= 0.6:
+                top_matches.append(skill_match.requirement)
+
+        # Extract key gaps
+        key_gaps = []
+        for gap in analysis.gaps[:3]:
+            if gap.priority.value in ["must_have", "should_have"]:
+                key_gaps.append(gap.requirement)
+
+        # Generate recommendation based on score
+        score = analysis.compatibility.overall
+        level = analysis.compatibility.level.value
+        if score >= 85:
+            recommendation = "Excellent match! Strongly recommended to apply."
+        elif score >= 70:
+            recommendation = "Strong match. Good candidate for this role."
+        elif score >= 50:
+            recommendation = "Moderate match. Consider highlighting transferable skills."
+        else:
+            recommendation = "Weak match. May want to focus on other opportunities."
+
+        return QuickScoreResponse(
+            score=score,
+            level=level,
+            job_title=processed_job.title,
+            company_name=processed_job.company.name if processed_job.company else None,
+            top_matches=top_matches,
+            key_gaps=key_gaps,
+            recommendation=recommendation,
+        )
+
+    except TimeoutError:
+        logger.error("Quick score timed out")
+        raise HTTPException(
+            status_code=500,
+            detail="Analysis timed out. Please try again.",
+        )
+    except Exception as e:
+        logger.error(f"Quick score failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Analysis failed: {str(e)}",
+        )
 
 
 @router.get(
@@ -855,6 +986,8 @@ class MetricsStatusResponse(BaseModel):
     avg_duration_seconds: float
     primary_model_success_rate: float
     fallback_usage_rate: float
+    current_cpu_percent: float | None
+    current_memory_percent: float | None
     current_temperature: float | None
     throttling_warning: bool
     performance_trend: str
@@ -967,6 +1100,8 @@ async def get_metrics_status() -> MetricsStatusResponse:
             avg_duration_seconds=status.avg_duration_seconds,
             primary_model_success_rate=status.primary_model_success_rate,
             fallback_usage_rate=status.fallback_usage_rate,
+            current_cpu_percent=status.current_cpu_percent,
+            current_memory_percent=status.current_memory_percent,
             current_temperature=status.current_temperature,
             throttling_warning=status.throttling_warning,
             performance_trend=status.performance_trend,

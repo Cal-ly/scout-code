@@ -179,6 +179,8 @@ class PerformanceStatus(BaseModel):
         avg_duration_seconds: Average inference duration today.
         primary_model_success_rate: Success rate of primary model.
         fallback_usage_rate: Percentage of calls using fallback model.
+        current_cpu_percent: Current CPU usage percentage.
+        current_memory_percent: Current memory usage percentage.
         current_temperature: Current CPU temperature in Celsius.
         throttling_warning: True if temperature indicates throttling risk.
         performance_trend: "improving", "stable", or "degrading".
@@ -190,6 +192,8 @@ class PerformanceStatus(BaseModel):
     avg_duration_seconds: float = 0.0
     primary_model_success_rate: float = 0.0
     fallback_usage_rate: float = 0.0
+    current_cpu_percent: float | None = None
+    current_memory_percent: float | None = None
     current_temperature: float | None = None
     throttling_warning: bool = False
     performance_trend: str = "stable"

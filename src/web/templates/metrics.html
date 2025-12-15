@@ -723,9 +723,9 @@
                 }[status.performance_trend] || '&#8596;';
                 trendEl.innerHTML = `<span class="trend-indicator ${trendClass}">${trendIcon} ${capitalizeFirst(status.performance_trend)}</span>`;
 
-                // Update system metrics
-                updateSystemMetric('sys-cpu', status.avg_cpu_percent, '%');
-                updateSystemMetric('sys-memory', status.avg_memory_mb, ' MB', true);
+                // Update system metrics (current values)
+                updateSystemMetric('sys-cpu', status.current_cpu_percent, '%');
+                updateSystemMetric('sys-memory', status.current_memory_percent, '%');
                 updateSystemMetric('sys-temp', status.current_temperature, '°C');
 
                 // Show throttling warning if needed
@@ -741,7 +741,7 @@
             }
         }
 
-        function updateSystemMetric(id, value, suffix, isMemory = false) {
+        function updateSystemMetric(id, value, suffix) {
             const el = document.getElementById(id);
             if (value === null || value === undefined) {
                 el.textContent = '-';
@@ -749,17 +749,23 @@
                 return;
             }
 
-            if (isMemory) {
-                el.textContent = value.toFixed(0) + suffix;
-            } else {
-                el.textContent = value.toFixed(1) + suffix;
-            }
+            el.textContent = value.toFixed(1) + suffix;
+            el.className = 'system-value';
 
             // Add warning classes for temperature
             if (id === 'sys-temp') {
-                el.className = 'system-value';
                 if (value >= 80) el.classList.add('danger');
                 else if (value >= 70) el.classList.add('warning');
+            }
+            // Add warning classes for CPU (high usage)
+            if (id === 'sys-cpu') {
+                if (value >= 90) el.classList.add('danger');
+                else if (value >= 75) el.classList.add('warning');
+            }
+            // Add warning classes for memory (high usage)
+            if (id === 'sys-memory') {
+                if (value >= 90) el.classList.add('danger');
+                else if (value >= 80) el.classList.add('warning');
             }
         }
 
@@ -814,29 +820,7 @@
         }
 
         async function loadSummary() {
-            const days = document.getElementById('period-select').value;
-
-            try {
-                const response = await fetch(`/api/metrics/summary?days=${days}`);
-                if (!response.ok) throw new Error('Failed to load summary');
-                const summary = await response.json();
-
-                // Update system metrics from summary averages
-                if (summary.avg_cpu_percent !== null) {
-                    updateSystemMetric('sys-cpu', summary.avg_cpu_percent, '%');
-                }
-                if (summary.avg_memory_mb !== null) {
-                    updateSystemMetric('sys-memory', summary.avg_memory_mb, ' MB', true);
-                }
-                if (summary.avg_temperature_c !== null) {
-                    updateSystemMetric('sys-temp', summary.avg_temperature_c, '°C');
-                }
-
-            } catch (error) {
-                console.error('Error loading summary:', error);
-            }
-
-            // Also reload entries with new period
+            // Reload entries with new period filter
             loadEntries();
         }
 
