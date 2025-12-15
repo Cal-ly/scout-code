@@ -293,7 +293,7 @@ async def quick_score(
         # Process job text (extract requirements)
         logger.info("Quick score: Processing job text with Rinser")
         processed_job = await asyncio.wait_for(
-            rinser.process(job_text),
+            rinser.process_job(job_text, index=False),
             timeout=QUICK_SCORE_TIMEOUT_SECONDS / 2,
         )
 
