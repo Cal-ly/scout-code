@@ -1,0 +1,5 @@
+# This directory stores validation test results
+# Results are auto-generated JSON files with timestamps
+# 
+# Baseline results should be committed for regression tracking
+# Daily/development results can be gitignored

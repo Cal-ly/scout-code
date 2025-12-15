@@ -1,8 +1,8 @@
 # Scout Project - Session Handover Document
 
-**Last Updated:** December 10, 2025
-**Current Phase:** Phase 3 - Integration (COMPLETE)
-**Status:** PoC Implementation Complete - All Components Ready
+**Last Updated:** December 15, 2025
+**Current Phase:** Review & Optimization
+**Status:** PoC Implementation Complete - Entering Review Phase
 
 ---
 
@@ -12,19 +12,18 @@
 I'm resuming work on Scout Project after conversation compaction.
 
 Current Status:
-- Phase 1 (Foundation Services): COMPLETE - 178 tests
+- Phase 1 (Foundation Services): COMPLETE - 194 tests
 - Phase 2 (Core Modules): COMPLETE - 268 tests
-- Phase 3 (Integration): COMPLETE - 161 tests
-- Total: 607/607 tests passing
+- Phase 3 (Integration): COMPLETE - 145 tests
+- Profile Service: COMPLETE - 45 tests
+- Total: ~652 tests passing
 
-Just Completed:
-- Web Interface (src/web/templates/) - 26 tests
-- Single-page app with job text input, progress display, results
-- Toast notifications with polling
-- Download links for CV and cover letter PDFs
+Current Focus:
+- Review & Optimization phase
+- Validation testing with synthetic job postings
+- Documentation consolidation
 
-PoC Implementation Complete!
-All services, modules, and web interface implemented.
+Architecture: Local Ollama LLM (Qwen 2.5 3B / Gemma 2 2B)
 
 Please read HANDOVER.md and LL-LI.md for full context.
 ```
@@ -33,16 +32,17 @@ Please read HANDOVER.md and LL-LI.md for full context.
 
 ## Project Summary
 
-Scout is an intelligent job application system that transforms job postings and user profiles into tailored CV and cover letter PDFs. Built as a PoC for a bachelor's thesis.
+Scout is an intelligent job application system that transforms job postings and user profiles into tailored CV and cover letter PDFs. Built as a PoC for a bachelor's thesis exploring generative AI with edge computing on Raspberry Pi 5.
 
 **Architecture Flow:**
 ```
 Job Posting → M1 Collector → M2 Rinser → M3 Analyzer → M4 Creator → M5 Formatter → PDF Output
                   ↓              ↓            ↓             ↓
             Vector Store    LLM Service   LLM Service   LLM Service
+                                (Ollama)      (Ollama)      (Ollama)
 ```
 
-**Pipeline Orchestrator (Just Completed):**
+**Pipeline Orchestrator:**
 ```
 PipelineInput(raw_job_text) → PipelineOrchestrator.execute() → PipelineResult
                                       │
@@ -64,14 +64,14 @@ PipelineInput(raw_job_text) → PipelineOrchestrator.execute() → PipelineResul
 
 ## Completed Work Summary
 
-### Phase 1: Foundation Services (178 tests)
+### Phase 1: Foundation Services (~194 tests)
 
 | Service | Location | Tests | Key Exports |
 |---------|----------|-------|-------------|
-| S2 Cost Tracker | `src/services/cost_tracker/` | 27 | `CostTracker`, `get_cost_tracker` |
+| S2 Metrics Service | `src/services/metrics_service/` | ~41 | `MetricsService`, `get_metrics_service` |
 | S3 Cache Service | `src/services/cache_service/` | 46 | `CacheService`, `get_cache_service` |
 | S4 Vector Store | `src/services/vector_store/` | 55 | `VectorStoreService`, `get_vector_store_service` |
-| S1 LLM Service | `src/services/llm_service/` | 50 | `LLMService`, `get_llm_service` |
+| S1 LLM Service | `src/services/llm_service/` | 52 | `LLMService`, `get_llm_service` |
 
 ### Phase 2: Core Modules (268 tests)
 
@@ -83,129 +83,94 @@ PipelineInput(raw_job_text) → PipelineOrchestrator.execute() → PipelineResul
 | M4 Creator | `src/modules/creator/` | 48 | `Creator`, `get_creator`, `CreatedContent` |
 | M5 Formatter | `src/modules/formatter/` | 38 | `Formatter`, `get_formatter`, `FormattedApplication` |
 
-### Phase 3: Integration (161 tests - COMPLETE)
+### Phase 3: Integration (~145 tests)
 
 | Component | Location | Tests | Status |
 |-----------|----------|-------|--------|
 | S6 Pipeline Orchestrator | `src/services/pipeline/` | 52 | COMPLETE |
-| API Routes | `src/web/` | 43 | COMPLETE |
+| API Routes | `src/web/routes/` | 43 | COMPLETE |
 | S8 Notification Service | `src/services/notification/` | 40 | COMPLETE |
-| Web Interface | `src/web/templates/` | 26 | COMPLETE |
+| Web Interface | `src/web/templates/` | ~10 | COMPLETE |
 
-**Total: 607/607 tests passing**
+### Additional Services
+
+| Service | Location | Tests | Key Exports |
+|---------|----------|-------|-------------|
+| Profile Service | `src/services/profile/` | 45 | `ProfileService`, `get_profile_service` |
+
+**Estimated Total: ~652 tests**
 
 ---
 
-## COMPLETED: API Routes
+## Profile Service (NEW)
 
-### Implemented Structure
+### Overview
+The Profile Service manages user profiles with database storage, file backup, and vector indexing. It's an alternative to YAML-based profile management via M1 Collector.
 
+### Structure
 ```
-src/web/
+src/services/profile/
   __init__.py          # Package exports
-  main.py              # FastAPI app entry point with lifespan
-  dependencies.py      # JobStore, get_orchestrator, get_store
-  schemas.py           # Request/Response Pydantic models
-  routes/
-    __init__.py        # Router exports
-    api.py             # API endpoints
-tests/test_web.py      # 43 tests
+  models.py            # ProfileStatus, ProfileData, ProfileChunk, etc.
+  exceptions.py        # ProfileError, ProfileNotFoundError, etc.
+  service.py           # ProfileService implementation
+tests/test_profile.py  # 45 tests
 ```
 
-### API Endpoints
+### Key Features
+- SQLite database storage (`data/profiles.db`)
+- File backup to `data/profiles/`
+- Auto-indexing to VectorStore on create/update
+- Text chunking (paragraph-based with sentence fallback)
+- Validation (100-10,000 characters)
+
+### Usage
+```python
+from src.services.profile import get_profile_service, ProfileService
+
+# Get singleton
+profile_service = await get_profile_service()
+
+# Create/update profile (auto-indexes)
+result = await profile_service.create_profile("My professional experience...")
+# Returns: ProfileCreateResponse(profile_id=1, status="created", is_indexed=True, chunk_count=5)
+
+# Get status
+status = await profile_service.get_status()
+# Returns: ProfileStatus(exists=True, is_indexed=True, profile_id=1, chunk_count=5, ...)
+
+# Get full profile
+profile = await profile_service.get_profile()
+# Returns: ProfileData with full text and metadata
+```
+
+---
+
+## API Routes Summary
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/apply` | POST | Start new job application (background task) |
 | `/api/status/{job_id}` | GET | Get pipeline status and results |
 | `/api/download/{job_id}/{file_type}` | GET | Download PDF (cv or cover_letter) |
-| `/api/jobs` | GET | List all submitted job applications |
+| `/api/jobs` | GET | List all submitted job applications (paginated) |
+| `/api/notifications` | GET | Get notifications |
+| `/api/notifications/{id}/read` | POST | Mark notification as read |
+| `/api/notifications/read-all` | POST | Mark all as read |
+| `/api/notifications` | DELETE | Clear all notifications |
 | `/health` | GET | Health check endpoint |
 | `/info` | GET | Application info JSON endpoint |
 | `/` | GET | Web interface (HTML page) |
 
-### Key Integration Points
-
-```python
-# API Routes usage:
-from src.web import app  # FastAPI application
-from src.web.dependencies import get_job_store, get_orchestrator
-
-# Run server:
-# uvicorn src.web.main:app --reload --host 0.0.0.0 --port 8000
-
-# Test client:
-from fastapi.testclient import TestClient
-client = TestClient(app)
-response = client.post("/api/apply", json={"job_text": "...", "source": "linkedin"})
-```
-
----
-
-## COMPLETED: S8 Notification Service
-
-### Implemented Structure
-
-```
-src/services/notification/
-  __init__.py          # Package exports
-  models.py            # Notification, NotificationList, NotificationType
-  exceptions.py        # NotificationError, NotificationNotFoundError
-  notification.py      # NotificationService implementation
-tests/test_notification.py  # 40 tests
-```
-
-### Key Features
-- In-app toast notifications (info, success, warning, error)
-- Pipeline-specific notifications (started, completed, failed)
-- Notification history with max limit (default 50)
-- Mark read, mark all read, clear all
-- Singleton pattern for service access
-
-### Notification API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/notifications` | GET | Get notifications (with unread_only, limit) |
-| `/api/notifications/{id}/read` | POST | Mark notification as read |
-| `/api/notifications/read-all` | POST | Mark all as read |
-| `/api/notifications` | DELETE | Clear all notifications |
-
----
-
-## COMPLETED: Web Interface
-
-### Implemented Structure
-
-```
-src/web/
-  templates/
-    index.html           # Main single-page application
-  routes/
-    pages.py             # Page serving routes
-tests/test_pages.py      # 26 tests
-```
-
-### Features
-- Single-page HTML application (no framework, vanilla JS)
-- Job text input with character count validation (min 100 chars)
-- Progress display with step indicators
-- Results display with compatibility score
-- Download links for CV and cover letter PDFs
-- Toast notifications with polling (3-second interval)
-- Error handling and retry functionality
-
-### Key URLs
-| URL | Description |
-|-----|-------------|
-| `/` | Main web interface |
-| `/docs` | OpenAPI documentation |
-| `/info` | Application info (JSON) |
-| `/health` | Health check (JSON) |
-
 ---
 
 ## Key Technical Decisions
+
+### LLM Architecture (Updated December 2025)
+- **Primary Model:** Qwen 2.5 3B via Ollama (local inference)
+- **Fallback Model:** Gemma 2 2B via Ollama
+- **Provider Pattern:** Abstract `LLMProvider` base class
+- **Target Hardware:** Raspberry Pi 5 (edge computing)
 
 ### PDF Generation
 - Uses **xhtml2pdf** (not WeasyPrint) - pure Python, no GTK dependencies
@@ -215,9 +180,10 @@ tests/test_pages.py      # 26 tests
 - `user_profiles` - Skills, experiences, education
 - `job_requirements` - Job requirements from M2 Rinser
 
-### LLM
-- Anthropic Claude 3.5 Haiku only (no fallback)
-- Integrated with cache and cost tracking
+### Data Storage
+- **Profiles:** SQLite (`data/profiles.db`) + file backup
+- **Cache:** Two-tier LRU (memory + file)
+- **Metrics:** JSON files with 30-day retention
 
 ---
 
@@ -231,11 +197,24 @@ cd c:\Users\Cal-l\Documents\GitHub\Scout\scout-code
 # Run all tests
 .\venv\Scripts\python.exe -m pytest tests/ -v
 
-# Verification for new component
-.\venv\Scripts\python.exe -m py_compile src/web/main.py
-.\venv\Scripts\python.exe -m mypy src/web/ --ignore-missing-imports
-.\venv\Scripts\python.exe -m ruff check src/web/
-.\venv\Scripts\python.exe -m pytest tests/test_web.py -v
+# Run specific test file
+.\venv\Scripts\python.exe -m pytest tests/test_profile.py -v
+
+# Verification for any component
+.\venv\Scripts\python.exe -m py_compile src/services/profile/service.py
+.\venv\Scripts\python.exe -m mypy src/services/profile/ --ignore-missing-imports
+.\venv\Scripts\python.exe -m ruff check src/services/profile/
+
+# Start the server
+.\venv\Scripts\python.exe -m uvicorn src.web.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Ollama Commands
+```bash
+ollama serve                # Start Ollama server
+ollama list                 # List installed models
+ollama pull qwen2.5:3b      # Pull primary model
+ollama pull gemma2:2b       # Pull fallback model
 ```
 
 ---
@@ -267,11 +246,15 @@ def reset_service() -> None:
     _instance = None
 ```
 
-### Import from collections.abc (LL-041)
+### Provider Abstraction (LL-055)
 ```python
-# For Python 3.9+
-from collections.abc import Callable, Awaitable
-# NOT from typing import Callable, Awaitable
+class LLMProvider(ABC):
+    @abstractmethod
+    async def initialize(self) -> None: pass
+    @abstractmethod
+    async def generate(self, request: LLMRequest, request_id: str) -> LLMResponse: pass
+    @abstractmethod
+    async def health_check(self) -> dict[str, Any]: pass
 ```
 
 ---
@@ -281,62 +264,11 @@ from collections.abc import Callable, Awaitable
 | Document | Purpose |
 |----------|---------|
 | `CLAUDE.md` | Project context and patterns |
-| `LL-LI.md` | Lessons learned (LL-001 to LL-044) |
+| `LL-LI.md` | Lessons learned (LL-001 to LL-058) |
+| `REVIEW.md` | Code review findings (Dec 13, 2025) |
+| `REVIEW-GUIDE.md` | Review methodology |
 | `docs/guides/Scout_PoC_Scope_Document.md` | PoC constraints |
-| `docs/services/S6*` | Pipeline Orchestrator spec (DONE) |
-| `docs/services/S8*` | Notification Service spec |
-| `docs/architecture/*` | Architecture and API specs |
-
----
-
-## Pipeline Module Interface Reference
-
-### PipelineOrchestrator (src/services/pipeline/)
-
-```python
-from src.services.pipeline import (
-    PipelineOrchestrator,
-    get_pipeline_orchestrator,
-    reset_pipeline_orchestrator,
-    PipelineInput,
-    PipelineResult,
-    PipelineStatus,
-    PipelineStep,
-    PipelineProgress,
-    ProgressCallback,
-)
-
-# Get singleton instance
-orchestrator = await get_pipeline_orchestrator()
-
-# Execute pipeline
-input_data = PipelineInput(
-    raw_job_text="...",      # min 100 chars
-    source="linkedin",        # optional
-    skip_formatting=False,    # optional - skip PDF generation
-)
-
-# With progress callback (for polling updates)
-async def on_progress(progress: PipelineProgress):
-    print(f"{progress.progress_percent}%: {progress.message}")
-
-result = await orchestrator.execute(input_data, progress_callback=on_progress)
-
-# Result fields
-result.pipeline_id          # str - unique ID
-result.status               # PipelineStatus (pending/running/completed/failed)
-result.is_success           # bool
-result.job_id               # str - job identifier
-result.job_title            # str
-result.company_name         # str
-result.compatibility_score  # float (0-100)
-result.cv_path              # str - path to CV PDF
-result.cover_letter_path    # str - path to cover letter PDF
-result.error                # str | None
-result.failed_step          # PipelineStep | None
-result.steps                # list[StepResult] - per-step results
-result.total_duration_ms    # int
-```
+| `docs/guides/Local_LLM_Transition_Guide.md` | Ollama architecture details |
 
 ---
 
@@ -346,6 +278,10 @@ result.total_duration_ms    # int
 M1 Collector
   Input: YAML profile path
   Output: UserProfile (indexed in vector store)
+
+Profile Service (Alternative)
+  Input: Raw profile text (100-10,000 chars)
+  Output: ProfileData (indexed in vector store)
 
 M2 Rinser
   Input: Raw job text
@@ -370,29 +306,28 @@ S6 Pipeline Orchestrator
 
 ---
 
-## Implementation Complete
+## Current Phase: Review & Optimization
 
-All Phase 3 components have been implemented:
+### Phase A: Consolidation (In Progress)
+- [x] A-01: Sync pyproject.toml with requirements.txt
+- [x] A-02: Document Profile Service in HANDOVER.md
+- [ ] A-03: Update test counts in LL-LI.md
+- [ ] A-04: Verify all imports resolve correctly
 
-1. ~~API Routes~~ ✓ COMPLETE (43 tests)
-2. ~~S8 Notification Service~~ ✓ COMPLETE (40 tests)
-3. ~~Web Interface~~ ✓ COMPLETE (26 tests)
+### Phase B: Validation Testing (Upcoming)
+- [ ] B-01: End-to-end test with synthetic job postings
+- [ ] B-02: Performance baseline on dev machine
+- [ ] B-03: Error path validation
+- [ ] B-04: Cache effectiveness measurement
 
-**PoC Implementation Complete!**
-
-### Running the Application
-
-```powershell
-cd c:\Users\Cal-l\Documents\GitHub\Scout\scout-code
-.\venv\Scripts\Activate.ps1
-
-# Start the server
-.\venv\Scripts\python.exe -m uvicorn src.web.main:app --reload --host 0.0.0.0 --port 8000
-
-# Open browser to http://localhost:8000
-```
+### Phase C: Enhancement Opportunities (Planned)
+- Pipeline resilience (checkpointing)
+- Observability improvements
+- Multi-profile support expansion
+- Output quality improvements
 
 ---
 
-*Last Updated: December 10, 2025*
-*Phase 3 Integration Complete - All PoC components implemented (607 total tests)*
+*Last Updated: December 15, 2025*
+*Architecture: Local Ollama LLM (Qwen 2.5 3B / Gemma 2 2B)*
+*Estimated Total Tests: ~652*

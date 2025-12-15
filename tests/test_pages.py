@@ -80,7 +80,8 @@ class TestIndexPage:
 
         assert "<script>" in response.text
         assert "startProcessing" in response.text
-        assert "fetchNotifications" in response.text
+        # Common JS functions moved to external file
+        assert '/static/js/common.js' in response.text
 
 
 # =============================================================================
@@ -284,16 +285,63 @@ class TestCSS:
         assert "<style>" in response.text
 
     def test_has_button_styles(self, client: TestClient) -> None:
-        """Should have button styling."""
+        """Should link to common CSS with button styling."""
         response = client.get("/")
+
+        # Common styles (including .btn-primary) moved to external file
+        assert '/static/css/common.css' in response.text
+
+    def test_has_toast_styles(self, client: TestClient) -> None:
+        """Should link to common CSS with toast notification styling."""
+        response = client.get("/")
+
+        # Toast styles moved to external CSS file
+        assert '/static/css/common.css' in response.text
+        # Also verify toast container element exists
+        assert 'toast-container' in response.text
+
+
+# =============================================================================
+# STATIC FILES TESTS
+# =============================================================================
+
+
+class TestStaticFiles:
+    """Tests for static CSS and JS files."""
+
+    def test_common_css_accessible(self, client: TestClient) -> None:
+        """Should serve common CSS file."""
+        response = client.get("/static/css/common.css")
+
+        assert response.status_code == 200
+        assert "text/css" in response.headers["content-type"]
+
+    def test_common_css_has_button_styles(self, client: TestClient) -> None:
+        """Common CSS should have button styling."""
+        response = client.get("/static/css/common.css")
 
         assert ".btn" in response.text
         assert ".btn-primary" in response.text
 
-    def test_has_toast_styles(self, client: TestClient) -> None:
-        """Should have toast notification styling."""
-        response = client.get("/")
+    def test_common_css_has_toast_styles(self, client: TestClient) -> None:
+        """Common CSS should have toast notification styling."""
+        response = client.get("/static/css/common.css")
 
         assert ".toast" in response.text
         assert ".toast-success" in response.text
         assert ".toast-error" in response.text
+
+    def test_common_js_accessible(self, client: TestClient) -> None:
+        """Should serve common JS file."""
+        response = client.get("/static/js/common.js")
+
+        assert response.status_code == 200
+        assert "javascript" in response.headers["content-type"]
+
+    def test_common_js_has_notification_functions(self, client: TestClient) -> None:
+        """Common JS should have notification functions."""
+        response = client.get("/static/js/common.js")
+
+        assert "fetchNotifications" in response.text
+        assert "showToast" in response.text
+        assert "startNotificationPolling" in response.text

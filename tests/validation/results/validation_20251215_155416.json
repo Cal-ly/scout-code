@@ -1,0 +1,198 @@
+{
+  "summary": {
+    "timestamp": "2025-12-15T15:54:16.163787",
+    "total_tests": 6,
+    "passed": 6,
+    "failed": 0,
+    "pass_rate": "100.0%",
+    "total_duration_ms": 0,
+    "avg_duration_ms": 0,
+    "avg_compatibility_score": null
+  },
+  "by_category": {
+    "baseline": {
+      "total": 1,
+      "passed": 1
+    },
+    "noise_filtering": {
+      "total": 1,
+      "passed": 1
+    },
+    "edge_case": {
+      "total": 2,
+      "passed": 2
+    },
+    "language": {
+      "total": 1,
+      "passed": 1
+    },
+    "stress_test": {
+      "total": 1,
+      "passed": 1
+    }
+  },
+  "results": [
+    {
+      "test_case_id": "TC001",
+      "test_case_name": "Clean Structured Posting",
+      "category": "baseline",
+      "started_at": "2025-12-15T15:54:16.162004",
+      "completed_at": "2025-12-15T15:54:16.162290",
+      "duration_ms": 0,
+      "success": true,
+      "error": null,
+      "pipeline_status": null,
+      "step_durations": {},
+      "extraction": {
+        "job_title": null,
+        "company": null,
+        "requirements_count": 0,
+        "requirements": []
+      },
+      "analysis": {
+        "compatibility_score": null,
+        "top_matches": [],
+        "key_gaps": []
+      },
+      "outputs": {
+        "cv_path": null,
+        "cover_letter_path": null
+      }
+    },
+    {
+      "test_case_id": "TC002",
+      "test_case_name": "Marketing Heavy Posting",
+      "category": "noise_filtering",
+      "started_at": "2025-12-15T15:54:16.162405",
+      "completed_at": "2025-12-15T15:54:16.162485",
+      "duration_ms": 0,
+      "success": true,
+      "error": null,
+      "pipeline_status": null,
+      "step_durations": {},
+      "extraction": {
+        "job_title": null,
+        "company": null,
+        "requirements_count": 0,
+        "requirements": []
+      },
+      "analysis": {
+        "compatibility_score": null,
+        "top_matches": [],
+        "key_gaps": []
+      },
+      "outputs": {
+        "cv_path": null,
+        "cover_letter_path": null
+      }
+    },
+    {
+      "test_case_id": "TC003",
+      "test_case_name": "Minimal Posting",
+      "category": "edge_case",
+      "started_at": "2025-12-15T15:54:16.162525",
+      "completed_at": "2025-12-15T15:54:16.162601",
+      "duration_ms": 0,
+      "success": true,
+      "error": null,
+      "pipeline_status": null,
+      "step_durations": {},
+      "extraction": {
+        "job_title": null,
+        "company": null,
+        "requirements_count": 0,
+        "requirements": []
+      },
+      "analysis": {
+        "compatibility_score": null,
+        "top_matches": [],
+        "key_gaps": []
+      },
+      "outputs": {
+        "cv_path": null,
+        "cover_letter_path": null
+      }
+    },
+    {
+      "test_case_id": "TC004",
+      "test_case_name": "Mixed Language Posting",
+      "category": "language",
+      "started_at": "2025-12-15T15:54:16.162639",
+      "completed_at": "2025-12-15T15:54:16.162713",
+      "duration_ms": 0,
+      "success": true,
+      "error": null,
+      "pipeline_status": null,
+      "step_durations": {},
+      "extraction": {
+        "job_title": null,
+        "company": null,
+        "requirements_count": 0,
+        "requirements": []
+      },
+      "analysis": {
+        "compatibility_score": null,
+        "top_matches": [],
+        "key_gaps": []
+      },
+      "outputs": {
+        "cv_path": null,
+        "cover_letter_path": null
+      }
+    },
+    {
+      "test_case_id": "TC005",
+      "test_case_name": "Enterprise Detailed Posting",
+      "category": "stress_test",
+      "started_at": "2025-12-15T15:54:16.162750",
+      "completed_at": "2025-12-15T15:54:16.162820",
+      "duration_ms": 0,
+      "success": true,
+      "error": null,
+      "pipeline_status": null,
+      "step_durations": {},
+      "extraction": {
+        "job_title": null,
+        "company": null,
+        "requirements_count": 0,
+        "requirements": []
+      },
+      "analysis": {
+        "compatibility_score": null,
+        "top_matches": [],
+        "key_gaps": []
+      },
+      "outputs": {
+        "cv_path": null,
+        "cover_letter_path": null
+      }
+    },
+    {
+      "test_case_id": "TC006",
+      "test_case_name": "Startup Unconventional",
+      "category": "edge_case",
+      "started_at": "2025-12-15T15:54:16.162858",
+      "completed_at": "2025-12-15T15:54:16.162927",
+      "duration_ms": 0,
+      "success": true,
+      "error": null,
+      "pipeline_status": null,
+      "step_durations": {},
+      "extraction": {
+        "job_title": null,
+        "company": null,
+        "requirements_count": 0,
+        "requirements": []
+      },
+      "analysis": {
+        "compatibility_score": null,
+        "top_matches": [],
+        "key_gaps": []
+      },
+      "outputs": {
+        "cv_path": null,
+        "cover_letter_path": null
+      }
+    }
+  ]
+}

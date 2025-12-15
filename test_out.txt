@@ -1,0 +1,42 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.7, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\Cal-l\Documents\GitHub\Scout\scout-code\venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Cal-l\Documents\GitHub\Scout\scout-code
+configfile: pyproject.toml
+plugins: anyio-4.12.0, asyncio-1.3.0, cov-7.0.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 31 items
+
+tests/test_pages.py::TestIndexPage::test_index_returns_html PASSED       [  3%]
+tests/test_pages.py::TestIndexPage::test_index_contains_title PASSED     [  6%]
+tests/test_pages.py::TestIndexPage::test_index_contains_form PASSED      [  9%]
+tests/test_pages.py::TestIndexPage::test_index_contains_progress_section PASSED [ 12%]
+tests/test_pages.py::TestIndexPage::test_index_contains_result_section PASSED [ 16%]
+tests/test_pages.py::TestIndexPage::test_index_contains_toast_container PASSED [ 19%]
+tests/test_pages.py::TestIndexPage::test_index_contains_javascript PASSED [ 22%]
+tests/test_pages.py::TestInfoEndpoint::test_info_returns_json PASSED     [ 25%]
+tests/test_pages.py::TestInfoEndpoint::test_info_contains_app_data PASSED [ 29%]
+tests/test_pages.py::TestHealthEndpoint::test_health_returns_status PASSED [ 32%]
+tests/test_pages.py::TestHealthEndpoint::test_health_contains_services PASSED [ 35%]
+tests/test_pages.py::TestPageSections::test_input_section_visible_by_default PASSED [ 38%]
+tests/test_pages.py::TestPageSections::test_progress_section_hidden_by_default PASSED [ 41%]
+tests/test_pages.py::TestPageSections::test_result_section_hidden_by_default PASSED [ 45%]
+tests/test_pages.py::TestPageSections::test_error_section_hidden_by_default PASSED [ 48%]
+tests/test_pages.py::TestCharacterCount::test_char_count_element_exists PASSED [ 51%]
+tests/test_pages.py::TestCharacterCount::test_minimum_chars_warning_in_placeholder PASSED [ 54%]
+tests/test_pages.py::TestStepDisplay::test_all_steps_present PASSED      [ 58%]
+tests/test_pages.py::TestStepDisplay::test_step_icons_present PASSED     [ 61%]
+tests/test_pages.py::TestDownloadLinks::test_cv_download_link PASSED     [ 64%]
+tests/test_pages.py::TestDownloadLinks::test_cover_letter_download_link PASSED [ 67%]
+tests/test_pages.py::TestResetFunctionality::test_reset_button_exists PASSED [ 70%]
+tests/test_pages.py::TestResetFunctionality::test_retry_button_exists PASSED [ 74%]
+tests/test_pages.py::TestCSS::test_page_has_styles PASSED                [ 77%]
+tests/test_pages.py::TestCSS::test_has_button_styles PASSED              [ 80%]
+tests/test_pages.py::TestCSS::test_has_toast_styles PASSED               [ 83%]
+tests/test_pages.py::TestStaticFiles::test_common_css_accessible PASSED  [ 87%]
+tests/test_pages.py::TestStaticFiles::test_common_css_has_button_styles PASSED [ 90%]
+tests/test_pages.py::TestStaticFiles::test_common_css_has_toast_styles PASSED [ 93%]
+tests/test_pages.py::TestStaticFiles::test_common_js_accessible PASSED   [ 96%]
+tests/test_pages.py::TestStaticFiles::test_common_js_has_notification_functions PASSED [100%]
+
+============================= 31 passed in 9.29s ==============================

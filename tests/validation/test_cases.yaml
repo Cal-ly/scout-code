@@ -1,0 +1,424 @@
+# Scout Validation Test Data
+# ==========================
+# Structured test cases for pipeline validation and metrics collection
+#
+# Usage:
+#   python -m tests.validation.runner --all
+#   python -m tests.validation.runner --case TC001
+#
+# Each test case includes:
+#   - Input: Job posting text
+#   - Metadata: Expected extraction targets
+#   - Complexity: Difficulty rating for categorization
+
+version: "1.0"
+created: "2024-12-15"
+description: "Synthetic job postings for Scout PoC validation"
+
+# =============================================================================
+# TEST CASES
+# =============================================================================
+
+test_cases:
+  # ---------------------------------------------------------------------------
+  # TC001: Clean & Structured (Baseline)
+  # ---------------------------------------------------------------------------
+  - id: "TC001"
+    name: "Clean Structured Posting"
+    category: "baseline"
+    complexity: "low"
+    language: "en"
+    description: "Well-formatted job posting with clear sections - expected best-case performance"
+    
+    input:
+      job_text: |
+        Senior Python Developer - FinTech Platform
+
+        Company: Nordic Financial Technologies
+        Location: Copenhagen, Denmark (Hybrid)
+        Employment: Full-time
+
+        About the Role:
+        We are seeking a Senior Python Developer to join our core platform team. You will be responsible for designing and building scalable microservices that power our trading infrastructure.
+
+        Requirements:
+        - 5+ years of professional Python development experience
+        - Strong experience with FastAPI or Django
+        - Proficiency with PostgreSQL and Redis
+        - Experience with Docker and Kubernetes
+        - Understanding of financial markets is a plus
+        - Fluent in English (Danish is a plus)
+
+        Responsibilities:
+        - Design and implement high-performance APIs
+        - Collaborate with data scientists on ML integration
+        - Mentor junior developers
+        - Participate in code reviews and architecture discussions
+        - On-call rotation (1 week per month)
+
+        Tech Stack:
+        - Python 3.11+, FastAPI, SQLAlchemy
+        - PostgreSQL, Redis, RabbitMQ
+        - Docker, Kubernetes, AWS
+        - GitHub Actions, Terraform
+
+        Benefits:
+        - Competitive salary (600-750k DKK)
+        - Stock options
+        - 6 weeks vacation
+        - Pension contribution
+        - Home office equipment allowance
+      source: "linkedin"
+    
+    expected:
+      job_title: "Senior Python Developer"
+      company_name: "Nordic Financial Technologies"
+      location: "Copenhagen, Denmark"
+      employment_type: "Full-time"
+      key_requirements:
+        - "Python"
+        - "FastAPI"
+        - "PostgreSQL"
+        - "Docker"
+        - "Kubernetes"
+      years_experience: 5
+      extraction_quality: "high"
+
+  # ---------------------------------------------------------------------------
+  # TC002: Noisy Marketing Content
+  # ---------------------------------------------------------------------------
+  - id: "TC002"
+    name: "Marketing Heavy Posting"
+    category: "noise_filtering"
+    complexity: "medium"
+    language: "en"
+    description: "Job posting with excessive marketing fluff - tests Rinser noise filtering"
+    
+    input:
+      job_text: |
+        🚀 JOIN THE REVOLUTION! 🚀
+
+        Are you ready to change the world? Do you wake up every morning thinking about code? Is your IDE your best friend? Then WE WANT YOU!
+
+        At InnovateTech Solutions, we're not just building software - we're building DREAMS. We're a family of 200 passionate individuals who believe that technology can solve every problem humanity faces. Our ping pong table is legendary, and our coffee machine makes the best espresso in all of Scandinavia (seriously, we've won awards).
+
+        THE OPPORTUNITY OF A LIFETIME:
+        We're looking for a Software Engineer who bleeds Python and dreams in JavaScript. Someone who can take our already AMAZING platform and make it EVEN MORE AMAZING!!!
+
+        What you'll do (when you're not enjoying our unlimited snacks):
+        • Write code that makes angels sing
+        • Collaborate with our world-class team of ninjas and rockstars
+        • Push the boundaries of what's possible
+        • Attend our monthly team events (last month we went skydiving!)
+
+        Must haves (non-negotiable, sorry!):
+        • Python experience (any amount works, we believe in potential!)
+        • JavaScript knowledge
+        • Git (obviously)
+        • A WINNING attitude 💪
+
+        Nice to haves:
+        • React experience
+        • Cloud stuff (AWS, GCP, whatever)
+        • You've built something cool
+
+        If InnovateTech sounds like a place where you could thrive and contribute to our mission of making the world a better place through innovative software solutions, we would LOVE to hear from you! Don't be shy - even if you only meet 50% of the requirements, APPLY ANYWAY! We believe in growth mindset! 🌟
+
+        PS: Free lunch every day. Yes, really. Every. Single. Day.
+
+        Applications: jobs@innovatetech.example.com
+      source: "company_website"
+    
+    expected:
+      job_title: "Software Engineer"
+      company_name: "InnovateTech Solutions"
+      key_requirements:
+        - "Python"
+        - "JavaScript"
+        - "Git"
+        - "React"
+        - "AWS"
+      noise_keywords:
+        - "revolution"
+        - "dreams"
+        - "ninjas"
+        - "rockstars"
+        - "ping pong"
+      extraction_quality: "medium"
+
+  # ---------------------------------------------------------------------------
+  # TC003: Minimal Information
+  # ---------------------------------------------------------------------------
+  - id: "TC003"
+    name: "Minimal Posting"
+    category: "edge_case"
+    complexity: "high"
+    language: "en"
+    description: "Sparse job posting with minimal details - tests handling of incomplete data"
+    
+    input:
+      job_text: |
+        Backend Developer
+
+        Python, Django, PostgreSQL
+        3+ years experience
+        Copenhagen office
+
+        Send CV to hr@company.example
+      source: "jobindex"
+    
+    expected:
+      job_title: "Backend Developer"
+      company_name: null
+      location: "Copenhagen"
+      key_requirements:
+        - "Python"
+        - "Django"
+        - "PostgreSQL"
+      years_experience: 3
+      extraction_quality: "low"
+      notes: "Missing company name, limited requirements detail"
+
+  # ---------------------------------------------------------------------------
+  # TC004: Mixed Language (Danish/English)
+  # ---------------------------------------------------------------------------
+  - id: "TC004"
+    name: "Mixed Language Posting"
+    category: "language"
+    complexity: "medium"
+    language: "da/en"
+    description: "Bilingual job posting - tests language handling"
+    
+    input:
+      job_text: |
+        Softwareudvikler søges - Full Stack Position
+
+        Virksomhed: DataSoft ApS
+        Sted: Aarhus, Danmark
+
+        Om stillingen:
+        Vi søger en erfaren Full Stack Developer til vores voksende team. You will work on our cloud-based analytics platform serving enterprise customers across the Nordics.
+
+        Krav:
+        - 3-5 års erfaring med softwareudvikling
+        - Strong proficiency in Python and TypeScript
+        - Experience with React or Vue.js
+        - Database experience (PostgreSQL, MongoDB)
+        - God kommunikationsevne på dansk og engelsk
+
+        Vi tilbyder:
+        - Konkurrencedygtig løn
+        - Flexible working hours
+        - Pension og sundhedsforsikring
+        - Årlig konference/kursusbudget
+
+        Er du begejstret for at blive en del af DataSoft og bidrage til vores mission om digital transformation? Så vil vi meget gerne høre fra dig!
+
+        Ansøgning sendes til: karriere@datasoft.dk
+      source: "linkedin"
+    
+    expected:
+      job_title: "Full Stack Developer"
+      company_name: "DataSoft ApS"
+      location: "Aarhus, Danmark"
+      key_requirements:
+        - "Python"
+        - "TypeScript"
+        - "React"
+        - "Vue.js"
+        - "PostgreSQL"
+        - "MongoDB"
+      years_experience: 3
+      extraction_quality: "medium"
+
+  # ---------------------------------------------------------------------------
+  # TC005: Long Enterprise Posting
+  # ---------------------------------------------------------------------------
+  - id: "TC005"
+    name: "Enterprise Detailed Posting"
+    category: "stress_test"
+    complexity: "high"
+    language: "en"
+    description: "Very detailed enterprise job posting - tests token limits and comprehensive extraction"
+    
+    input:
+      job_text: |
+        Principal Software Engineer - Enterprise Platform Division
+
+        Department: Technology & Innovation
+        Reports to: VP of Engineering
+        Location: Copenhagen HQ / Remote (EU timezone)
+        Job ID: ENG-2024-0847
+
+        About Our Company:
+        GlobalCorp Industries is a Fortune 500 company with operations in 47 countries. Our Enterprise Platform Division builds the internal tools and infrastructure that power our global operations. We process over 50 million transactions daily and maintain 99.99% uptime.
+
+        Position Overview:
+        We are seeking a Principal Software Engineer to lead technical initiatives within our Enterprise Platform team. This is a senior individual contributor role with significant influence on architectural decisions and technical strategy.
+
+        Key Responsibilities:
+
+        Technical Leadership:
+        - Drive architectural decisions for platform services processing 50M+ daily transactions
+        - Define and enforce engineering standards across 15+ development teams
+        - Lead technical design reviews and provide mentorship to senior engineers
+        - Evaluate and introduce new technologies aligned with business objectives
+
+        Hands-on Development:
+        - Design and implement critical platform components
+        - Write production-quality Python and Go code
+        - Perform code reviews and ensure code quality standards
+        - Contribute to open-source projects where applicable
+
+        Required Qualifications:
+
+        Technical Skills:
+        - 10+ years of software engineering experience
+        - 5+ years of experience in distributed systems design
+        - Expert-level Python programming skills
+        - Strong experience with Go or Rust
+        - Deep understanding of event-driven architectures (Kafka, RabbitMQ)
+        - Extensive experience with cloud platforms (AWS preferred)
+        - Proficiency with Kubernetes and container orchestration
+        - Experience with observability tools (Prometheus, Grafana, Datadog)
+
+        Architecture & Design:
+        - Proven track record of designing systems at scale
+        - Experience with microservices and service mesh architectures
+        - Understanding of data modeling and database design
+        - Knowledge of API design principles (REST, gRPC, GraphQL)
+
+        Preferred Qualifications:
+        - Experience in financial services or regulated industries
+        - Contributions to open-source projects
+        - Master's degree in Computer Science
+
+        Compensation & Benefits:
+        - Base salary: 900,000 - 1,200,000 DKK
+        - Annual bonus: 15-25% of base
+        - Stock options / RSUs
+        - 6 weeks paid vacation
+        - Learning & development budget: 30,000 DKK/year
+      source: "linkedin"
+    
+    expected:
+      job_title: "Principal Software Engineer"
+      company_name: "GlobalCorp Industries"
+      location: "Copenhagen"
+      employment_type: "Full-time"
+      key_requirements:
+        - "Python"
+        - "Go"
+        - "Kafka"
+        - "Kubernetes"
+        - "AWS"
+        - "Distributed Systems"
+      years_experience: 10
+      seniority: "principal"
+      extraction_quality: "high"
+      character_count_approx: 2800
+
+  # ---------------------------------------------------------------------------
+  # TC006: Startup with Unusual Requirements
+  # ---------------------------------------------------------------------------
+  - id: "TC006"
+    name: "Startup Unconventional"
+    category: "edge_case"
+    complexity: "medium"
+    language: "en"
+    description: "Startup posting with non-standard requirements - tests soft skill handling"
+    
+    input:
+      job_text: |
+        AI/ML Engineer - Startup Environment
+
+        We're a 5-person startup working on computer vision for autonomous drones.
+
+        What we need:
+        - Someone who can ship fast (we deploy daily)
+        - Python, PyTorch, OpenCV
+        - Experience with edge deployment (Jetson, RPi)
+        - Comfortable with ambiguity (startup life!)
+        - Available for occasional weekend work during launches
+        - Must love dogs (we have 2 office dogs)
+        - Willingness to travel (20% international)
+
+        Bonus if you have:
+        - Drone piloting license
+        - Hardware prototyping skills
+        - Previous startup experience
+        - Your own side projects to show us
+
+        Anti-requirements (please don't apply if):
+        - You need detailed specs before starting
+        - You prefer large, structured teams
+        - You can't handle rapid pivots
+
+        This role is NOT for everyone. We're looking for builders who want equity over stability.
+
+        Compensation: Below market salary + significant equity (0.5-1.5%)
+        Location: On-site only (Malmö, Sweden)
+      source: "company_website"
+    
+    expected:
+      job_title: "AI/ML Engineer"
+      company_name: null
+      location: "Malmö, Sweden"
+      key_requirements:
+        - "Python"
+        - "PyTorch"
+        - "OpenCV"
+        - "Edge deployment"
+      soft_requirements:
+        - "Comfortable with ambiguity"
+        - "Ship fast"
+        - "Startup experience"
+      extraction_quality: "medium"
+
+# =============================================================================
+# TEST PROFILE
+# =============================================================================
+
+test_profile:
+  name: "Test Developer Profile"
+  description: "Standard test profile for validation - Senior Python Developer"
+  file: "test_profile.yaml"
+  
+  summary:
+    years_experience: 7
+    primary_skills:
+      - "Python"
+      - "FastAPI"
+      - "PostgreSQL"
+      - "Docker"
+      - "AWS"
+    secondary_skills:
+      - "TypeScript"
+      - "React"
+      - "Redis"
+      - "Kubernetes"
+    soft_skills:
+      - "Team leadership"
+      - "Mentoring"
+      - "Technical writing"
+
+# =============================================================================
+# METRICS CONFIGURATION
+# =============================================================================
+
+metrics:
+  capture:
+    - "total_duration_ms"
+    - "step_durations"
+    - "compatibility_score"
+    - "llm_tokens_used"
+    - "cache_hits"
+    - "extraction_success"
+  
+  thresholds:
+    max_pipeline_duration_ms: 300000  # 5 minutes for local LLM
+    min_extraction_fields: 3
+    acceptable_score_variance: 10  # % variance between runs
+
+  output_format: "json"
+  output_path: "tests/validation/results/"

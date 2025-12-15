@@ -93,11 +93,14 @@ scout-code/
 │   │   ├── analyzer/           # M3: Semantic matching & scoring
 │   │   ├── creator/            # M4: Tailored content generation
 │   │   └── formatter/          # M5: Document output (PDF/DOCX)
-│   ├── services/               # Services (LLM, Cache, Metrics, VectorStore)
+│   ├── services/               # Services (LLM, Cache, Metrics, VectorStore, Profile)
 │   │   ├── llm_service/        # S1: Ollama local LLM integration
 │   │   ├── metrics_service/    # S2: Performance & reliability tracking
 │   │   ├── cache_service/      # S3: Multi-tier caching
-│   │   └── vector_store/       # S4: ChromaDB vector database
+│   │   ├── vector_store/       # S4: ChromaDB vector database
+│   │   ├── pipeline/           # S6: Pipeline orchestration
+│   │   ├── notification/       # S8: In-app notifications
+│   │   └── profile/            # Profile management (SQLite + vector indexing)
 │   └── web/                    # Web interface (FastAPI entry point, routes, templates)
 ├── tests/                      # Test suite (ready for implementation)
 ├── docs/                       # Specifications and guides
@@ -544,13 +547,13 @@ Vector Store Service ─────────────┤
 
 ## Current Project Status
 
-**Phase:** Phase 3 - Integration (COMPLETE)
+**Phase:** Review & Optimization
 
-### Phase 1: Foundation Services (COMPLETE - 194 tests)
-- ✅ **S2 Metrics Service** - Complete (41 tests) - **Refactored from Cost Tracker**
+### Phase 1: Foundation Services (COMPLETE - ~194 tests)
+- ✅ **S2 Metrics Service** - Complete (~41 tests) - **Refactored from Cost Tracker**
 - ✅ **S3 Cache Service** - Complete (46 tests)
 - ✅ **S4 Vector Store Service** - Complete (55 tests)
-- ✅ **S1 LLM Service** - Complete (51 tests) - **Refactored for Ollama + Metrics**
+- ✅ **S1 LLM Service** - Complete (~52 tests) - **Refactored for Ollama + Metrics**
 
 ### Phase 2: Core Modules (COMPLETE - 268 tests)
 - ✅ **M1 Collector** - Complete (49 tests)
@@ -559,13 +562,16 @@ Vector Store Service ─────────────┤
 - ✅ **M4 Creator** - Complete (48 tests)
 - ✅ **M5 Formatter** - Complete (38 tests)
 
-### Phase 3: Integration (COMPLETE - 161 tests)
+### Phase 3: Integration (COMPLETE - ~145 tests)
 - ✅ **S6 Pipeline Orchestrator** - Complete (52 tests)
 - ✅ **API Routes** - Complete (43 tests)
 - ✅ **S8 Notification Service** - Complete (40 tests)
-- ✅ **Web Interface** - Complete (26 tests)
+- ✅ **Web Interface** - Complete (~10 tests)
 
-**Total Tests:** 623+ passing
+### Additional Services
+- ✅ **Profile Service** - Complete (45 tests) - SQLite + vector indexing
+
+**Estimated Total Tests:** ~652
 
 **Learning Documentation:**
 - See `LL-LI.md` for validated patterns (LL-001 to LL-058)
@@ -581,4 +587,4 @@ Vector Store Service ─────────────┤
 
 ---
 
-*Last updated: December 14, 2025*
+*Last updated: December 15, 2025*

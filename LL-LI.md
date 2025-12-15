@@ -879,10 +879,11 @@ to support the thesis objective of edge computing on Raspberry Pi 5.
 ### Implementation Order
 
 #### Phase 1: Services (Complete)
-1. S2 Cost Tracker - Complete
+1. S2 Metrics Service - Complete (formerly Cost Tracker)
 2. S3 Cache Service - Complete
 3. S4 Vector Store - Complete
 4. S1 LLM Service - Complete (✅ Refactored for Ollama)
+5. Profile Service - Complete (alternative to YAML profiles)
 
 #### Phase 2: Modules (Complete)
 5. M1 Collector - Complete
@@ -900,10 +901,10 @@ to support the thesis objective of edge computing on Raspberry Pi 5.
 ### Test Targets
 | Component | Tests | Coverage |
 |-----------|-------|----------|
-| S2 Cost Tracker | 27 | >90% |
+| S2 Metrics Service | ~41 | >90% |
 | S3 Cache Service | 46 | >90% |
 | S4 Vector Store | 55 | >90% |
-| S1 LLM Service | 50 | >90% |
+| S1 LLM Service | 52 | >90% |
 | M1 Collector | 49 | >90% |
 | M2 Rinser | 71 | >90% |
 | M3 Analyzer | 62 | >90% |
@@ -912,11 +913,12 @@ to support the thesis objective of edge computing on Raspberry Pi 5.
 | S6 Pipeline | 52 | >90% |
 | API Routes | 43 | >90% |
 | S8 Notification | 40 | >90% |
-| Web Interface | 26 | >90% |
-| **Total** | **607** | **>90%** |
+| Web Interface | ~10 | >90% |
+| Profile Service | 45 | >90% |
+| **Total** | **~652** | **>90%** |
 
 ---
 
-*Last Updated: December 13, 2025*
-*Phase 3 Integration Complete - All PoC components implemented (607 total tests)*
-*Architecture Update: LLM transitioned from Anthropic API to local Ollama - Implementation Complete*
+*Last Updated: December 15, 2025*
+*Review & Optimization Phase - PoC implementation complete (~652 total tests)*
+*Architecture: Local Ollama LLM (Qwen 2.5 3B / Gemma 2 2B)*
