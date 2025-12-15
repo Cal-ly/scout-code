@@ -49,8 +49,8 @@ router = APIRouter(prefix="/api", tags=["api"])
 # Local inference on Raspberry Pi 5 can take 15-30 min for full pipeline
 PIPELINE_TIMEOUT_SECONDS = 900
 
-# Quick score timeout (2 minutes - just rinser + analyzer without LLM strategy)
-QUICK_SCORE_TIMEOUT_SECONDS = 120
+# Quick score timeout (5 minutes - Rinser needs LLM on Pi which is slow)
+QUICK_SCORE_TIMEOUT_SECONDS = 300
 
 
 # =============================================================================

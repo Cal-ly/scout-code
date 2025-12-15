@@ -415,7 +415,7 @@ Include:
             <div id="quick-score-container" class="hidden">
                 <div id="quick-score-loading" class="quick-score-result quick-score-loading hidden">
                     <span class="spinner">&#8635;</span>
-                    <span>Analyzing compatibility...</span>
+                    <span>Analyzing compatibility (1-3 min on Pi)...</span>
                 </div>
                 <div id="quick-score-result" class="quick-score-result hidden">
                     <div class="quick-score-header">
@@ -519,6 +519,7 @@ Include:
         // DASHBOARD STATE
         // =====================================================================
 
+        const STORAGE_KEY = 'scout_active_job';
         let currentJobId = null;
         let pollInterval = null;
         let profileExists = false;
@@ -564,7 +565,75 @@ Include:
 
             // Update profile select when profiles load
             setTimeout(updateProfileSelect, 500);
+
+            // Check for active job (handle page refresh)
+            checkActiveJob();
         });
+
+        // =====================================================================
+        // ACTIVE JOB RECOVERY
+        // =====================================================================
+
+        async function checkActiveJob() {
+            // Check localStorage for an active job
+            const storedJob = localStorage.getItem(STORAGE_KEY);
+            if (!storedJob) return;
+
+            try {
+                const jobData = JSON.parse(storedJob);
+                const jobId = jobData.job_id;
+                const startedAt = new Date(jobData.started_at);
+
+                // Check if job is too old (more than 30 minutes)
+                const ageMinutes = (Date.now() - startedAt.getTime()) / 60000;
+                if (ageMinutes > 30) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    return;
+                }
+
+                // Check job status from API
+                const response = await fetch(`/api/status/${jobId}`);
+                if (!response.ok) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    return;
+                }
+
+                const status = await response.json();
+
+                // If job is still running, restore the UI
+                if (status.status === 'running' || status.status === 'pending') {
+                    currentJobId = jobId;
+                    inputSection.classList.add('hidden');
+                    progressSection.classList.remove('hidden');
+                    resultSection.classList.add('hidden');
+                    errorSection.classList.add('hidden');
+                    updateProgress(status);
+                    startPolling();
+                    showToast('info', 'Job Restored', 'Resuming progress tracking...');
+                } else if (status.status === 'completed') {
+                    currentJobId = jobId;
+                    showResults(status);
+                } else if (status.status === 'failed') {
+                    currentJobId = jobId;
+                    showError(status.error || 'Processing failed');
+                }
+            } catch (error) {
+                console.error('Error checking active job:', error);
+                localStorage.removeItem(STORAGE_KEY);
+            }
+        }
+
+        function saveActiveJob(jobId) {
+            const jobData = {
+                job_id: jobId,
+                started_at: new Date().toISOString()
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(jobData));
+        }
+
+        function clearActiveJob() {
+            localStorage.removeItem(STORAGE_KEY);
+        }
 
         // =====================================================================
         // PROFILE FUNCTIONS
@@ -678,6 +747,9 @@ Include:
                 const data = await response.json();
                 currentJobId = data.job_id;
 
+                // Save to localStorage for page refresh recovery
+                saveActiveJob(currentJobId);
+
                 // Start polling
                 startPolling();
             } catch (error) {
@@ -775,6 +847,9 @@ Include:
         // =====================================================================
 
         function showResults(status) {
+            // Clear active job from localStorage
+            clearActiveJob();
+
             progressSection.classList.add('hidden');
             resultSection.classList.remove('hidden');
 
@@ -822,12 +897,18 @@ Include:
         }
 
         function showError(message) {
+            // Clear active job from localStorage
+            clearActiveJob();
+
             progressSection.classList.add('hidden');
             errorSection.classList.remove('hidden');
             document.getElementById('error-message').textContent = message;
         }
 
         function resetForm() {
+            // Clear active job from localStorage
+            clearActiveJob();
+
             currentJobId = null;
             inputSection.classList.remove('hidden');
             progressSection.classList.add('hidden');
