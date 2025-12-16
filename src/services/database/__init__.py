@@ -1,7 +1,4 @@
-"""
-Database Service
-
-SQLite-based persistence for profiles and applications.
+"""Database service - SQLite persistence for users, profiles, and applications.
 
 Usage:
     from src.services.database import get_database_service, Profile, Application
@@ -11,17 +8,64 @@ Usage:
     await db.create_profile(profile_data)
 """
 
-from src.services.database.models import (
+from .completeness import calculate_completeness
+from .exceptions import (
+    ApplicationNotFoundError,
+    DatabaseError,
+    MigrationError,
+    NoActiveProfileError,
+    ProfileExistsError,
+    ProfileNotFoundError,
+    ProfileSlugExistsError,
+    UserNotFoundError,
+)
+from .models import (
+    # Application models
     Application,
+    ApplicationBase,
     ApplicationCreate,
     ApplicationStatus,
     ApplicationUpdate,
+    # Certification models
+    Certification,
+    CertificationBase,
+    CertificationCreate,
+    # Completeness models
+    CompletenessSection,
+    # Education models
+    Education,
+    EducationBase,
+    EducationCreate,
+    # Experience models
+    Experience,
+    ExperienceBase,
+    ExperienceCreate,
+    # Language models
+    Language,
+    LanguageBase,
+    LanguageCreate,
+    LanguageProficiency,
+    # Profile models
     Profile,
+    ProfileBase,
+    ProfileCompleteness,
     ProfileCreate,
+    ProfileSummary,
     ProfileUpdate,
+    # Settings
     Settings,
+    # Skill models
+    Skill,
+    SkillBase,
+    SkillCreate,
+    SkillLevel,
+    # User models
+    User,
+    UserBase,
+    UserCreate,
 )
-from src.services.database.service import (
+from .schemas import SCHEMA_SQL, SCHEMA_VERSION, get_drop_tables_sql
+from .service import (
     DatabaseService,
     get_database_service,
     reset_database_service,
@@ -32,13 +76,62 @@ __all__ = [
     "DatabaseService",
     "get_database_service",
     "reset_database_service",
-    # Models
+    # Schema
+    "SCHEMA_SQL",
+    "SCHEMA_VERSION",
+    "get_drop_tables_sql",
+    # Enums
+    "SkillLevel",
+    "LanguageProficiency",
+    "ApplicationStatus",
+    # User models
+    "User",
+    "UserBase",
+    "UserCreate",
+    # Skill models
+    "Skill",
+    "SkillBase",
+    "SkillCreate",
+    # Experience models
+    "Experience",
+    "ExperienceBase",
+    "ExperienceCreate",
+    # Education models
+    "Education",
+    "EducationBase",
+    "EducationCreate",
+    # Certification models
+    "Certification",
+    "CertificationBase",
+    "CertificationCreate",
+    # Language models
+    "Language",
+    "LanguageBase",
+    "LanguageCreate",
+    # Profile models
     "Profile",
+    "ProfileBase",
     "ProfileCreate",
     "ProfileUpdate",
+    "ProfileSummary",
+    # Completeness
+    "ProfileCompleteness",
+    "CompletenessSection",
+    "calculate_completeness",
+    # Application models
     "Application",
+    "ApplicationBase",
     "ApplicationCreate",
     "ApplicationUpdate",
-    "ApplicationStatus",
+    # Settings
     "Settings",
+    # Exceptions
+    "DatabaseError",
+    "MigrationError",
+    "UserNotFoundError",
+    "ProfileNotFoundError",
+    "ProfileSlugExistsError",
+    "ProfileExistsError",
+    "ApplicationNotFoundError",
+    "NoActiveProfileError",
 ]
