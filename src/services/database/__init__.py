@@ -9,6 +9,14 @@ Usage:
 """
 
 from .completeness import calculate_completeness
+from .demo_data import (
+    BACKEND_FOCUS_PROFILE,
+    DEFAULT_ACTIVE_PROFILE_SLUG,
+    DEMO_PROFILES,
+    DEVOPS_FOCUS_PROFILE,
+    FULLSTACK_FOCUS_PROFILE,
+    TEST_USER,
+)
 from .exceptions import (
     ApplicationNotFoundError,
     DatabaseError,
@@ -80,6 +88,13 @@ __all__ = [
     "SCHEMA_SQL",
     "SCHEMA_VERSION",
     "get_drop_tables_sql",
+    # Demo Data
+    "TEST_USER",
+    "DEMO_PROFILES",
+    "BACKEND_FOCUS_PROFILE",
+    "FULLSTACK_FOCUS_PROFILE",
+    "DEVOPS_FOCUS_PROFILE",
+    "DEFAULT_ACTIVE_PROFILE_SLUG",
     # Enums
     "SkillLevel",
     "LanguageProficiency",

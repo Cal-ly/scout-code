@@ -5,63 +5,9 @@ import sqlite3
 from pathlib import Path
 
 from src.services.database.exceptions import MigrationError
+from src.services.database.schemas import SCHEMA_SQL, SCHEMA_VERSION, get_drop_tables_sql
 
 logger = logging.getLogger(__name__)
-
-SCHEMA_VERSION = 1
-
-SCHEMA_SQL = """
--- Application settings
-CREATE TABLE IF NOT EXISTS settings (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- User profiles
-CREATE TABLE IF NOT EXISTS profiles (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    slug TEXT UNIQUE NOT NULL,
-    full_name TEXT NOT NULL,
-    email TEXT,
-    title TEXT,
-    profile_data TEXT NOT NULL,
-    is_active INTEGER DEFAULT 0,
-    is_indexed INTEGER DEFAULT 0,
-    is_demo INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Job applications
-CREATE TABLE IF NOT EXISTS applications (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    job_id TEXT UNIQUE NOT NULL,
-    profile_id INTEGER NOT NULL,
-    job_title TEXT,
-    company_name TEXT,
-    job_text TEXT,
-    status TEXT DEFAULT 'pending',
-    compatibility_score INTEGER,
-    cv_path TEXT,
-    cover_letter_path TEXT,
-    analysis_data TEXT,
-    pipeline_data TEXT,
-    error_message TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    started_at TIMESTAMP,
-    completed_at TIMESTAMP,
-    FOREIGN KEY (profile_id) REFERENCES profiles(id)
-);
-
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_profiles_active ON profiles(is_active);
-CREATE INDEX IF NOT EXISTS idx_profiles_slug ON profiles(slug);
-CREATE INDEX IF NOT EXISTS idx_applications_profile ON applications(profile_id);
-CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status);
-CREATE INDEX IF NOT EXISTS idx_applications_created ON applications(created_at DESC);
-"""
 
 
 def initialize_database(db_path: Path) -> sqlite3.Connection:
@@ -88,20 +34,24 @@ def initialize_database(db_path: Path) -> sqlite3.Connection:
         # Enable foreign keys
         conn.execute("PRAGMA foreign_keys = ON")
 
-        # Create schema
-        conn.executescript(SCHEMA_SQL)
-        conn.commit()
-
-        # Set schema version if not exists
+        # Check if this is a fresh database or needs migration
         cursor = conn.execute(
-            "SELECT value FROM settings WHERE key = 'schema_version'"
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='settings'"
         )
-        if cursor.fetchone() is None:
+        settings_exists = cursor.fetchone() is not None
+
+        if not settings_exists:
+            # Fresh database - create schema
+            logger.info("Creating fresh database schema")
+            conn.executescript(SCHEMA_SQL)
             conn.execute(
                 "INSERT INTO settings (key, value) VALUES (?, ?)",
                 ("schema_version", str(SCHEMA_VERSION))
             )
             conn.commit()
+        else:
+            # Existing database - check version and migrate if needed
+            run_migrations(conn)
 
         logger.info(f"Database initialized: {db_path}")
         return conn
@@ -112,29 +62,101 @@ def initialize_database(db_path: Path) -> sqlite3.Connection:
 
 
 def get_schema_version(conn: sqlite3.Connection) -> int:
-    """Get current schema version."""
-    cursor = conn.execute(
-        "SELECT value FROM settings WHERE key = 'schema_version'"
-    )
-    row = cursor.fetchone()
-    return int(row["value"]) if row else 0
+    """Get current schema version from database."""
+    try:
+        cursor = conn.execute(
+            "SELECT value FROM settings WHERE key = 'schema_version'"
+        )
+        row = cursor.fetchone()
+        return int(row["value"]) if row else 0
+    except sqlite3.OperationalError:
+        # Settings table doesn't exist
+        return 0
 
 
 def run_migrations(conn: sqlite3.Connection) -> None:
     """
     Run any pending migrations.
 
-    Currently a placeholder for future schema updates.
+    Migrations are run sequentially from current version to target version.
     """
     current_version = get_schema_version(conn)
 
-    if current_version < SCHEMA_VERSION:
-        logger.info(f"Migrating from v{current_version} to v{SCHEMA_VERSION}")
-        # Add migration logic here as needed
+    if current_version == SCHEMA_VERSION:
+        logger.debug(f"Database already at version {SCHEMA_VERSION}")
+        return
 
+    if current_version > SCHEMA_VERSION:
+        raise MigrationError(
+            f"Database version {current_version} is newer than code version {SCHEMA_VERSION}"
+        )
+
+    logger.info(f"Migrating database from v{current_version} to v{SCHEMA_VERSION}")
+
+    try:
+        # Run each migration step
+        if current_version < 2:
+            _migrate_v1_to_v2(conn)
+
+        # Update version
         conn.execute(
-            "UPDATE settings SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = 'schema_version'",
+            "UPDATE settings SET value = ?, updated_at = CURRENT_TIMESTAMP "
+            "WHERE key = 'schema_version'",
             (str(SCHEMA_VERSION),)
         )
         conn.commit()
-        logger.info("Migration complete")
+        logger.info(f"Migration complete - now at v{SCHEMA_VERSION}")
+
+    except Exception as e:
+        conn.rollback()
+        raise MigrationError(f"Migration failed: {e}") from e
+
+
+def _migrate_v1_to_v2(conn: sqlite3.Connection) -> None:
+    """
+    Migrate from v1 (flat profiles) to v2 (normalized user/profile).
+
+    This is a destructive migration that drops old data.
+    In production, you would want to preserve and transform data.
+    For the PoC, we simply recreate the schema.
+    """
+    logger.warning("Migrating v1 to v2 - this will reset all profile data")
+
+    # Drop all old tables
+    drop_sql = get_drop_tables_sql()
+    conn.executescript(drop_sql)
+
+    # Create new schema
+    conn.executescript(SCHEMA_SQL)
+
+    # Reset demo_data_loaded so it will be re-seeded
+    conn.execute(
+        """
+        INSERT OR REPLACE INTO settings (key, value, updated_at)
+        VALUES ('demo_data_loaded', 'false', CURRENT_TIMESTAMP)
+        """
+    )
+
+    logger.info("v1 to v2 migration complete - schema recreated")
+
+
+def reset_database(conn: sqlite3.Connection) -> None:
+    """
+    Reset database to fresh state.
+
+    WARNING: This deletes all data!
+    Used for testing and development.
+    """
+    logger.warning("Resetting database - all data will be lost")
+
+    drop_sql = get_drop_tables_sql()
+    conn.executescript(drop_sql)
+    conn.executescript(SCHEMA_SQL)
+
+    conn.execute(
+        "INSERT INTO settings (key, value) VALUES (?, ?)",
+        ("schema_version", str(SCHEMA_VERSION))
+    )
+    conn.commit()
+
+    logger.info("Database reset complete")
