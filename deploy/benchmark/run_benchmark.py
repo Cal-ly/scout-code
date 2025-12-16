@@ -39,8 +39,9 @@ TEST_JOBS = {
         "name": "Senior Python Developer",
         "description": "Backend-focused Python role at a FinTech startup",
         "text": """
-Senior Python Developer - FinTech Startup
+Senior Python Developer - PayFlow Technologies
 
+Company: PayFlow Technologies
 Location: Remote (US/EU timezone overlap)
 Salary: $150,000 - $180,000 + equity
 
@@ -407,9 +408,9 @@ async def run_benchmark(
                 if result["status"] == "completed":
                     total_sec = result["timings"].get("total_seconds", 0)
                     score = result.get("compatibility_score", "N/A")
-                    print(f"    ✓ Completed in {total_sec:.1f}s (score: {score})")
+                    print(f"    [OK] Completed in {total_sec:.1f}s (score: {score})")
                 else:
-                    print(f"    ✗ {result['status']}: {result.get('error', 'Unknown')}")
+                    print(f"    [FAIL] {result['status']}: {result.get('error', 'Unknown')}")
 
     results["completed_at"] = datetime.now().isoformat()
 

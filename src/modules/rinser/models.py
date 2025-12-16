@@ -78,10 +78,18 @@ class CompanyInfo(BaseModel):
     Extracted from job posting when available.
     """
 
-    name: str
+    name: str = "Unknown Company"  # Default for postings without explicit company name
     industry: str | None = None
     size: str | None = None  # e.g., "50-200 employees"
     culture_notes: str | None = None
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def name_not_null(cls, v: str | None) -> str:
+        """Convert null/empty name to default."""
+        if v is None or v == "" or v.lower() == "null":
+            return "Unknown Company"
+        return v
 
 
 class ProcessedJob(BaseModel):

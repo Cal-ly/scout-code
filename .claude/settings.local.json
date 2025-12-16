@@ -39,7 +39,23 @@
       "Bash(cat:*)",
       "Bash(sudo systemctl restart:*)",
       "Bash(git checkout:*)",
-      "Bash(if exist datascout.db del datascout.db)"
+      "Bash(if exist datascout.db del datascout.db)",
+      "Bash(git merge:*)",
+      "Bash(git stash:*)",
+      "Bash(git fetch:*)",
+      "Bash(git -C \"c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\" status --short deploy/)",
+      "Bash(git -C \"c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\" add deploy/)",
+      "Bash(del \"c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\\deploy\\nul\")",
+      "Bash(git -C \"c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\" reset HEAD -- deploy/)",
+      "Bash(git -C \"c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\" status --porcelain deploy/)",
+      "Bash(git -C \"c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\" add \"deploy/.env.example\" \"deploy/README.md\" \"deploy/docker-compose.yml\" \"deploy/docker-compose.cpu.yml\" \"deploy/benchmark/Dockerfile\" \"deploy/benchmark/run_benchmark.py\" \"deploy/benchmark/results/.gitkeep\" \"deploy/benchmark/test_jobs/.gitkeep\" \"deploy/configs/.gitkeep\" \"deploy/scripts/setup-windows.ps1\" \"deploy/scripts/setup-linux-gpu.sh\" \"deploy/scripts/setup-rpi.sh\" \"deploy/scripts/pull-models.sh\")",
+      "Bash(git -C \"c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\" status --short)",
+      "Bash(git -C \"c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\" commit -m \"$(cat <<''EOF''\nWP5: Add portable deployment and cross-platform benchmarking\n\n- Docker Compose with CPU and GPU profiles\n- Platform setup scripts (Windows, Linux GPU, Raspberry Pi)\n- Standardized benchmark suite with 3 test jobs\n- Automated system info collection for thesis data\n- JSON output with per-module timing breakdowns\n\nEnables cross-platform performance comparison for thesis.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(docker:*)",
+      "Bash(ollama:*)",
+      "Bash(nvidia-smi:*)",
+      "Bash(findstr:*)",
+      "Bash(timeout:*)"
     ]
   }
 }

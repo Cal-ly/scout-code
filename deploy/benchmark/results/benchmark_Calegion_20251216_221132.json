@@ -1,0 +1,189 @@
+{
+  "system_info": {
+    "hostname": "Calegion",
+    "platform": "Windows",
+    "platform_release": "11",
+    "architecture": "AMD64",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "python_version": "3.13.7",
+    "timestamp": "2025-12-16T22:10:29.588822",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU, 8188 MiB, 581.29"
+  },
+  "ollama_info": {
+    "available_models": [
+      "qwen2.5:3b",
+      "qwen2.5:7b"
+    ]
+  },
+  "scout_url": "http://localhost:8000",
+  "runs_per_job": 3,
+  "started_at": "2025-12-16T22:10:31.971425",
+  "job_results": [
+    {
+      "job_key": "senior_python",
+      "job_name": "Senior Python Developer",
+      "run_number": 1,
+      "status": "failed",
+      "error": "Rinser step failed: 1 validation error for CompanyInfo\nname\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.12/v/string_type",
+      "timings": {
+        "submit_ms": 14,
+        "total_seconds": 2.03,
+        "rinser_ms": 0
+      },
+      "job_id": "753dc480",
+      "compatibility_score": null
+    },
+    {
+      "job_key": "senior_python",
+      "job_name": "Senior Python Developer",
+      "run_number": 2,
+      "status": "failed",
+      "error": "Rinser step failed: 1 validation error for CompanyInfo\nname\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.12/v/string_type",
+      "timings": {
+        "submit_ms": 23,
+        "total_seconds": 2.04,
+        "rinser_ms": 0
+      },
+      "job_id": "3a80a80f",
+      "compatibility_score": null
+    },
+    {
+      "job_key": "senior_python",
+      "job_name": "Senior Python Developer",
+      "run_number": 3,
+      "status": "failed",
+      "error": "Rinser step failed: 1 validation error for CompanyInfo\nname\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.12/v/string_type",
+      "timings": {
+        "submit_ms": 21,
+        "total_seconds": 2.03,
+        "rinser_ms": 0
+      },
+      "job_id": "4150351c",
+      "compatibility_score": null
+    },
+    {
+      "job_key": "fullstack_react",
+      "job_name": "Full Stack React Developer",
+      "run_number": 1,
+      "status": "completed",
+      "error": null,
+      "timings": {
+        "submit_ms": 847,
+        "total_seconds": 18.95,
+        "rinser_ms": 516,
+        "analyzer_ms": 6807,
+        "creator_ms": 9703,
+        "formatter_ms": 112
+      },
+      "job_id": "b740c84a",
+      "compatibility_score": 100.0
+    },
+    {
+      "job_key": "fullstack_react",
+      "job_name": "Full Stack React Developer",
+      "run_number": 2,
+      "status": "completed",
+      "error": null,
+      "timings": {
+        "submit_ms": 1286,
+        "total_seconds": 3.3,
+        "rinser_ms": 697,
+        "analyzer_ms": 379,
+        "creator_ms": 2,
+        "formatter_ms": 184
+      },
+      "job_id": "baf45fdc",
+      "compatibility_score": 100.0
+    },
+    {
+      "job_key": "fullstack_react",
+      "job_name": "Full Stack React Developer",
+      "run_number": 3,
+      "status": "completed",
+      "error": null,
+      "timings": {
+        "submit_ms": 1331,
+        "total_seconds": 3.35,
+        "rinser_ms": 721,
+        "analyzer_ms": 384,
+        "creator_ms": 2,
+        "formatter_ms": 193
+      },
+      "job_id": "7a363fb6",
+      "compatibility_score": 100.0
+    },
+    {
+      "job_key": "devops_engineer",
+      "job_name": "DevOps Engineer",
+      "run_number": 1,
+      "status": "completed",
+      "error": null,
+      "timings": {
+        "submit_ms": 17,
+        "total_seconds": 22.13,
+        "rinser_ms": 7267,
+        "analyzer_ms": 3113,
+        "creator_ms": 10163,
+        "formatter_ms": 83
+      },
+      "job_id": "6b6545ec",
+      "compatibility_score": 100.0
+    },
+    {
+      "job_key": "devops_engineer",
+      "job_name": "DevOps Engineer",
+      "run_number": 2,
+      "status": "completed",
+      "error": null,
+      "timings": {
+        "submit_ms": 1046,
+        "total_seconds": 3.06,
+        "rinser_ms": 542,
+        "analyzer_ms": 281,
+        "creator_ms": 2,
+        "formatter_ms": 197
+      },
+      "job_id": "1efc86c3",
+      "compatibility_score": 100.0
+    },
+    {
+      "job_key": "devops_engineer",
+      "job_name": "DevOps Engineer",
+      "run_number": 3,
+      "status": "completed",
+      "error": null,
+      "timings": {
+        "submit_ms": 1019,
+        "total_seconds": 3.03,
+        "rinser_ms": 526,
+        "analyzer_ms": 278,
+        "creator_ms": 2,
+        "formatter_ms": 195
+      },
+      "job_id": "ebb8b63c",
+      "compatibility_score": 100.0
+    }
+  ],
+  "scout_health": {
+    "status": "healthy",
+    "version": "0.1.0",
+    "services": {
+      "pipeline": "ok",
+      "job_store": "ok",
+      "notifications": "ok"
+    }
+  },
+  "completed_at": "2025-12-16T22:11:32.402591",
+  "summary": {
+    "total_runs": 9,
+    "successful_runs": 6,
+    "success_rate": 0.6666666666666666,
+    "avg_total_seconds": 8.97,
+    "min_total_seconds": 3.03,
+    "max_total_seconds": 22.13,
+    "avg_rinser_ms": 1711.5,
+    "avg_analyzer_ms": 1873.6666666666667,
+    "avg_creator_ms": 3312.3333333333335,
+    "avg_formatter_ms": 160.66666666666666
+  }
+}
