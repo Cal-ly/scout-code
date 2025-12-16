@@ -1,8 +1,8 @@
 # Scout Project - Session Handover Document
 
-**Last Updated:** December 15, 2025
+**Last Updated:** December 16, 2025
 **Current Phase:** Review & Optimization
-**Status:** PoC Implementation Complete - Entering Review Phase
+**Status:** PoC Implementation Complete - Database Persistence Added
 
 ---
 
@@ -12,16 +12,19 @@
 I'm resuming work on Scout Project after conversation compaction.
 
 Current Status:
-- Phase 1 (Foundation Services): COMPLETE - 194 tests
+- Phase 1 (Foundation Services): COMPLETE - ~194 tests
 - Phase 2 (Core Modules): COMPLETE - 268 tests
-- Phase 3 (Integration): COMPLETE - 145 tests
+- Phase 3 (Integration): COMPLETE - ~145 tests
 - Profile Service: COMPLETE - 45 tests
-- Total: ~652 tests passing
+- Database Service: COMPLETE - SQLite persistence for profiles/applications
+- Total: ~700+ tests passing
 
-Current Focus:
-- Review & Optimization phase
-- Validation testing with synthetic job postings
-- Documentation consolidation
+Recent Additions:
+- SQLite database persistence (src/services/database/)
+- Multi-profile support with 3 demo profiles
+- Profile-scoped applications
+- Legacy URL redirects for backward compatibility
+- Persistent PDF output directory (data/outputs)
 
 Architecture: Local Ollama LLM (Qwen 2.5 3B / Gemma 2 2B)
 
@@ -97,15 +100,72 @@ PipelineInput(raw_job_text) → PipelineOrchestrator.execute() → PipelineResul
 | Service | Location | Tests | Key Exports |
 |---------|----------|-------|-------------|
 | Profile Service | `src/services/profile/` | 45 | `ProfileService`, `get_profile_service` |
+| Database Service | `src/services/database/` | ~50 | `DatabaseService`, `get_database_service` |
 
-**Estimated Total: ~652 tests**
+**Estimated Total: ~700+ tests**
 
 ---
 
-## Profile Service (NEW)
+## Database Service (NEW - December 2025)
+
+### Overview
+The Database Service provides SQLite persistence for profiles and applications, enabling multi-profile support with persistent storage across server restarts.
+
+### Structure
+```
+src/services/database/
+  __init__.py          # Package exports
+  models.py            # Profile, Application, ApplicationStatus, etc.
+  exceptions.py        # ProfileNotFoundError, ApplicationNotFoundError, etc.
+  service.py           # DatabaseService implementation
+  migrations/          # Database schema migrations
+```
+
+### Key Features
+- SQLite database storage (`data/scout.db`)
+- Multi-profile support (3 demo profiles included)
+- Profile-scoped applications
+- Active profile switching with ChromaDB re-indexing
+- Auto-migration on startup
+- Slug-based profile URLs
+
+### Demo Profiles
+Three demo profiles are auto-created on first startup:
+1. **Emma Chen** (`emma-chen`) - AI/ML engineer
+2. **Marcus Andersen** (`marcus-andersen`) - Backend/DevOps engineer
+3. **Sofia Martinez** (`sofia-martinez`) - Full-stack developer
+
+### Usage
+```python
+from src.services.database import get_database_service, DatabaseService
+
+# Get singleton
+db = await get_database_service()
+
+# Get active profile
+profile = await db.get_active_profile()
+
+# Switch active profile (triggers ChromaDB re-indexing)
+await db.set_active_profile("marcus-andersen")
+
+# List all profiles
+profiles = await db.list_profiles()
+
+# Get profile by slug
+profile = await db.get_profile_by_slug("emma-chen")
+
+# List applications (profile-scoped)
+applications, total = await db.list_applications(profile_id=1, limit=20)
+```
+
+---
+
+## Profile Service (LEGACY)
 
 ### Overview
 The Profile Service manages user profiles with database storage, file backup, and vector indexing. It's an alternative to YAML-based profile management via M1 Collector.
+
+> **Note:** For multi-profile support, use the Database Service instead.
 
 ### Structure
 ```
@@ -148,19 +208,58 @@ profile = await profile_service.get_profile()
 
 ## API Routes Summary
 
+### Profile Management (NEW)
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/apply` | POST | Start new job application (background task) |
-| `/api/status/{job_id}` | GET | Get pipeline status and results |
-| `/api/download/{job_id}/{file_type}` | GET | Download PDF (cv or cover_letter) |
-| `/api/jobs` | GET | List all submitted job applications (paginated) |
-| `/api/notifications` | GET | Get notifications |
-| `/api/notifications/{id}/read` | POST | Mark notification as read |
-| `/api/notifications/read-all` | POST | Mark all as read |
-| `/api/notifications` | DELETE | Clear all notifications |
+| `/api/v1/profiles` | GET | List all profiles with stats |
+| `/api/v1/profiles` | POST | Create new profile |
+| `/api/v1/profiles/{slug}` | GET | Get profile by slug |
+| `/api/v1/profiles/{slug}` | PUT | Update profile |
+| `/api/v1/profiles/{slug}` | DELETE | Delete profile |
+| `/api/v1/profiles/{slug}/activate` | POST | Set as active profile |
+
+### Job Applications
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/jobs/apply` | POST | Start new job application (background task) |
+| `/api/v1/jobs/{job_id}` | GET | Get pipeline status and results |
+| `/api/v1/jobs/{job_id}/download/{file_type}` | GET | Download PDF (cv or cover_letter) |
+| `/api/v1/jobs` | GET | List all submitted job applications (paginated) |
+| `/api/v1/jobs/quick-score` | POST | Get quick compatibility score |
+
+### Notifications
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/notifications` | GET | Get notifications |
+| `/api/v1/notifications/{id}/read` | POST | Mark notification as read |
+| `/api/v1/notifications/read-all` | POST | Mark all as read |
+| `/api/v1/notifications` | DELETE | Clear all notifications |
+
+### System
+| Endpoint | Method | Description |
+|----------|--------|-------------|
 | `/health` | GET | Health check endpoint |
 | `/info` | GET | Application info JSON endpoint |
-| `/` | GET | Web interface (HTML page) |
+
+### Web Pages
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Dashboard (HTML page) |
+| `/profiles` | GET | Profile list page |
+| `/profiles/new` | GET | Create new profile page |
+| `/profiles/{slug}/edit` | GET | Edit profile page |
+| `/applications` | GET | Applications list page |
+| `/metrics` | GET | Performance metrics dashboard |
+| `/logs` | GET | Application logs page |
+| `/diagnostics` | GET | System diagnostics page |
+
+### Legacy Redirects (301)
+| Old URL | Redirects To |
+|---------|--------------|
+| `/profile/create` | `/profiles/new` |
+| `/profile/edit` | `/profiles` |
+| `/profiles/create` | `/profiles/new` |
+| `/profiles/edit` | `/profiles` |
 
 ---
 
@@ -181,9 +280,11 @@ profile = await profile_service.get_profile()
 - `job_requirements` - Job requirements from M2 Rinser
 
 ### Data Storage
-- **Profiles:** SQLite (`data/profiles.db`) + file backup
+- **Database:** SQLite (`data/scout.db`) - profiles and applications
+- **Profiles (legacy):** SQLite (`data/profiles.db`) + file backup
 - **Cache:** Two-tier LRU (memory + file)
 - **Metrics:** JSON files with 30-day retention
+- **PDF Output:** Persistent directory (`data/outputs/`)
 
 ---
 
@@ -264,22 +365,29 @@ class LLMProvider(ABC):
 | Document | Purpose |
 |----------|---------|
 | `CLAUDE.md` | Project context and patterns |
-| `LL-LI.md` | Lessons learned (LL-001 to LL-058) |
+| `LL-LI.md` | Lessons learned (LL-001 to LL-062+) |
 | `REVIEW.md` | Code review findings (Dec 13, 2025) |
 | `REVIEW-GUIDE.md` | Review methodology |
 | `docs/guides/Scout_PoC_Scope_Document.md` | PoC constraints |
 | `docs/guides/Local_LLM_Transition_Guide.md` | Ollama architecture details |
+| `docs/tasks/TASK-PERSISTENCE-UI.md` | Database persistence task (COMPLETED) |
 
 ---
 
 ## Module Inputs/Outputs Reference
 
 ```
-M1 Collector
-  Input: YAML profile path
-  Output: UserProfile (indexed in vector store)
+Database Service
+  Input: Profile/Application data
+  Output: Persisted records (SQLite)
+  Notes: Auto-creates 3 demo profiles on startup
 
-Profile Service (Alternative)
+M1 Collector
+  Input: YAML profile path OR database profile
+  Output: UserProfile (indexed in vector store)
+  Notes: load_profile_from_db() method loads active profile
+
+Profile Service (Legacy)
   Input: Raw profile text (100-10,000 chars)
   Output: ProfileData (indexed in vector store)
 
@@ -297,22 +405,34 @@ M4 Creator
 
 M5 Formatter
   Input: CreatedContent
-  Output: FormattedApplication (PDF files)
+  Output: FormattedApplication (PDF files in data/outputs/)
 
 S6 Pipeline Orchestrator
   Input: PipelineInput(raw_job_text, source?, skip_formatting?)
   Output: PipelineResult (status, paths, scores, timing)
+  Notes: Persists results to database
 ```
 
 ---
 
 ## Current Phase: Review & Optimization
 
+### Completed: Database Persistence (December 2025)
+- [x] SQLite database service implementation
+- [x] Multi-profile support with demo profiles
+- [x] Profile-scoped applications
+- [x] API endpoints for profile management
+- [x] Web UI for profile listing/editing
+- [x] Legacy URL redirects for backward compatibility
+- [x] Collector integration with database
+- [x] Persistent PDF output directory
+
 ### Phase A: Consolidation (In Progress)
 - [x] A-01: Sync pyproject.toml with requirements.txt
 - [x] A-02: Document Profile Service in HANDOVER.md
-- [ ] A-03: Update test counts in LL-LI.md
-- [ ] A-04: Verify all imports resolve correctly
+- [x] A-03: Document Database Service in HANDOVER.md
+- [x] A-04: Update API routes documentation
+- [ ] A-05: Verify all imports resolve correctly
 
 ### Phase B: Validation Testing (Upcoming)
 - [ ] B-01: End-to-end test with synthetic job postings
@@ -323,11 +443,11 @@ S6 Pipeline Orchestrator
 ### Phase C: Enhancement Opportunities (Planned)
 - Pipeline resilience (checkpointing)
 - Observability improvements
-- Multi-profile support expansion
 - Output quality improvements
 
 ---
 
-*Last Updated: December 15, 2025*
+*Last Updated: December 16, 2025*
 *Architecture: Local Ollama LLM (Qwen 2.5 3B / Gemma 2 2B)*
-*Estimated Total Tests: ~652*
+*Database: SQLite with multi-profile support*
+*Estimated Total Tests: ~700+*

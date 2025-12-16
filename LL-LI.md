@@ -884,6 +884,7 @@ to support the thesis objective of edge computing on Raspberry Pi 5.
 3. S4 Vector Store - Complete
 4. S1 LLM Service - Complete (✅ Refactored for Ollama)
 5. Profile Service - Complete (alternative to YAML profiles)
+6. Database Service - Complete (✅ SQLite persistence, Dec 2025)
 
 #### Phase 2: Modules (Complete)
 5. M1 Collector - Complete
@@ -916,7 +917,8 @@ to support the thesis objective of edge computing on Raspberry Pi 5.
 | Web Interface | ~10 | >90% |
 | Profile Service | 45 | >90% |
 | Skill Aliases | 36 | >90% |
-| **Total** | **~688** | **>90%** |
+| Database Service | ~50 | >90% |
+| **Total** | **~738** | **>90%** |
 
 ---
 
@@ -988,6 +990,141 @@ content = f"{searchable_text} Also known as: {', '.join(aliases)}"
 
 ---
 
-*Last Updated: December 15, 2025*
-*Review & Optimization Phase - PoC implementation complete (~688 total tests)*
+## Database Persistence Implementation (December 2025)
+
+### Database Service (Complete)
+
+#### Lessons Learned
+
+**LL-063: SQLite for PoC Persistence**
+- SQLite is sufficient for PoC-level persistence needs
+- Single file database (`data/scout.db`) simplifies deployment
+- No need for PostgreSQL or other database servers
+- aiosqlite provides async SQLite access for FastAPI integration
+```python
+import aiosqlite
+
+async with aiosqlite.connect(self._db_path) as db:
+    db.row_factory = aiosqlite.Row
+    await db.execute(query, params)
+    await db.commit()
+```
+- **Apply to:** Any PoC needing simple persistence
+
+**LL-064: Auto-Migration Pattern for Schema Changes**
+- Check schema version on startup and apply migrations
+- Store version in a metadata table or dedicated file
+- Keep migrations idempotent (safe to run multiple times)
+```python
+async def _ensure_schema(self) -> None:
+    """Create tables if they don't exist."""
+    async with aiosqlite.connect(self._db_path) as db:
+        await db.execute('''
+            CREATE TABLE IF NOT EXISTS profiles (
+                id INTEGER PRIMARY KEY,
+                slug TEXT UNIQUE NOT NULL,
+                ...
+            )
+        ''')
+        await db.commit()
+```
+- **Apply to:** Any database with evolving schema
+
+**LL-065: Demo Data Seeding Pattern**
+- Create demo data on first startup when tables are empty
+- Use conditional insert (only if no profiles exist)
+- Provide realistic demo data for immediate testing
+```python
+async def _seed_demo_profiles(self) -> None:
+    """Create demo profiles if none exist."""
+    count = await self._count_profiles()
+    if count == 0:
+        for demo in DEMO_PROFILES:
+            await self.create_profile(demo)
+```
+- **Apply to:** Any application needing out-of-box demo experience
+
+**LL-066: Slug-Based URLs for Human-Readable Routes**
+- Generate URL slugs from profile names (lowercase, hyphenated)
+- Ensure uniqueness by appending numbers if needed
+- Use slugs in URLs instead of integer IDs for better UX
+```python
+def generate_slug(name: str) -> str:
+    """Convert name to URL-safe slug."""
+    slug = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
+    return slug  # "Emma Chen" -> "emma-chen"
+```
+- **Apply to:** Any user-facing resource URLs
+
+**LL-067: Active Profile Pattern with Re-indexing**
+- Only one profile can be "active" at a time
+- Switching profiles triggers ChromaDB re-indexing
+- Web interface reflects active profile in navbar
+```python
+async def set_active_profile(self, slug: str) -> Profile:
+    """Activate a profile and re-index to ChromaDB."""
+    # Clear previous active
+    await self._db.execute("UPDATE profiles SET is_active = 0")
+    # Set new active
+    await self._db.execute(
+        "UPDATE profiles SET is_active = 1 WHERE slug = ?",
+        (slug,)
+    )
+    # Re-index to ChromaDB
+    await self._reindex_profile(profile)
+    return profile
+```
+- **Apply to:** Any application with "current selection" pattern
+
+**LL-068: Legacy URL Redirects for Backward Compatibility**
+- Add 301 redirects for old URLs when restructuring routes
+- Keeps bookmarks and external links working
+- Use RedirectResponse with status_code=301
+```python
+@router.get("/profile/create", response_class=RedirectResponse)
+async def profile_create_redirect() -> RedirectResponse:
+    """Redirect legacy URL to new location."""
+    return RedirectResponse(url="/profiles/new", status_code=301)
+```
+- **Apply to:** Any route restructuring
+
+**LL-069: Profile-Scoped Applications**
+- Associate applications with specific profiles via foreign key
+- Filter applications by active profile in list views
+- Allows comparing results across different profiles
+```python
+async def list_applications(
+    self,
+    profile_id: int | None = None,
+    limit: int = 20,
+    offset: int = 0,
+) -> tuple[list[Application], int]:
+    query = "SELECT * FROM applications"
+    if profile_id:
+        query += " WHERE profile_id = ?"
+```
+- **Apply to:** Any multi-tenant or multi-profile application
+
+**LL-070: Collector Database Integration**
+- Add `load_profile_from_db()` method to Collector for database integration
+- Keeps existing YAML loading for backward compatibility
+- Module adapts to data source without changing interface
+```python
+async def load_profile_from_db(self) -> UserProfile | None:
+    """Load the active profile from database."""
+    from src.services.database import get_database_service
+    db = await get_database_service()
+    active = await db.get_active_profile()
+    if active is None:
+        return None
+    self._profile = UserProfile(**active.profile_data)
+    return self._profile
+```
+- **Apply to:** Any module needing multiple data source support
+
+---
+
+*Last Updated: December 16, 2025*
+*Review & Optimization Phase - PoC implementation complete (~700+ total tests)*
 *Architecture: Local Ollama LLM (Qwen 2.5 3B / Gemma 2 2B)*
+*Database: SQLite with multi-profile support*
