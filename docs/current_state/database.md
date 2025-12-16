@@ -4,13 +4,13 @@ This document describes the SQLite database service implementation for Scout's p
 
 ## Overview
 
-The Database Service provides SQLite-based persistence for user profiles and job applications, enabling multi-profile support with data that survives server restarts.
+The Database Service provides SQLite-based persistence with a normalized User/Profile architecture, enabling multi-profile support where a single user can have multiple career personas (profiles) for different job application strategies.
 
 | Component | Details |
 |-----------|---------|
 | Location | `src/services/database/` |
 | Database | SQLite (`data/scout.db`) |
-| Test Count | ~50 |
+| Schema Version | 2 |
 | Dependencies | None |
 
 ---
@@ -32,16 +32,20 @@ The Database Service provides SQLite-based persistence for user profiles and job
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                  Database Service                            │
-│  - Profile CRUD                                              │
+│  - User operations (get, create)                             │
+│  - Profile CRUD with normalized data                         │
 │  - Application CRUD                                          │
 │  - Active profile management                                 │
-│  - ChromaDB re-indexing triggers                             │
+│  - Profile completeness scoring                              │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                   SQLite (data/scout.db)                     │
-│  Tables: profiles, applications                              │
+│  Tables: users, profiles, profile_skills,                    │
+│          profile_experiences, profile_education,             │
+│          profile_certifications, profile_languages,          │
+│          applications, settings                              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -52,89 +56,214 @@ The Database Service provides SQLite-based persistence for user profiles and job
 ```
 src/services/database/
 ├── __init__.py          # Public exports
-├── service.py           # Main DatabaseService class
+├── service.py           # Main DatabaseService class (~1200 lines)
 ├── models.py            # Pydantic models and enums
+├── schemas.py           # SQL schema definitions
+├── migrations.py        # Database initialization and migrations
+├── completeness.py      # Profile completeness scoring algorithm
 ├── exceptions.py        # Custom exceptions
-└── demo_profiles.py     # Demo profile data
+└── demo_data.py         # Test User + 3 demo profiles
 ```
 
 ---
 
-## Database Schema
+## Database Schema (v2)
+
+### `users` Table
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | INTEGER | PRIMARY KEY | Auto-increment ID |
+| `username` | TEXT | UNIQUE NOT NULL | Login identifier |
+| `email` | TEXT | | Email address |
+| `display_name` | TEXT | | Display name |
+| `created_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Creation time |
+| `updated_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Last update time |
 
 ### `profiles` Table
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | INTEGER | PRIMARY KEY | Auto-increment ID |
+| `user_id` | INTEGER | REFERENCES users(id) | Owner user |
 | `slug` | TEXT | UNIQUE NOT NULL | URL-safe identifier |
 | `name` | TEXT | NOT NULL | Display name |
-| `full_name` | TEXT | | Full name |
-| `email` | TEXT | | Email address |
+| `title` | TEXT | | Job title |
+| `email` | TEXT | | Contact email |
 | `phone` | TEXT | | Phone number |
 | `location` | TEXT | | Location |
-| `title` | TEXT | | Job title |
 | `summary` | TEXT | | Professional summary |
-| `profile_data` | TEXT | | JSON: Full UserProfile model |
 | `is_active` | INTEGER | DEFAULT 0 | Active profile flag (0/1) |
 | `is_demo` | INTEGER | DEFAULT 0 | Demo profile flag (0/1) |
-| `created_at` | TEXT | | ISO timestamp |
-| `updated_at` | TEXT | | ISO timestamp |
+| `created_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Creation time |
+| `updated_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Last update time |
+
+### `profile_skills` Table
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | INTEGER | PRIMARY KEY | Auto-increment ID |
+| `profile_id` | INTEGER | REFERENCES profiles(id) ON DELETE CASCADE | Parent profile |
+| `name` | TEXT | NOT NULL | Skill name |
+| `level` | TEXT | CHECK(level IN (...)) | beginner/intermediate/advanced/expert |
+| `years` | INTEGER | | Years of experience |
+| `category` | TEXT | | Skill category (e.g., "Programming") |
+| `sort_order` | INTEGER | DEFAULT 0 | Display order |
+
+### `profile_experiences` Table
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | INTEGER | PRIMARY KEY | Auto-increment ID |
+| `profile_id` | INTEGER | REFERENCES profiles(id) ON DELETE CASCADE | Parent profile |
+| `title` | TEXT | NOT NULL | Job title |
+| `company` | TEXT | NOT NULL | Company name |
+| `start_date` | TEXT | | Start date (YYYY-MM) |
+| `end_date` | TEXT | | End date (YYYY-MM or NULL for current) |
+| `description` | TEXT | | Role description |
+| `achievements` | TEXT | | JSON array of achievements |
+| `sort_order` | INTEGER | DEFAULT 0 | Display order |
+
+### `profile_education` Table
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | INTEGER | PRIMARY KEY | Auto-increment ID |
+| `profile_id` | INTEGER | REFERENCES profiles(id) ON DELETE CASCADE | Parent profile |
+| `institution` | TEXT | NOT NULL | School/university name |
+| `degree` | TEXT | | Degree type (B.S., M.S., etc.) |
+| `field` | TEXT | | Field of study |
+| `start_date` | TEXT | | Start date |
+| `end_date` | TEXT | | End date |
+| `gpa` | TEXT | | GPA |
+| `achievements` | TEXT | | JSON array of achievements |
+| `sort_order` | INTEGER | DEFAULT 0 | Display order |
+
+### `profile_certifications` Table
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | INTEGER | PRIMARY KEY | Auto-increment ID |
+| `profile_id` | INTEGER | REFERENCES profiles(id) ON DELETE CASCADE | Parent profile |
+| `name` | TEXT | NOT NULL | Certification name |
+| `issuer` | TEXT | | Issuing organization |
+| `date_obtained` | TEXT | | Date obtained |
+| `expiry_date` | TEXT | | Expiration date |
+| `credential_url` | TEXT | | Verification URL |
+| `sort_order` | INTEGER | DEFAULT 0 | Display order |
+
+### `profile_languages` Table
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | INTEGER | PRIMARY KEY | Auto-increment ID |
+| `profile_id` | INTEGER | REFERENCES profiles(id) ON DELETE CASCADE | Parent profile |
+| `language` | TEXT | NOT NULL | Language name |
+| `proficiency` | TEXT | CHECK(proficiency IN (...)) | basic/conversational/professional/fluent/native |
+| `sort_order` | INTEGER | DEFAULT 0 | Display order |
 
 ### `applications` Table
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | INTEGER | PRIMARY KEY | Auto-increment ID |
+| `user_id` | INTEGER | REFERENCES users(id) | Owner user |
+| `profile_id` | INTEGER | REFERENCES profiles(id) | Profile used |
 | `job_id` | TEXT | UNIQUE NOT NULL | Pipeline job ID |
-| `profile_id` | INTEGER | FOREIGN KEY | References profiles(id) |
-| `job_text` | TEXT | | Original job posting text |
 | `job_title` | TEXT | | Extracted job title |
 | `company_name` | TEXT | | Extracted company name |
-| `status` | TEXT | | pending/running/completed/failed |
+| `status` | TEXT | DEFAULT 'pending' | pending/running/completed/failed |
 | `compatibility_score` | REAL | | Match score (0-100) |
 | `cv_path` | TEXT | | Path to generated CV PDF |
 | `cover_letter_path` | TEXT | | Path to cover letter PDF |
+| `job_text` | TEXT | | Original job posting text |
 | `analysis_data` | TEXT | | JSON: AnalysisResult data |
 | `pipeline_data` | TEXT | | JSON: Pipeline step results |
 | `error_message` | TEXT | | Error details if failed |
-| `started_at` | TEXT | | Pipeline start timestamp |
-| `completed_at` | TEXT | | Pipeline completion timestamp |
-| `created_at` | TEXT | | Record creation timestamp |
+| `created_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record creation |
+| `updated_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Last update |
+| `started_at` | TIMESTAMP | | Pipeline start time |
+| `completed_at` | TIMESTAMP | | Pipeline completion time |
+
+### `settings` Table
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `key` | TEXT | PRIMARY KEY | Setting key |
+| `value` | TEXT | NOT NULL | Setting value |
+| `updated_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Last update |
 
 ---
 
 ## Models
 
-### Profile Model
+### User Models
+
+```python
+class User(BaseModel):
+    """Database user record."""
+    id: int
+    username: str
+    email: str | None = None
+    display_name: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+class UserCreate(BaseModel):
+    """Data for creating a new user."""
+    username: str
+    email: str | None = None
+    display_name: str | None = None
+```
+
+### Profile Models
 
 ```python
 class Profile(BaseModel):
-    """Database profile record."""
+    """Full profile with all related data."""
     id: int
+    user_id: int
     slug: str
     name: str
-    full_name: str | None = None
+    title: str | None = None
     email: str | None = None
     phone: str | None = None
     location: str | None = None
-    title: str | None = None
     summary: str | None = None
-    profile_data: dict[str, Any]  # Full UserProfile as dict
     is_active: bool = False
     is_demo: bool = False
     created_at: datetime
     updated_at: datetime
-    stats: ProfileStats | None = None  # Computed on read
+    # Related data
+    skills: list[Skill] = []
+    experiences: list[Experience] = []
+    education: list[Education] = []
+    certifications: list[Certification] = []
+    languages: list[Language] = []
 
-class ProfileStats(BaseModel):
-    """Profile statistics computed from applications."""
-    total_applications: int = 0
-    completed_applications: int = 0
+class ProfileSummary(BaseModel):
+    """Profile with aggregated stats (for list views)."""
+    id: int
+    user_id: int
+    slug: str
+    name: str
+    title: str | None = None
+    is_active: bool = False
+    is_demo: bool = False
+    created_at: datetime
+    updated_at: datetime
+    # Computed stats
+    skill_count: int = 0
+    experience_count: int = 0
+    education_count: int = 0
+    certification_count: int = 0
+    language_count: int = 0
+    application_count: int = 0
+    completed_application_count: int = 0
     avg_compatibility_score: float | None = None
 ```
 
-### Application Model
+### Application Models
 
 ```python
 class ApplicationStatus(str, Enum):
@@ -147,7 +276,8 @@ class Application(BaseModel):
     """Database application record."""
     id: int
     job_id: str
-    profile_id: int
+    user_id: int | None = None
+    profile_id: int | None = None
     job_text: str | None = None
     job_title: str | None = None
     company_name: str | None = None
@@ -161,6 +291,9 @@ class Application(BaseModel):
     started_at: datetime | None = None
     completed_at: datetime | None = None
     created_at: datetime
+    # Joined fields
+    profile_name: str | None = None
+    profile_slug: str | None = None
 ```
 
 ---
@@ -169,167 +302,134 @@ class Application(BaseModel):
 
 ```python
 class DatabaseService:
-    """SQLite persistence for profiles and applications."""
+    """SQLite persistence for users, profiles, and applications."""
 
-    def __init__(
-        self,
-        db_path: Path | None = None,  # Default: data/scout.db
-    ): ...
+    def __init__(self, db_path: Path = DEFAULT_DB_PATH): ...
 
     async def initialize(self) -> None:
-        """
-        Initialize database:
-        1. Create data directory if needed
-        2. Create tables if not exist
-        3. Seed demo profiles if empty
-        """
+        """Initialize database, run migrations, seed demo data."""
 
-    async def shutdown(self) -> None:
+    async def close(self) -> None:
         """Close database connection."""
 
+    async def reset(self) -> None:
+        """Reset database to fresh state. WARNING: Deletes all data!"""
+
+    # Settings
+    async def get_settings(self) -> Settings: ...
+    async def set_setting(self, key: str, value: Any) -> None: ...
+
+    # User operations
+    async def get_user(self, user_id: int) -> User: ...
+    async def get_user_by_username(self, username: str) -> User | None: ...
+    async def get_current_user(self) -> User: ...
+    async def create_user(self, data: UserCreate) -> User: ...
+
     # Profile operations
-    async def list_profiles(self) -> list[Profile]: ...
+    async def list_profiles(self, user_id: int | None = None) -> list[ProfileSummary]: ...
+    async def get_profile(self, profile_id: int) -> Profile: ...
     async def get_profile_by_slug(self, slug: str) -> Profile: ...
-    async def get_active_profile(self) -> Profile | None: ...
-    async def set_active_profile(self, slug: str) -> Profile: ...
-    async def create_profile(self, data: ProfileCreate) -> Profile: ...
+    async def get_active_profile(self, user_id: int | None = None) -> Profile | None: ...
+    async def create_profile(self, user_id: int, data: ProfileCreate) -> Profile: ...
     async def update_profile(self, slug: str, data: ProfileUpdate) -> Profile: ...
     async def delete_profile(self, slug: str) -> None: ...
+    async def activate_profile(self, slug: str) -> Profile: ...
+    async def get_profile_completeness(self, slug: str) -> ProfileCompleteness: ...
 
     # Application operations
     async def list_applications(
         self,
+        user_id: int | None = None,
         profile_id: int | None = None,
-        limit: int = 20,
+        status: ApplicationStatus | None = None,
+        limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[Application], int]: ...
-    async def get_application_by_job_id(self, job_id: str) -> Application | None: ...
+    async def get_application(self, job_id: str) -> Application: ...
+    async def get_application_by_id(self, app_id: int) -> Application: ...
     async def create_application(self, data: ApplicationCreate) -> Application: ...
     async def update_application(self, job_id: str, data: ApplicationUpdate) -> Application: ...
+    async def delete_application(self, job_id: str) -> None: ...
 ```
 
 ---
 
 ## Key Features
 
-### 1. Auto-Migration
+### 1. User/Profile Separation
 
-Tables are created automatically on first startup:
+Users own multiple profiles, enabling different career personas:
 
 ```python
-async def _ensure_schema(self) -> None:
-    """Create tables if they don't exist."""
-    async with aiosqlite.connect(self._db_path) as db:
-        await db.execute('''
-            CREATE TABLE IF NOT EXISTS profiles (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                slug TEXT UNIQUE NOT NULL,
-                name TEXT NOT NULL,
-                ...
-            )
-        ''')
-        await db.execute('''
-            CREATE TABLE IF NOT EXISTS applications (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                job_id TEXT UNIQUE NOT NULL,
-                profile_id INTEGER REFERENCES profiles(id),
-                ...
-            )
-        ''')
-        await db.commit()
+# One user can have multiple profiles
+user = await db.get_current_user()  # Returns Test User
+profiles = await db.list_profiles(user.id)
+# Returns: Backend Focus, Full Stack, DevOps Specialist
 ```
 
-### 2. Demo Profile Seeding
+### 2. Normalized Profile Data
 
-Three demo profiles are auto-created when the database is empty:
+Profile data is stored in separate related tables instead of a JSON blob:
+
+```python
+profile = await db.get_profile_by_slug("backend-focus")
+print(f"Skills: {len(profile.skills)}")  # 12 skills
+print(f"Experience: {len(profile.experiences)}")  # 3 experiences
+print(f"Education: {len(profile.education)}")  # 1 education
+```
+
+### 3. Demo Data Seeding
+
+Test User with 3 demo profiles is auto-created on first startup:
 
 ```python
 DEMO_PROFILES = [
-    {
-        "name": "Emma Chen",
-        "slug": "emma-chen",
-        "title": "AI/ML Engineer",
-        "email": "emma.chen@example.com",
-        # ... full profile data
-    },
-    {
-        "name": "Marcus Andersen",
-        "slug": "marcus-andersen",
-        "title": "Backend/DevOps Engineer",
-        # ...
-    },
-    {
-        "name": "Sofia Martinez",
-        "slug": "sofia-martinez",
-        "title": "Full-Stack Developer",
-        # ...
-    },
+    BACKEND_FOCUS_PROFILE,    # Senior Backend Engineer
+    FULLSTACK_FOCUS_PROFILE,  # Full Stack Developer
+    DEVOPS_FOCUS_PROFILE,     # DevOps Engineer
 ]
+DEFAULT_ACTIVE_PROFILE_SLUG = "backend-focus"
 ```
 
-### 3. Slug Generation
+### 4. Profile Completeness Scoring
 
-Profile slugs are generated from names for human-readable URLs:
+Profiles are scored based on section completeness:
 
 ```python
-def generate_slug(name: str) -> str:
-    """Convert name to URL-safe slug."""
-    slug = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
-    return slug
-
-# Examples:
-# "Emma Chen" -> "emma-chen"
-# "Dr. John Smith III" -> "dr-john-smith-iii"
+completeness = await db.get_profile_completeness("backend-focus")
+print(f"Score: {completeness.overall_score}%")  # 91%
+print(f"Level: {completeness.level}")  # excellent
 ```
 
-### 4. Active Profile Pattern
+Scoring weights:
+- Contact info: 15%
+- Summary: 15%
+- Skills: 20%
+- Experience: 25%
+- Education: 15%
+- Certifications: 5%
+- Languages: 5%
 
-Only one profile can be active at a time. Switching triggers ChromaDB re-indexing:
+### 5. Schema Migrations
+
+Database migrations run automatically on startup:
 
 ```python
-async def set_active_profile(self, slug: str) -> Profile:
-    """Activate a profile and re-index to ChromaDB."""
-    async with aiosqlite.connect(self._db_path) as db:
-        # Clear all active flags
-        await db.execute("UPDATE profiles SET is_active = 0")
-
-        # Set new active profile
-        await db.execute(
-            "UPDATE profiles SET is_active = 1 WHERE slug = ?",
-            (slug,)
-        )
-        await db.commit()
-
-    # Trigger ChromaDB re-indexing
-    profile = await self.get_profile_by_slug(slug)
-    await self._reindex_to_chromadb(profile)
-
-    return profile
+def run_migrations(conn: sqlite3.Connection) -> None:
+    """Run pending migrations from current to target version."""
+    current = get_schema_version(conn)
+    if current < 2:
+        _migrate_v1_to_v2(conn)  # Destructive for PoC
 ```
 
-### 5. Profile-Scoped Applications
-
-Applications are linked to profiles via foreign key:
+### 6. Singleton Pattern
 
 ```python
-async def list_applications(
-    self,
-    profile_id: int | None = None,
-    limit: int = 20,
-    offset: int = 0,
-) -> tuple[list[Application], int]:
-    """List applications, optionally filtered by profile."""
-    query = "SELECT * FROM applications"
-    params = []
+# Get singleton instance
+db = await get_database_service()
 
-    if profile_id is not None:
-        query += " WHERE profile_id = ?"
-        params.append(profile_id)
-
-    query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
-    params.extend([limit, offset])
-
-    # ... execute query
+# Reset singleton (for testing)
+reset_database_service()
 ```
 
 ---
@@ -344,56 +444,74 @@ from src.services.database import get_database_service
 # Get singleton instance
 db = await get_database_service()
 
-# Get active profile
+# Get current user (test_user for PoC)
+user = await db.get_current_user()
+
+# Get active profile with all data
 profile = await db.get_active_profile()
 print(f"Active: {profile.name} ({profile.slug})")
-
-# List all profiles
-profiles = await db.list_profiles()
-for p in profiles:
-    print(f"- {p.name}: {p.stats.total_applications} apps")
+print(f"Skills: {len(profile.skills)}")
 ```
 
 ### Profile Management
 
 ```python
-# Create new profile
-from src.services.database import ProfileCreate
+from src.services.database import (
+    get_database_service,
+    ProfileCreate,
+    ProfileUpdate,
+    SkillCreate,
+    SkillLevel,
+)
 
-new_profile = await db.create_profile(ProfileCreate(
-    name="John Doe",
-    email="john@example.com",
-    title="Software Engineer",
-    profile_data={
-        "name": "John Doe",
-        "skills": [{"name": "Python", "level": "expert"}],
-        # ...
-    }
+db = await get_database_service()
+user = await db.get_current_user()
+
+# Create new profile
+new_profile = await db.create_profile(user.id, ProfileCreate(
+    name="ML Engineer",
+    title="Machine Learning Engineer",
+    summary="ML specialist with 5 years of experience...",
+    skills=[
+        SkillCreate(name="Python", level=SkillLevel.EXPERT, years=5),
+        SkillCreate(name="TensorFlow", level=SkillLevel.ADVANCED, years=3),
+    ],
 ))
 print(f"Created: {new_profile.slug}")
 
-# Switch active profile
-await db.set_active_profile("john-doe")
-
 # Update profile
-from src.services.database import ProfileUpdate
-
-await db.update_profile("john-doe", ProfileUpdate(
-    title="Senior Software Engineer"
+await db.update_profile("ml-engineer", ProfileUpdate(
+    title="Senior ML Engineer",
+    skills=[
+        SkillCreate(name="Python", level=SkillLevel.EXPERT, years=6),
+        SkillCreate(name="PyTorch", level=SkillLevel.ADVANCED, years=4),
+    ],
 ))
 
-# Delete profile (cannot delete active)
-await db.delete_profile("old-profile")
+# Activate profile
+await db.activate_profile("ml-engineer")
+
+# Delete profile
+await db.delete_profile("ml-engineer")
 ```
 
 ### Application Tracking
 
 ```python
-from src.services.database import ApplicationCreate, ApplicationUpdate, ApplicationStatus
+from src.services.database import (
+    ApplicationCreate,
+    ApplicationUpdate,
+    ApplicationStatus,
+)
 
-# Create application record when pipeline starts
+db = await get_database_service()
+user = await db.get_current_user()
+profile = await db.get_active_profile()
+
+# Create application when pipeline starts
 app = await db.create_application(ApplicationCreate(
     job_id="abc12345",
+    user_id=user.id,
     profile_id=profile.id,
     job_text="Software Engineer at Example Corp...",
 ))
@@ -406,95 +524,14 @@ await db.update_application("abc12345", ApplicationUpdate(
     compatibility_score=78.5,
     cv_path="data/outputs/cv_abc12345.pdf",
     cover_letter_path="data/outputs/cover_letter_abc12345.pdf",
-    completed_at=datetime.now(),
 ))
 
-# List applications for profile
+# List applications with filtering
 apps, total = await db.list_applications(
-    profile_id=profile.id,
+    user_id=user.id,
+    status=ApplicationStatus.COMPLETED,
     limit=10,
-    offset=0
 )
-```
-
----
-
-## Integration Points
-
-### Pipeline Orchestrator
-
-The Pipeline Orchestrator creates and updates application records:
-
-```python
-# In jobs.py API route
-async def _execute_pipeline(...):
-    db = await get_database_service()
-
-    # Mark as running
-    await db.update_application(job_id, ApplicationUpdate(
-        status=ApplicationStatus.RUNNING,
-        started_at=datetime.now(),
-    ))
-
-    try:
-        result = await orchestrator.execute(input_data)
-
-        # Save completed result
-        await db.update_application(job_id, ApplicationUpdate(
-            status=ApplicationStatus.COMPLETED,
-            job_title=result.job_title,
-            company_name=result.company_name,
-            compatibility_score=result.compatibility_score,
-            cv_path=result.cv_path,
-            cover_letter_path=result.cover_letter_path,
-            completed_at=datetime.now(),
-        ))
-    except Exception as e:
-        await db.update_application(job_id, ApplicationUpdate(
-            status=ApplicationStatus.FAILED,
-            error_message=str(e),
-            completed_at=datetime.now(),
-        ))
-```
-
-### Collector Module
-
-The Collector can load profiles from the database:
-
-```python
-# In collector.py
-async def load_profile_from_db(self) -> UserProfile | None:
-    """Load the active profile from database."""
-    from src.services.database import get_database_service
-
-    db = await get_database_service()
-    active = await db.get_active_profile()
-
-    if active is None:
-        return None
-
-    self._profile = UserProfile(**active.profile_data)
-    return self._profile
-```
-
-### Web Interface
-
-The navbar profile switcher uses the profiles API:
-
-```javascript
-// In common.js
-async function loadProfilesList() {
-    const response = await fetch('/api/v1/profiles');
-    const data = await response.json();
-    window.Scout.profilesList = data.profiles || [];
-    window.Scout.activeProfileSlug = data.active_profile_slug;
-    updateNavbarProfileSwitcher();
-}
-
-async function switchToProfile(slug) {
-    await fetch(`/api/v1/profiles/${slug}/activate`, { method: 'POST' });
-    // Shows toast, reloads page
-}
 ```
 
 ---
@@ -504,19 +541,24 @@ async function switchToProfile(slug) {
 ```python
 class DatabaseError(Exception):
     """Base exception for database operations."""
-    pass
+
+class MigrationError(DatabaseError):
+    """Schema migration failed."""
+
+class UserNotFoundError(DatabaseError):
+    """User not found by ID or username."""
 
 class ProfileNotFoundError(DatabaseError):
-    """Profile with given slug not found."""
-    pass
+    """Profile not found by ID or slug."""
+
+class ProfileSlugExistsError(DatabaseError):
+    """Profile with this slug already exists."""
 
 class ApplicationNotFoundError(DatabaseError):
-    """Application with given job_id not found."""
-    pass
+    """Application not found by job_id."""
 
-class CannotDeleteActiveProfileError(DatabaseError):
-    """Cannot delete the currently active profile."""
-    pass
+class NoActiveProfileError(DatabaseError):
+    """No active profile set for user."""
 ```
 
 ---
@@ -535,19 +577,20 @@ The database file and parent directory are created automatically if they don't e
 
 Run tests:
 ```bash
-pytest tests/test_database.py -v
+pytest tests/test_database_service.py -v
 ```
 
 Key test areas:
-- Profile CRUD operations
+- User CRUD operations
+- Profile CRUD with related data
 - Application CRUD operations
 - Active profile switching
-- Demo profile seeding
-- Slug generation
-- Foreign key constraints
+- Demo data seeding
+- Profile completeness scoring
+- Schema migrations
 - Error handling
 
 ---
 
 *Last updated: December 16, 2025*
-*Database: SQLite with aiosqlite for async access*
+*Schema Version: 2 (User/Profile architecture)*
