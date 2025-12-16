@@ -64,6 +64,26 @@ async def profile_create_legacy(request: Request) -> HTMLResponse:
     )
 
 
+@router.get("/profile/edit", response_class=HTMLResponse)
+async def profile_editor(request: Request) -> HTMLResponse:
+    """
+    Render the form-based profile editor page.
+
+    Provides a user-friendly multi-step form interface for creating
+    and editing profiles without needing to write YAML manually.
+
+    Args:
+        request: FastAPI request object (required for templates).
+
+    Returns:
+        Rendered HTML page.
+    """
+    return templates.TemplateResponse(
+        request=request,
+        name="profile_editor.html",
+    )
+
+
 # =============================================================================
 # MULTI-PROFILE MANAGEMENT PAGES
 # =============================================================================

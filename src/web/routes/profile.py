@@ -10,14 +10,32 @@ Endpoints:
     GET /api/profile/retrieve - Get current profile data
     GET /api/profile/assessment - Get profile completeness assessment
     GET /api/profile/completeness-summary - Get quick profile summary with score
+    GET /api/profile/editor-data - Get profile data for form editor
+    POST /api/profile/editor-save - Save profile from form editor
+    POST /api/profile/assess - Assess profile completeness without saving
+    POST /api/profile/export-yaml - Export profile as YAML file download
 """
 
 import logging
+from datetime import datetime
+from pathlib import Path
 
+import yaml
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
+from pydantic import ValidationError
 
 from src.modules.collector import ProfileAssessment, get_collector
+from src.modules.collector.assessment import assess_profile
 from src.modules.collector.collector import Collector
+from src.modules.collector.models import (
+    Certification,
+    Education,
+    Experience,
+    Skill,
+    SkillLevel,
+    UserProfile,
+)
 from src.services.profile import (
     ProfileCreateRequest,
     ProfileCreateResponse,
@@ -300,3 +318,278 @@ async def get_profile_completeness_summary(
     except Exception as e:
         logger.error(f"Summary failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# =============================================================================
+# PROFILE EDITOR ENDPOINTS
+# =============================================================================
+
+# Default profile path
+DEFAULT_PROFILE_PATH = Path("data/profile.yaml")
+
+
+@router.get(
+    "/editor-data",
+    responses={
+        404: {"model": ErrorResponse, "description": "Profile not found"},
+        500: {"model": ErrorResponse, "description": "Server error"},
+    },
+    summary="Get profile data for editor",
+    description="Get profile data in JSON format for the form-based editor.",
+)
+async def get_editor_data(
+    collector: Collector = Depends(get_collector_dep),
+) -> dict:
+    """
+    Get profile data for the form editor.
+
+    Returns profile data as a JSON object that can populate the editor form.
+    """
+    try:
+        # Try to get loaded profile
+        try:
+            profile = collector.get_profile()
+        except Exception:
+            # Try to load default profile
+            await collector.load_profile()
+            profile = collector.get_profile()
+
+        # Convert to dict with JSON-safe serialization
+        return profile.model_dump(mode="json")
+
+    except Exception as e:
+        logger.info(f"No profile found for editor: {e}")
+        raise HTTPException(status_code=404, detail="No profile found")
+
+
+@router.post(
+    "/editor-save",
+    responses={
+        400: {"model": ErrorResponse, "description": "Validation error"},
+        500: {"model": ErrorResponse, "description": "Server error"},
+    },
+    summary="Save profile from editor",
+    description="Save profile data from the form-based editor.",
+)
+async def save_editor_data(
+    profile_data: dict,
+    collector: Collector = Depends(get_collector_dep),
+) -> dict:
+    """
+    Save profile from the form editor.
+
+    Validates the profile data, saves to YAML file, and re-indexes.
+    """
+    try:
+        # Parse and validate profile data
+        profile = _parse_profile_data(profile_data)
+
+        # Ensure data directory exists
+        DEFAULT_PROFILE_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+        # Save to YAML file
+        profile_dict = profile.model_dump(mode="json")
+        with open(DEFAULT_PROFILE_PATH, "w") as f:
+            yaml.dump(
+                profile_dict,
+                f,
+                default_flow_style=False,
+                allow_unicode=True,
+                sort_keys=False,
+            )
+
+        # Reload in collector and re-index
+        await collector.load_profile(DEFAULT_PROFILE_PATH)
+        await collector.clear_index()
+        chunk_count = await collector.index_profile()
+
+        logger.info(f"Profile saved and indexed: {chunk_count} chunks")
+
+        return {
+            "status": "saved",
+            "message": "Profile saved successfully",
+            "chunk_count": chunk_count,
+        }
+
+    except ValidationError as e:
+        logger.warning(f"Profile validation failed: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error saving profile: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post(
+    "/assess",
+    response_model=ProfileAssessment,
+    responses={
+        400: {"model": ErrorResponse, "description": "Validation error"},
+        500: {"model": ErrorResponse, "description": "Assessment failed"},
+    },
+    summary="Assess profile completeness",
+    description="Assess profile completeness without saving.",
+)
+async def assess_profile_data(profile_data: dict) -> ProfileAssessment:
+    """
+    Assess profile completeness without saving.
+
+    Takes profile data as JSON and returns assessment with scores and suggestions.
+    """
+    try:
+        # Parse and validate profile data
+        profile = _parse_profile_data(profile_data)
+
+        # Run assessment
+        return assess_profile(profile)
+
+    except ValidationError as e:
+        logger.warning(f"Profile validation failed: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Assessment failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post(
+    "/export-yaml",
+    responses={
+        400: {"model": ErrorResponse, "description": "Validation error"},
+        500: {"model": ErrorResponse, "description": "Export failed"},
+    },
+    summary="Export profile as YAML",
+    description="Export profile data as a downloadable YAML file.",
+)
+async def export_profile_yaml(profile_data: dict) -> Response:
+    """
+    Export profile as YAML file download.
+
+    Takes profile data as JSON and returns a YAML file.
+    """
+    try:
+        # Parse and validate profile data
+        profile = _parse_profile_data(profile_data)
+
+        # Convert to YAML
+        yaml_content = yaml.dump(
+            profile.model_dump(mode="json"),
+            default_flow_style=False,
+            allow_unicode=True,
+            sort_keys=False,
+        )
+
+        return Response(
+            content=yaml_content,
+            media_type="application/x-yaml",
+            headers={
+                "Content-Disposition": "attachment; filename=profile.yaml"
+            },
+        )
+
+    except ValidationError as e:
+        logger.warning(f"Profile validation failed: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Export failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def _parse_profile_data(data: dict) -> UserProfile:
+    """
+    Parse profile data from editor form format to UserProfile.
+
+    Handles conversion of nested objects and date parsing.
+    """
+    # Parse skills
+    skills = []
+    for skill_data in data.get("skills", []):
+        if skill_data.get("name"):
+            level_str = skill_data.get("level", "intermediate")
+            try:
+                level = SkillLevel(level_str)
+            except ValueError:
+                level = SkillLevel.INTERMEDIATE
+
+            skills.append(Skill(
+                name=skill_data["name"],
+                level=level,
+                years=skill_data.get("years"),
+                keywords=skill_data.get("keywords", []),
+            ))
+
+    # Parse experiences
+    experiences = []
+    for exp_data in data.get("experiences", []):
+        if exp_data.get("company") and exp_data.get("role"):
+            experiences.append(Experience(
+                company=exp_data["company"],
+                role=exp_data["role"],
+                start_date=_parse_date(exp_data.get("start_date")),
+                end_date=_parse_date(exp_data.get("end_date")),
+                current=exp_data.get("current", False),
+                description=exp_data.get("description", ""),
+                achievements=exp_data.get("achievements", []),
+                technologies=exp_data.get("technologies", []),
+            ))
+
+    # Parse education
+    education = []
+    for edu_data in data.get("education", []):
+        if edu_data.get("institution"):
+            education.append(Education(
+                institution=edu_data["institution"],
+                degree=edu_data.get("degree", ""),
+                field=edu_data.get("field", ""),
+                start_date=_parse_date(edu_data.get("start_date")),
+                end_date=_parse_date(edu_data.get("end_date")),
+                gpa=edu_data.get("gpa"),
+                relevant_courses=edu_data.get("relevant_courses", []),
+            ))
+
+    # Parse certifications
+    certifications = []
+    for cert_data in data.get("certifications", []):
+        if cert_data.get("name"):
+            certifications.append(Certification(
+                name=cert_data["name"],
+                issuer=cert_data.get("issuer", ""),
+                date_obtained=_parse_date(cert_data.get("date_obtained")),
+                expiry_date=_parse_date(cert_data.get("expiry_date")),
+                credential_id=cert_data.get("credential_id"),
+            ))
+
+    # Create profile
+    return UserProfile(
+        full_name=data.get("full_name", ""),
+        email=data.get("email", ""),
+        phone=data.get("phone"),
+        location=data.get("location", ""),
+        linkedin_url=data.get("linkedin_url"),
+        github_url=data.get("github_url"),
+        title=data.get("title", ""),
+        years_experience=data.get("years_experience", 0.0),
+        summary=data.get("summary", ""),
+        skills=skills,
+        experiences=experiences,
+        education=education,
+        certifications=certifications,
+        last_updated=datetime.now(),
+    )
+
+
+def _parse_date(date_str: str | None) -> datetime | None:
+    """Parse date string to datetime, handling various formats."""
+    if not date_str:
+        return None
+
+    try:
+        # Try ISO format first (YYYY-MM-DD)
+        if "T" in date_str:
+            return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        # Try date-only format
+        return datetime.strptime(date_str, "%Y-%m-%d")
+    except ValueError:
+        try:
+            # Try year-month format
+            return datetime.strptime(date_str, "%Y-%m")
+        except ValueError:
+            return None

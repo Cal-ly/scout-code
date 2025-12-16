@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Editor - Scout</title>
+    <link rel="stylesheet" href="/static/css/common.css">
+    <link rel="stylesheet" href="/static/css/profile-editor.css">
+</head>
+<body>
+    {% include 'partials/navbar.html' %}
+
+    <main class="container">
+        <div class="editor-header">
+            <h1>Profile Editor</h1>
+            <div class="editor-actions">
+                <button type="button" class="btn btn-secondary" onclick="exportYAML()">
+                    Export YAML
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveProfile()">
+                    Save Profile
+                </button>
+            </div>
+        </div>
+
+        <!-- Completeness Score Banner -->
+        <div id="completeness-banner" class="completeness-banner">
+            <div class="score-circle" id="score-circle">
+                <span id="score-value">--</span>
+            </div>
+            <div class="score-details">
+                <span id="score-grade" class="grade">Loading...</span>
+                <span id="score-suggestion" class="suggestion"></span>
+            </div>
+        </div>
+
+        <!-- Section Navigation -->
+        <div class="section-nav">
+            <button class="section-tab active" data-section="basic-info">Basic Info</button>
+            <button class="section-tab" data-section="summary">Summary</button>
+            <button class="section-tab" data-section="skills">Skills</button>
+            <button class="section-tab" data-section="experience">Experience</button>
+            <button class="section-tab" data-section="education">Education</button>
+            <button class="section-tab" data-section="certifications">Certifications</button>
+        </div>
+
+        <!-- Form Sections -->
+        <form id="profile-form" class="profile-form">
+            <!-- Basic Info Section -->
+            <div id="section-basic-info" class="form-section active">
+                <h2>Basic Information</h2>
+                <p class="section-description">Your contact details and professional links.</p>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="full_name">Full Name *</label>
+                        <input type="text" id="full_name" name="full_name" required
+                               placeholder="Alex Andersen">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email *</label>
+                        <input type="email" id="email" name="email" required
+                               placeholder="alex@example.com">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="phone">Phone</label>
+                        <input type="tel" id="phone" name="phone"
+                               placeholder="+45 12 34 56 78">
+                    </div>
+                    <div class="form-group">
+                        <label for="location">Location *</label>
+                        <input type="text" id="location" name="location" required
+                               placeholder="Copenhagen, Denmark">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="linkedin_url">LinkedIn URL</label>
+                        <input type="url" id="linkedin_url" name="linkedin_url"
+                               placeholder="https://linkedin.com/in/yourprofile">
+                    </div>
+                    <div class="form-group">
+                        <label for="github_url">GitHub URL</label>
+                        <input type="url" id="github_url" name="github_url"
+                               placeholder="https://github.com/yourusername">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Section -->
+            <div id="section-summary" class="form-section">
+                <h2>Professional Summary</h2>
+                <p class="section-description">Your title, experience, and professional bio.</p>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="title">Professional Title *</label>
+                        <input type="text" id="title" name="title" required
+                               placeholder="Senior Software Engineer">
+                    </div>
+                    <div class="form-group">
+                        <label for="years_experience">Years of Experience</label>
+                        <input type="number" id="years_experience" name="years_experience"
+                               min="0" max="50" step="0.5" placeholder="7">
+                    </div>
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="summary">Professional Summary</label>
+                    <textarea id="summary" name="summary" rows="5"
+                              placeholder="A brief summary of your professional background, expertise, and career goals. Aim for 50-100 words."></textarea>
+                    <span class="char-count"><span id="summary-count">0</span> words</span>
+                </div>
+            </div>
+
+            <!-- Skills Section -->
+            <div id="section-skills" class="form-section">
+                <h2>Skills</h2>
+                <p class="section-description">Your technical and professional skills. Aim for 8-15 skills.</p>
+
+                <div id="skills-list" class="dynamic-list">
+                    <!-- Skills will be added here dynamically -->
+                </div>
+
+                <button type="button" class="btn btn-add" onclick="addSkill()">
+                    + Add Skill
+                </button>
+            </div>
+
+            <!-- Experience Section -->
+            <div id="section-experience" class="form-section">
+                <h2>Work Experience</h2>
+                <p class="section-description">Your work history, starting with the most recent.</p>
+
+                <div id="experience-list" class="dynamic-list">
+                    <!-- Experiences will be added here dynamically -->
+                </div>
+
+                <button type="button" class="btn btn-add" onclick="addExperience()">
+                    + Add Experience
+                </button>
+            </div>
+
+            <!-- Education Section -->
+            <div id="section-education" class="form-section">
+                <h2>Education</h2>
+                <p class="section-description">Your academic background.</p>
+
+                <div id="education-list" class="dynamic-list">
+                    <!-- Education entries will be added here dynamically -->
+                </div>
+
+                <button type="button" class="btn btn-add" onclick="addEducation()">
+                    + Add Education
+                </button>
+            </div>
+
+            <!-- Certifications Section -->
+            <div id="section-certifications" class="form-section">
+                <h2>Certifications</h2>
+                <p class="section-description">Professional certifications and credentials.</p>
+
+                <div id="certifications-list" class="dynamic-list">
+                    <!-- Certifications will be added here dynamically -->
+                </div>
+
+                <button type="button" class="btn btn-add" onclick="addCertification()">
+                    + Add Certification
+                </button>
+            </div>
+        </form>
+
+        <!-- Navigation Buttons -->
+        <div class="form-navigation">
+            <button type="button" class="btn btn-secondary" id="prev-btn" onclick="prevSection()" disabled>
+                &larr; Previous
+            </button>
+            <button type="button" class="btn btn-primary" id="next-btn" onclick="nextSection()">
+                Next &rarr;
+            </button>
+        </div>
+    </main>
+
+    <!-- Skill Template (hidden) -->
+    <template id="skill-template">
+        <div class="list-item skill-item" data-index="{index}">
+            <div class="item-header">
+                <span class="item-title">Skill #{index}</span>
+                <button type="button" class="btn-remove" onclick="removeSkill({index})">x</button>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Skill Name *</label>
+                    <input type="text" name="skills[{index}].name" required
+                           placeholder="Python" list="common-skills">
+                </div>
+                <div class="form-group">
+                    <label>Proficiency Level</label>
+                    <select name="skills[{index}].level">
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate" selected>Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                        <option value="expert">Expert</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Years of Experience</label>
+                    <input type="number" name="skills[{index}].years" min="0" max="50" step="0.5"
+                           placeholder="3">
+                </div>
+                <div class="form-group">
+                    <label>Keywords (comma-separated)</label>
+                    <input type="text" name="skills[{index}].keywords"
+                           placeholder="python3, asyncio, typing">
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Experience Template (hidden) -->
+    <template id="experience-template">
+        <div class="list-item experience-item" data-index="{index}">
+            <div class="item-header">
+                <span class="item-title">Experience #{index}</span>
+                <button type="button" class="btn-remove" onclick="removeExperience({index})">x</button>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Company *</label>
+                    <input type="text" name="experiences[{index}].company" required
+                           placeholder="TechCorp ApS">
+                </div>
+                <div class="form-group">
+                    <label>Role/Title *</label>
+                    <input type="text" name="experiences[{index}].role" required
+                           placeholder="Senior Software Engineer">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Start Date *</label>
+                    <input type="date" name="experiences[{index}].start_date" required>
+                </div>
+                <div class="form-group">
+                    <label>End Date</label>
+                    <input type="date" name="experiences[{index}].end_date">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="experiences[{index}].current"
+                               onchange="toggleEndDate(this, {index})">
+                        Current position
+                    </label>
+                </div>
+            </div>
+            <div class="form-group full-width">
+                <label>Description</label>
+                <textarea name="experiences[{index}].description" rows="3"
+                          placeholder="Describe your responsibilities and achievements..."></textarea>
+            </div>
+            <div class="form-group full-width">
+                <label>Key Achievements (one per line)</label>
+                <textarea name="experiences[{index}].achievements" rows="3"
+                          placeholder="Reduced API latency by 50%&#10;Led migration to Kubernetes&#10;Mentored 3 junior developers"></textarea>
+            </div>
+            <div class="form-group full-width">
+                <label>Technologies Used (comma-separated)</label>
+                <input type="text" name="experiences[{index}].technologies"
+                       placeholder="Python, FastAPI, PostgreSQL, AWS">
+            </div>
+        </div>
+    </template>
+
+    <!-- Education Template (hidden) -->
+    <template id="education-template">
+        <div class="list-item education-item" data-index="{index}">
+            <div class="item-header">
+                <span class="item-title">Education #{index}</span>
+                <button type="button" class="btn-remove" onclick="removeEducation({index})">x</button>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Institution *</label>
+                    <input type="text" name="education[{index}].institution" required
+                           placeholder="University of Copenhagen">
+                </div>
+                <div class="form-group">
+                    <label>Degree *</label>
+                    <input type="text" name="education[{index}].degree" required
+                           placeholder="M.Sc. Computer Science">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Field of Study *</label>
+                    <input type="text" name="education[{index}].field" required
+                           placeholder="Computer Science">
+                </div>
+                <div class="form-group">
+                    <label>GPA (optional)</label>
+                    <input type="number" name="education[{index}].gpa" min="0" max="12" step="0.1"
+                           placeholder="10.5">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Start Date *</label>
+                    <input type="date" name="education[{index}].start_date" required>
+                </div>
+                <div class="form-group">
+                    <label>End Date</label>
+                    <input type="date" name="education[{index}].end_date">
+                </div>
+            </div>
+            <div class="form-group full-width">
+                <label>Relevant Courses (comma-separated)</label>
+                <input type="text" name="education[{index}].relevant_courses"
+                       placeholder="Distributed Systems, Machine Learning, Cloud Computing">
+            </div>
+        </div>
+    </template>
+
+    <!-- Certification Template (hidden) -->
+    <template id="certification-template">
+        <div class="list-item certification-item" data-index="{index}">
+            <div class="item-header">
+                <span class="item-title">Certification #{index}</span>
+                <button type="button" class="btn-remove" onclick="removeCertification({index})">x</button>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Certification Name *</label>
+                    <input type="text" name="certifications[{index}].name" required
+                           placeholder="AWS Solutions Architect - Associate">
+                </div>
+                <div class="form-group">
+                    <label>Issuing Organization *</label>
+                    <input type="text" name="certifications[{index}].issuer" required
+                           placeholder="Amazon Web Services">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Date Obtained *</label>
+                    <input type="date" name="certifications[{index}].date_obtained" required>
+                </div>
+                <div class="form-group">
+                    <label>Expiry Date (if applicable)</label>
+                    <input type="date" name="certifications[{index}].expiry_date">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Credential ID (optional)</label>
+                <input type="text" name="certifications[{index}].credential_id"
+                       placeholder="AWS-SAA-12345">
+            </div>
+        </div>
+    </template>
+
+    <!-- Common Skills Datalist -->
+    <datalist id="common-skills">
+        <option value="Python">
+        <option value="JavaScript">
+        <option value="TypeScript">
+        <option value="Java">
+        <option value="Go">
+        <option value="Rust">
+        <option value="C#">
+        <option value="C++">
+        <option value="Ruby">
+        <option value="PHP">
+        <option value="Swift">
+        <option value="Kotlin">
+        <option value="React">
+        <option value="Vue.js">
+        <option value="Angular">
+        <option value="Node.js">
+        <option value="Django">
+        <option value="FastAPI">
+        <option value="Flask">
+        <option value="Spring Boot">
+        <option value="PostgreSQL">
+        <option value="MySQL">
+        <option value="MongoDB">
+        <option value="Redis">
+        <option value="Elasticsearch">
+        <option value="Docker">
+        <option value="Kubernetes">
+        <option value="AWS">
+        <option value="GCP">
+        <option value="Azure">
+        <option value="Terraform">
+        <option value="Git">
+        <option value="CI/CD">
+        <option value="Linux">
+        <option value="REST API">
+        <option value="GraphQL">
+        <option value="Machine Learning">
+        <option value="Data Analysis">
+        <option value="Agile">
+        <option value="Scrum">
+    </datalist>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/static/js/common.js"></script>
+    <script src="/static/js/profile-editor.js"></script>
+</body>
+</html>
