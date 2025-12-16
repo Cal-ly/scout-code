@@ -1,0 +1,2 @@
+# Benchmark results directory
+# Results are saved as JSON files: benchmark_{hostname}_{timestamp}.json

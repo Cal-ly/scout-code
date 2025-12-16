@@ -1,0 +1,130 @@
+# Scout Portable Deployment
+# Supports CPU-only and GPU-accelerated configurations
+#
+# Usage:
+#   CPU-only:  docker-compose up -d
+#   With GPU:  docker-compose --profile gpu up -d
+#
+# Prerequisites:
+#   - Docker and Docker Compose installed
+#   - Ollama running (either as service or via this compose)
+#   - For GPU: NVIDIA Container Toolkit installed
+
+version: '3.8'
+
+services:
+  # ==========================================================================
+  # SCOUT APPLICATION
+  # ==========================================================================
+  scout:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: scout-app
+    ports:
+      - "${SCOUT_PORT:-8000}:8000"
+    volumes:
+      # Persistent data
+      - ../data:/app/data
+      - ../outputs:/app/outputs
+      # Optional: mount templates for customization
+      - ../data/templates:/app/data/templates:ro
+    environment:
+      # Ollama connection
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:3b}
+      # Scout configuration
+      - SCOUT_LOG_LEVEL=${SCOUT_LOG_LEVEL:-INFO}
+      - SCOUT_ENVIRONMENT=${SCOUT_ENVIRONMENT:-production}
+    extra_hosts:
+      # Allows container to reach host's Ollama on Linux
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    depends_on:
+      ollama:
+        condition: service_healthy
+        required: false
+
+  # ==========================================================================
+  # OLLAMA - CPU MODE (default)
+  # ==========================================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: scout-ollama
+    profiles:
+      - ollama-cpu
+      - full-cpu
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # ==========================================================================
+  # OLLAMA - GPU MODE (NVIDIA)
+  # ==========================================================================
+  ollama-gpu:
+    image: ollama/ollama:latest
+    container_name: scout-ollama-gpu
+    profiles:
+      - ollama-gpu
+      - full-gpu
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # ==========================================================================
+  # BENCHMARK RUNNER (on-demand)
+  # ==========================================================================
+  benchmark:
+    build:
+      context: .
+      dockerfile: benchmark/Dockerfile
+    container_name: scout-benchmark
+    profiles:
+      - benchmark
+    volumes:
+      - ./benchmark/results:/app/results
+      - ./benchmark/test_jobs:/app/test_jobs:ro
+    environment:
+      - SCOUT_URL=${SCOUT_URL:-http://scout:8000}
+      - BENCHMARK_RUNS=${BENCHMARK_RUNS:-3}
+    depends_on:
+      - scout
+    network_mode: "host"
+
+volumes:
+  ollama_data:
+    name: scout-ollama-data

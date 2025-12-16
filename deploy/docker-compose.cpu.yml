@@ -1,0 +1,12 @@
+# CPU-only override for Raspberry Pi and non-GPU systems
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.cpu.yml up -d
+
+version: '3.8'
+
+services:
+  scout:
+    environment:
+      # Use smaller model for CPU
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:3b}
+      # Optimize for limited resources
+      - SCOUT_LLM_TIMEOUT=600
