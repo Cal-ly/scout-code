@@ -915,10 +915,79 @@ to support the thesis objective of edge computing on Raspberry Pi 5.
 | S8 Notification | 40 | >90% |
 | Web Interface | ~10 | >90% |
 | Profile Service | 45 | >90% |
-| **Total** | **~652** | **>90%** |
+| Skill Aliases | 36 | >90% |
+| **Total** | **~688** | **>90%** |
+
+---
+
+## Enhancement Features
+
+### Skill Aliases Feature (Complete)
+
+#### Lessons Learned
+
+**LL-059: Skill Alias System Pattern**
+- Use a central dictionary mapping canonical names to aliases
+- Build reverse lookup at module load time for O(1) normalization
+- Keep all aliases lowercase for consistent matching
+```python
+SKILL_ALIASES: dict[str, list[str]] = {
+    "kubernetes": ["k8s", "kube"],
+    "python": ["py", "python3", "python 3.x"],
+}
+
+# Build reverse lookup once at module load
+_ALIAS_TO_CANONICAL: dict[str, str] = {}
+for canonical, aliases in SKILL_ALIASES.items():
+    _ALIAS_TO_CANONICAL[canonical.lower()] = canonical
+    for alias in aliases:
+        _ALIAS_TO_CANONICAL[alias.lower()] = canonical
+```
+- **Apply to:** Any terminology normalization system
+
+**LL-060: Query Expansion for Better Semantic Search**
+- Expand search queries to include all known aliases
+- Combine original query with expanded terms in parentheses
+- This helps vector embeddings capture terminology variance
+```python
+expanded_terms = expand_skill_query(query)  # ["kubernetes", "k8s", "kube"]
+if len(expanded_terms) > 1:
+    enhanced_query = f"{query} ({', '.join(expanded_terms)})"
+# Result: "kubernetes (kubernetes, k8s, kube)"
+```
+- **Apply to:** Any semantic search needing terminology normalization
+
+**LL-061: Test Updates When Behavior Changes**
+- When enhancing search behavior, existing tests may need updates
+- Tests that check exact query strings will fail with query expansion
+- Update tests to validate behavior rather than exact implementation
+```python
+# Old test (too rigid):
+mock.search.assert_called_with(query="machine learning")
+
+# New test (validates behavior):
+call_args = mock.search.call_args
+assert "machine learning" in call_args.kwargs["query"]
+assert "ml" in call_args.kwargs["query"]  # Alias is included
+```
+- **Apply to:** Any behavior-changing enhancements
+
+**LL-062: Metadata Enrichment for Indexed Documents**
+- Add canonical_name and aliases to document metadata during indexing
+- Append alias text to searchable content for embedding coverage
+- Enables both exact matching and semantic similarity
+```python
+metadata={
+    "name": skill.name,
+    "canonical_name": normalize_skill_name(skill.name),
+    "aliases": ",".join(expand_skill_query(skill.name)),
+}
+content = f"{searchable_text} Also known as: {', '.join(aliases)}"
+```
+- **Apply to:** Any vector store indexing with terminology variants
 
 ---
 
 *Last Updated: December 15, 2025*
-*Review & Optimization Phase - PoC implementation complete (~652 total tests)*
+*Review & Optimization Phase - PoC implementation complete (~688 total tests)*
 *Architecture: Local Ollama LLM (Qwen 2.5 3B / Gemma 2 2B)*
