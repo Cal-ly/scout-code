@@ -55,7 +55,12 @@
       "Bash(ollama:*)",
       "Bash(nvidia-smi:*)",
       "Bash(findstr:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(git -C \"c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\" diff --stat)",
+      "Bash(git -C \"c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\" diff deploy/benchmark/run_benchmark.py src/modules/rinser/models.py)",
+      "Bash(git -C \"c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\" log --oneline -5)",
+      "Bash(git -C \"c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\" show b9df5fc --stat)",
+      "Bash(git -C \"c:\\Users\\Cal-l\\Documents\\GitHub\\Scout\\scout-code\" push origin main)"
     ]
   }
 }
