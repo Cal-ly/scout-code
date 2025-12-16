@@ -9,7 +9,7 @@
 
 window.Scout = window.Scout || {
     profilesList: [],
-    activeProfileFilename: null,
+    activeProfileSlug: null,
     notificationPollInterval: null,
     seenNotifications: new Set()
 };
@@ -114,42 +114,16 @@ function showToast(type, title, message, autoDismiss = true, dismissSeconds = 5)
  */
 async function loadProfilesList() {
     try {
-        // Try new multi-profile API first
-        const response = await fetch('/api/v1/profiles?include_archived=false');
+        const response = await fetch('/api/v1/profiles');
         if (response.ok) {
             const data = await response.json();
             window.Scout.profilesList = data.profiles || [];
-            window.Scout.activeProfileFilename = data.active_profile;
+            window.Scout.activeProfileSlug = data.active_profile_slug;
             updateNavbarProfileSwitcher();
             return;
         }
-    } catch (e) {
-        console.log('Multi-profile API not available, trying single profile');
-    }
-
-    // Fallback to single profile API
-    try {
-        const statusResponse = await fetch('/api/v1/profile/status');
-        if (statusResponse.ok) {
-            const status = await statusResponse.json();
-            if (status.exists) {
-                const profileResponse = await fetch('/api/v1/profile/retrieve');
-                if (profileResponse.ok) {
-                    const profileData = await profileResponse.json();
-                    window.Scout.profilesList = [{
-                        filename: 'profile.yaml',
-                        profile_name: extractProfileName(profileData.profile_text) || 'My Profile',
-                        is_indexed: status.is_indexed,
-                        usage_count: 0,
-                        avg_compatibility_score: null
-                    }];
-                    window.Scout.activeProfileFilename = 'profile.yaml';
-                    updateNavbarProfileSwitcher();
-                }
-            }
-        }
     } catch (error) {
-        console.error('Error loading profile:', error);
+        console.error('Error loading profiles:', error);
     }
 }
 
@@ -173,7 +147,7 @@ function updateNavbarProfileSwitcher() {
     if (!switcherName || !switcherIndicator || !dropdownList) return;
 
     const profiles = window.Scout.profilesList;
-    const activeFilename = window.Scout.activeProfileFilename;
+    const activeSlug = window.Scout.activeProfileSlug;
 
     if (profiles.length === 0) {
         switcherName.textContent = 'No Profiles';
@@ -183,9 +157,9 @@ function updateNavbarProfileSwitcher() {
     }
 
     // Find active profile
-    const activeProfile = profiles.find(p => p.filename === activeFilename);
+    const activeProfile = profiles.find(p => p.slug === activeSlug);
     if (activeProfile) {
-        switcherName.textContent = activeProfile.profile_name || activeProfile.filename;
+        switcherName.textContent = activeProfile.name || activeProfile.full_name;
         switcherIndicator.classList.add('active');
     } else {
         switcherName.textContent = 'Select Profile';
@@ -194,14 +168,15 @@ function updateNavbarProfileSwitcher() {
 
     // Populate dropdown
     dropdownList.innerHTML = profiles.map(profile => {
-        const isActive = profile.filename === activeFilename;
+        const isActive = profile.slug === activeSlug;
+        const appCount = profile.stats?.total_applications || 0;
         return `
             <button class="profile-dropdown-item ${isActive ? 'active' : ''}"
-                    onclick="switchToProfile('${escapeHtml(profile.filename)}')">
+                    onclick="switchToProfile('${escapeHtml(profile.slug)}')">
                 <span class="indicator ${isActive ? 'active' : 'inactive'}"></span>
                 <div class="info">
-                    <div class="name">${escapeHtml(profile.profile_name || profile.filename)}</div>
-                    <div class="meta">${profile.usage_count || 0} apps</div>
+                    <div class="name">${escapeHtml(profile.name || profile.full_name)}</div>
+                    <div class="meta">${appCount} apps${profile.is_demo ? ' (demo)' : ''}</div>
                 </div>
             </button>
         `;
@@ -222,15 +197,16 @@ function toggleProfileDropdown(event) {
 /**
  * Switch to a different profile
  */
-async function switchToProfile(filename) {
+async function switchToProfile(slug) {
     try {
-        const response = await fetch(`/api/v1/profiles/${encodeURIComponent(filename)}/activate`, {
+        const response = await fetch(`/api/v1/profiles/${encodeURIComponent(slug)}/activate`, {
             method: 'POST'
         });
 
         if (!response.ok) throw new Error('Failed to switch profile');
 
-        window.Scout.activeProfileFilename = filename;
+        const profile = await response.json();
+        window.Scout.activeProfileSlug = profile.slug;
         updateNavbarProfileSwitcher();
 
         // Close dropdown
@@ -238,8 +214,10 @@ async function switchToProfile(filename) {
         if (dropdown) dropdown.classList.remove('show');
 
         // Show toast
-        const profile = window.Scout.profilesList.find(p => p.filename === filename);
-        showToast('success', 'Profile Activated', `Now using: ${profile?.profile_name || filename}`);
+        showToast('success', 'Profile Activated', `Now using: ${profile.name || profile.full_name}`);
+
+        // Reload page after short delay to reflect changes
+        setTimeout(() => location.reload(), 1000);
 
     } catch (error) {
         console.error('Error switching profile:', error);

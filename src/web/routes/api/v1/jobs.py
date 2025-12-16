@@ -21,6 +21,13 @@ from typing import Literal
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import FileResponse
 
+from src.services.database import (
+    get_database_service,
+    ApplicationCreate,
+    ApplicationUpdate,
+    ApplicationStatus,
+)
+from src.services.database.exceptions import ProfileNotFoundError
 from src.services.pipeline import (
     PipelineInput,
     PipelineOrchestrator,
@@ -98,14 +105,40 @@ async def _execute_pipeline(
     input_data: PipelineInput,
     job_id: str,
 ) -> None:
-    """Execute pipeline in background with timeout."""
+    """Execute pipeline in background with timeout and persist to database."""
+    db = await get_database_service()
+
     try:
         logger.info(f"Starting pipeline for job {job_id}")
+
+        # Mark as running in database
+        await db.update_application(job_id, ApplicationUpdate(
+            status=ApplicationStatus.RUNNING,
+            started_at=datetime.now(),
+        ))
+
         result = await asyncio.wait_for(
             orchestrator.execute(input_data),
             timeout=PIPELINE_TIMEOUT_SECONDS,
         )
         store.store(result)
+
+        # Save to database
+        await db.update_application(job_id, ApplicationUpdate(
+            status=ApplicationStatus.COMPLETED if result.status == PipelineStatus.COMPLETED else ApplicationStatus.FAILED,
+            job_title=result.job_title,
+            company_name=result.company_name,
+            compatibility_score=result.compatibility_score,
+            cv_path=result.cv_path,
+            cover_letter_path=result.cover_letter_path,
+            analysis_data=result.analysis.model_dump() if hasattr(result, 'analysis') and result.analysis else None,
+            pipeline_data={
+                "steps": [{"step": s.step.value, "status": s.status.value, "duration_ms": s.duration_ms} for s in result.steps],
+                "total_duration_ms": result.total_duration_ms,
+            },
+            completed_at=datetime.now(),
+            error_message=result.error,
+        ))
         logger.info(f"Pipeline completed for job {job_id}: {result.status.value}")
 
     except TimeoutError:
@@ -117,6 +150,11 @@ async def _execute_pipeline(
             error=f"Pipeline timed out after {PIPELINE_TIMEOUT_SECONDS} seconds",
         )
         store.store(error_result)
+        await db.update_application(job_id, ApplicationUpdate(
+            status=ApplicationStatus.FAILED,
+            error_message=f"Pipeline timed out after {PIPELINE_TIMEOUT_SECONDS} seconds",
+            completed_at=datetime.now(),
+        ))
 
     except Exception as e:
         logger.error(f"Pipeline failed for job {job_id}: {e}")
@@ -127,6 +165,11 @@ async def _execute_pipeline(
             error=str(e),
         )
         store.store(error_result)
+        await db.update_application(job_id, ApplicationUpdate(
+            status=ApplicationStatus.FAILED,
+            error_message=str(e),
+            completed_at=datetime.now(),
+        ))
 
 
 @router.post(
@@ -143,7 +186,24 @@ async def apply(
 ) -> ApplyResponse:
     """Start a new job application pipeline."""
     job_id = str(uuid.uuid4())[:8]
-    logger.info(f"Apply request: job_id={job_id}, source={request.source}")
+
+    # Verify active profile exists
+    db = await get_database_service()
+    active_profile = await db.get_active_profile()
+    if active_profile is None:
+        raise HTTPException(
+            status_code=400,
+            detail="No active profile. Please activate a profile first."
+        )
+
+    logger.info(f"Apply request: job_id={job_id}, profile={active_profile.slug}, source={request.source}")
+
+    # Create application record in database
+    await db.create_application(ApplicationCreate(
+        job_id=job_id,
+        profile_id=active_profile.id,
+        job_text=request.job_text,
+    ))
 
     input_data = PipelineInput(
         raw_job_text=request.job_text,
@@ -233,13 +293,41 @@ async def quick_score(request: QuickScoreRequest) -> QuickScoreResponse:
 async def list_jobs(
     skip: int = 0,
     limit: int = 20,
+    profile_slug: str | None = None,
     store: JobStore = Depends(get_store),
 ) -> JobListResponse:
-    """Get paginated list of job applications."""
-    all_results = store.list_all()
-    total = len(all_results)
-    paginated = all_results[skip : skip + limit]
-    summaries = [_result_to_summary(r) for r in paginated]
+    """Get paginated list of job applications from database."""
+    db = await get_database_service()
+
+    # Get profile ID if slug provided
+    profile_id = None
+    if profile_slug:
+        try:
+            profile = await db.get_profile_by_slug(profile_slug)
+            profile_id = profile.id
+        except ProfileNotFoundError:
+            pass
+
+    # Query database
+    applications, total = await db.list_applications(
+        profile_id=profile_id,
+        limit=limit,
+        offset=skip,
+    )
+
+    # Convert to summaries
+    summaries = [
+        JobSummary(
+            job_id=app.job_id,
+            job_title=app.job_title,
+            company_name=app.company_name,
+            status=app.status.value,
+            compatibility_score=app.compatibility_score,
+            submitted_at=app.created_at,
+            completed_at=app.completed_at,
+        )
+        for app in applications
+    ]
 
     return JobListResponse(jobs=summaries, total=total, skip=skip, limit=limit)
 
@@ -255,10 +343,39 @@ async def get_status(
     store: JobStore = Depends(get_store),
 ) -> StatusResponse:
     """Get status of a specific job."""
+    # First check in-memory store for running jobs (has real-time updates)
     result = store.get(job_id)
-    if result is None:
+    if result is not None:
+        return _result_to_status_response(result)
+
+    # Fall back to database for persisted results
+    db = await get_database_service()
+    app = await db.get_application_by_job_id(job_id)
+
+    if app is None:
         raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
-    return _result_to_status_response(result)
+
+    # Convert database record to StatusResponse
+    steps = []
+    if app.pipeline_data and "steps" in app.pipeline_data:
+        steps = [StepInfo(**s) for s in app.pipeline_data["steps"]]
+
+    return StatusResponse(
+        job_id=app.job_id,
+        pipeline_id=app.job_id,
+        status=app.status.value,
+        current_step=None,
+        job_title=app.job_title,
+        company_name=app.company_name,
+        compatibility_score=app.compatibility_score,
+        cv_path=app.cv_path,
+        cover_letter_path=app.cover_letter_path,
+        steps=steps,
+        error=app.error_message,
+        started_at=app.started_at,
+        completed_at=app.completed_at,
+        total_duration_ms=app.pipeline_data.get("total_duration_ms", 0) if app.pipeline_data else 0,
+    )
 
 
 @router.get(
@@ -272,11 +389,20 @@ async def download(
     store: JobStore = Depends(get_store),
 ) -> FileResponse:
     """Download CV or cover letter PDF."""
+    # First check in-memory store
     result = store.get(job_id)
-    if result is None:
-        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+    file_path = None
 
-    file_path = result.cv_path if file_type == "cv" else result.cover_letter_path
+    if result is not None:
+        file_path = result.cv_path if file_type == "cv" else result.cover_letter_path
+    else:
+        # Fall back to database
+        db = await get_database_service()
+        app = await db.get_application_by_job_id(job_id)
+        if app is None:
+            raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+        file_path = app.cv_path if file_type == "cv" else app.cover_letter_path
+
     filename = f"{file_type}_{job_id}.pdf"
 
     if file_path is None:

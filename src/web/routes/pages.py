@@ -5,13 +5,13 @@ HTML page serving endpoints for Scout web interface.
 
 Endpoints:
     GET / - Main application page
-    GET /profile/create - Legacy profile creation page
     GET /profiles - Profile list page
-    GET /profiles/create - Create new profile
-    GET /profiles/{filename} - Profile detail page
-    GET /profiles/{filename}/edit - Edit profile page
+    GET /profiles/new - Create new profile
+    GET /profiles/{slug}/edit - Edit profile page
     GET /applications - Generated applications list page
     GET /metrics - Performance metrics dashboard
+    GET /logs - Application logs page
+    GET /diagnostics - System diagnostics page
 """
 
 from pathlib import Path
@@ -44,44 +44,6 @@ async def index(request: Request) -> HTMLResponse:
     )
 
 
-@router.get("/profile/create", response_class=HTMLResponse)
-async def profile_create_legacy(request: Request) -> HTMLResponse:
-    """
-    Render the legacy profile creation/edit page.
-
-    This is kept for backward compatibility.
-    New implementations should use /profiles/create.
-
-    Args:
-        request: FastAPI request object (required for templates).
-
-    Returns:
-        Rendered HTML page.
-    """
-    return templates.TemplateResponse(
-        request=request,
-        name="profile.html",
-    )
-
-
-@router.get("/profile/edit", response_class=HTMLResponse)
-async def profile_editor(request: Request) -> HTMLResponse:
-    """
-    Render the form-based profile editor page.
-
-    Provides a user-friendly multi-step form interface for creating
-    and editing profiles without needing to write YAML manually.
-
-    Args:
-        request: FastAPI request object (required for templates).
-
-    Returns:
-        Rendered HTML page.
-    """
-    return templates.TemplateResponse(
-        request=request,
-        name="profile_editor.html",
-    )
 
 
 # =============================================================================
@@ -108,10 +70,10 @@ async def profiles_list(request: Request) -> HTMLResponse:
     )
 
 
-@router.get("/profiles/create", response_class=HTMLResponse)
+@router.get("/profiles/new", response_class=HTMLResponse)
 async def profiles_create(request: Request) -> HTMLResponse:
     """
-    Render the profile creation page with YAML editor.
+    Render the profile creation page.
 
     Args:
         request: FastAPI request object (required for templates).
@@ -125,35 +87,14 @@ async def profiles_create(request: Request) -> HTMLResponse:
     )
 
 
-@router.get("/profiles/{filename}", response_class=HTMLResponse)
-async def profile_detail(request: Request, filename: str) -> HTMLResponse:
+@router.get("/profiles/{slug}/edit", response_class=HTMLResponse)
+async def profile_edit(request: Request, slug: str) -> HTMLResponse:
     """
-    Render the profile detail/view page.
-
-    Shows detailed information about a specific profile including
-    statistics, content in different view modes, and management actions.
+    Render the profile edit page.
 
     Args:
         request: FastAPI request object (required for templates).
-        filename: The YAML filename of the profile.
-
-    Returns:
-        Rendered HTML page.
-    """
-    return templates.TemplateResponse(
-        request=request,
-        name="profile_detail.html",
-    )
-
-
-@router.get("/profiles/{filename}/edit", response_class=HTMLResponse)
-async def profile_edit(request: Request, filename: str) -> HTMLResponse:
-    """
-    Render the profile edit page with YAML editor.
-
-    Args:
-        request: FastAPI request object (required for templates).
-        filename: The YAML filename of the profile to edit.
+        slug: The URL slug of the profile to edit.
 
     Returns:
         Rendered HTML page.
