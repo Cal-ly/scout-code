@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 _MODULE_DIR = Path(__file__).parent
 _PROJECT_ROOT = _MODULE_DIR.parent.parent.parent  # src/modules/formatter -> project root
 DEFAULT_TEMPLATES_DIR = _PROJECT_ROOT / "src" / "templates"
-DEFAULT_OUTPUT_DIR = _PROJECT_ROOT / "output"
+DEFAULT_OUTPUT_DIR = _PROJECT_ROOT / "data" / "outputs"
 
 
 class Formatter:

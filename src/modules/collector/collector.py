@@ -181,6 +181,31 @@ class Collector:
 
         return self._profile
 
+    async def load_profile_from_db(self) -> UserProfile | None:
+        """
+        Load the active profile from database.
+
+        Called on startup to initialize with active profile.
+
+        Returns:
+            The active UserProfile, or None if no active profile exists.
+        """
+        from src.services.database import get_database_service
+
+        db = await get_database_service()
+        active = await db.get_active_profile()
+
+        if active is None:
+            logger.warning("No active profile in database")
+            return None
+
+        # Parse profile data to UserProfile
+        self._profile = UserProfile(**active.profile_data)
+        self._profile_hash = str(active.id)
+
+        logger.info(f"Loaded profile from database: {active.name}")
+        return self._profile
+
     def get_profile(self) -> UserProfile:
         """
         Get the currently loaded profile.
