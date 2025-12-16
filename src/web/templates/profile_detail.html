@@ -617,7 +617,7 @@
 
         async function loadProfile() {
             try {
-                const response = await fetch(`/api/profiles/${encodeURIComponent(filename)}`);
+                const response = await fetch(`/api/v1/profiles/${encodeURIComponent(filename)}`);
 
                 if (!response.ok) {
                     if (response.status === 404) {
@@ -816,7 +816,7 @@
 
         async function activateProfile() {
             try {
-                const response = await fetch(`/api/profiles/${encodeURIComponent(filename)}/activate`, {
+                const response = await fetch(`/api/v1/profiles/${encodeURIComponent(filename)}/activate`, {
                     method: 'POST'
                 });
                 if (!response.ok) throw new Error('Failed to activate profile');
@@ -831,7 +831,7 @@
 
         async function duplicateProfile() {
             try {
-                const response = await fetch(`/api/profiles/${encodeURIComponent(filename)}/duplicate`, {
+                const response = await fetch(`/api/v1/profiles/${encodeURIComponent(filename)}/duplicate`, {
                     method: 'POST'
                 });
                 if (!response.ok) throw new Error('Failed to duplicate profile');
@@ -851,7 +851,7 @@
             try {
                 showToast('info', 'Indexing', 'Re-indexing profile...');
 
-                const response = await fetch(`/api/diagnostics/profiles/${encodeURIComponent(filename)}/reindex`, {
+                const response = await fetch(`/api/v1/diagnostics/profiles/${encodeURIComponent(filename)}/reindex`, {
                     method: 'POST'
                 });
                 if (!response.ok) throw new Error('Failed to reindex profile');

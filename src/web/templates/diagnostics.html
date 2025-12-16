@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scout - System Diagnostics</title>
+    <link rel="stylesheet" href="/static/css/common.css">
+    <style>
+        /* Diagnostics-specific styles */
+        .diagnostics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .diagnostics-header h1 {
+            font-size: 1.75rem;
+            color: #1a1a1a;
+        }
+
+        .overall-status {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .overall-status.ok {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .overall-status.degraded {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .overall-status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-icon {
+            font-size: 1.25rem;
+        }
+
+        /* Profile Info Card */
+        .profile-card {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border: 1px solid #93c5fd;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .profile-card h3 {
+            color: #1e40af;
+            margin-bottom: 1rem;
+        }
+
+        .profile-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .profile-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .profile-field .label {
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+
+        .profile-field .value {
+            font-weight: 500;
+            color: #1f2937;
+        }
+
+        /* Components Grid */
+        .components-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .component-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1.25rem;
+            transition: border-color 0.2s;
+        }
+
+        .component-card.status-ok {
+            border-left: 4px solid #10b981;
+        }
+
+        .component-card.status-error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .component-card.status-not_initialized {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .component-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .component-name {
+            font-weight: 600;
+            color: #1f2937;
+            text-transform: capitalize;
+        }
+
+        .component-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .component-status.ok {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .component-status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .component-status.not_initialized {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .component-message {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        /* Quick Test Section */
+        .quick-test-section {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .quick-test-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .quick-test-header h3 {
+            color: #1f2937;
+        }
+
+        .test-results {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .test-result {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background: #fff;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .test-result .test-name {
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .test-result .test-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .test-result .test-duration {
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+
+        .test-result .test-icon {
+            font-size: 1rem;
+        }
+
+        .test-result .test-icon.ok {
+            color: #10b981;
+        }
+
+        .test-result .test-icon.error {
+            color: #ef4444;
+        }
+
+        .test-result .test-message {
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+
+        /* Loading States */
+        .loading-overlay {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .loading-overlay .spinner {
+            font-size: 2rem;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Actions */
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        /* Auto-refresh indicator */
+        .refresh-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+
+        .refresh-indicator .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    {% include 'partials/navbar.html' %}
+
+    <main class="container">
+        <!-- Header -->
+        <div class="diagnostics-header">
+            <h1>System Diagnostics</h1>
+            <div class="overall-status" id="overall-status">
+                <span class="status-icon" id="overall-icon">&#8635;</span>
+                <span id="overall-text">Checking...</span>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading-state" class="card">
+            <div class="loading-overlay">
+                <span class="spinner">&#8635;</span>
+                <span>Loading diagnostics...</span>
+            </div>
+        </div>
+
+        <!-- Content (hidden until loaded) -->
+        <div id="content" class="hidden">
+            <!-- Profile Info -->
+            <div class="profile-card" id="profile-section">
+                <h3>Profile Information</h3>
+                <div class="profile-info" id="profile-info">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Components Status -->
+            <div class="card">
+                <h3 style="margin-bottom: 1rem;">Component Status</h3>
+                <div class="components-grid" id="components-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Quick Test Section -->
+            <div class="quick-test-section">
+                <div class="quick-test-header">
+                    <h3>Quick Tests</h3>
+                    <button id="run-tests-btn" class="btn btn-primary" onclick="runQuickTests()">
+                        Run Tests
+                    </button>
+                </div>
+                <div id="test-results" class="test-results">
+                    <p style="color: #6b7280; text-align: center;">Click "Run Tests" to perform quick component checks</p>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card">
+                <h3 style="margin-bottom: 1rem;">Actions</h3>
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="loadDiagnostics()">
+                        Refresh Status
+                    </button>
+                    <a href="/api/v1/health" target="_blank" class="btn btn-secondary">
+                        View Health API
+                    </a>
+                    <a href="/logs" class="btn btn-secondary">
+                        View Logs
+                    </a>
+                    <a href="/metrics" class="btn btn-secondary">
+                        View Metrics
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Auto-refresh indicator -->
+        <div class="refresh-indicator" style="margin-top: 1rem;">
+            <span class="dot"></span>
+            <span>Auto-refreshes every 30 seconds</span>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/static/js/common.js"></script>
+    <script>
+        // =================================================================
+        // STATE
+        // =================================================================
+
+        let refreshInterval = null;
+
+        // =================================================================
+        // INITIALIZATION
+        // =================================================================
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDiagnostics();
+            // Auto-refresh every 30 seconds
+            refreshInterval = setInterval(loadDiagnostics, 30000);
+        });
+
+        // =================================================================
+        // LOAD DIAGNOSTICS
+        // =================================================================
+
+        async function loadDiagnostics() {
+            try {
+                const response = await fetch('/api/v1/diagnostics');
+                if (!response.ok) throw new Error('Failed to load diagnostics');
+
+                const data = await response.json();
+                renderDiagnostics(data);
+
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('content').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error loading diagnostics:', error);
+                showToast('error', 'Error', 'Failed to load diagnostics');
+            }
+        }
+
+        function renderDiagnostics(data) {
+            // Overall status
+            const statusEl = document.getElementById('overall-status');
+            const iconEl = document.getElementById('overall-icon');
+            const textEl = document.getElementById('overall-text');
+
+            statusEl.className = `overall-status ${data.overall}`;
+
+            if (data.overall === 'ok') {
+                iconEl.textContent = '\u2713';
+                textEl.textContent = 'All Systems Operational';
+            } else if (data.overall === 'degraded') {
+                iconEl.textContent = '\u26A0';
+                textEl.textContent = 'Degraded Performance';
+            } else {
+                iconEl.textContent = '\u2717';
+                textEl.textContent = 'System Error';
+            }
+
+            // Profile info
+            renderProfileInfo(data);
+
+            // Components
+            renderComponents(data.components || []);
+        }
+
+        async function renderProfileInfo(data) {
+            const container = document.getElementById('profile-info');
+            const section = document.getElementById('profile-section');
+
+            if (!data.profile_loaded) {
+                section.style.background = 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)';
+                section.style.borderColor = '#f59e0b';
+                container.innerHTML = `
+                    <div class="profile-field">
+                        <span class="label">Status</span>
+                        <span class="value" style="color: #92400e;">No Profile Loaded</span>
+                    </div>
+                    <div class="profile-field">
+                        <a href="/profiles/create" class="btn btn-primary">Create Profile</a>
+                    </div>
+                `;
+                return;
+            }
+
+            // Fetch detailed profile info
+            try {
+                const response = await fetch('/api/v1/diagnostics/profile');
+                if (!response.ok) throw new Error('Failed to load profile details');
+
+                const profile = await response.json();
+
+                container.innerHTML = `
+                    <div class="profile-field">
+                        <span class="label">Name</span>
+                        <span class="value">${escapeHtml(profile.name || 'Unknown')}</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="label">Title</span>
+                        <span class="value">${escapeHtml(profile.title || '-')}</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="label">Experience</span>
+                        <span class="value">${profile.years_experience || 0} years</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="label">Skills</span>
+                        <span class="value">${profile.skill_count || 0}</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="label">Experience Entries</span>
+                        <span class="value">${profile.experience_count || 0}</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="label">Education</span>
+                        <span class="value">${profile.education_count || 0}</span>
+                    </div>
+                `;
+
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="profile-field">
+                        <span class="label">Profile</span>
+                        <span class="value">${escapeHtml(data.profile_name || 'Loaded')}</span>
+                    </div>
+                `;
+            }
+        }
+
+        function renderComponents(components) {
+            const grid = document.getElementById('components-grid');
+
+            grid.innerHTML = components.map(comp => `
+                <div class="component-card status-${comp.status}">
+                    <div class="component-header">
+                        <span class="component-name">${escapeHtml(comp.name)}</span>
+                        <span class="component-status ${comp.status}">${comp.status}</span>
+                    </div>
+                    <p class="component-message">${escapeHtml(comp.message || '')}</p>
+                </div>
+            `).join('');
+        }
+
+        // =================================================================
+        // QUICK TESTS
+        // =================================================================
+
+        async function runQuickTests() {
+            const btn = document.getElementById('run-tests-btn');
+            const resultsContainer = document.getElementById('test-results');
+
+            btn.disabled = true;
+            btn.textContent = 'Running...';
+
+            resultsContainer.innerHTML = `
+                <div class="loading-overlay" style="padding: 2rem;">
+                    <span class="spinner">&#8635;</span>
+                    <span>Running quick tests...</span>
+                </div>
+            `;
+
+            try {
+                const response = await fetch('/api/v1/diagnostics/quick-test', {
+                    method: 'POST'
+                });
+
+                if (!response.ok) throw new Error('Failed to run tests');
+
+                const data = await response.json();
+                renderTestResults(data);
+
+            } catch (error) {
+                console.error('Error running tests:', error);
+                resultsContainer.innerHTML = `
+                    <div style="color: #ef4444; text-align: center; padding: 1rem;">
+                        Failed to run tests: ${escapeHtml(error.message)}
+                    </div>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Run Tests';
+            }
+        }
+
+        function renderTestResults(data) {
+            const container = document.getElementById('test-results');
+
+            const resultsHtml = data.results.map(result => {
+                const iconClass = result.status === 'ok' ? 'ok' : 'error';
+                const icon = result.status === 'ok' ? '\u2713' : '\u2717';
+
+                return `
+                    <div class="test-result">
+                        <div>
+                            <div class="test-name">${escapeHtml(result.component)}</div>
+                            <div class="test-message">${escapeHtml(result.message)}</div>
+                        </div>
+                        <div class="test-status">
+                            <span class="test-duration">${result.duration_ms}ms</span>
+                            <span class="test-icon ${iconClass}">${icon}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const summaryClass = data.success ? 'color: #10b981' : 'color: #ef4444';
+            const summaryText = data.success ? 'All tests passed' : 'Some tests failed';
+
+            container.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 0.75rem; background: #f3f4f6; border-radius: 6px;">
+                    <span style="${summaryClass}; font-weight: 600;">${summaryText}</span>
+                    <span style="color: #6b7280;">Total: ${data.total_duration_ms}ms</span>
+                </div>
+                ${resultsHtml}
+            `;
+        }
+    </script>
+</body>
+</html>

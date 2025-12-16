@@ -237,3 +237,28 @@ async def logs_page(request: Request) -> HTMLResponse:
         request=request,
         name="logs.html",
     )
+
+
+# =============================================================================
+# DIAGNOSTICS PAGE
+# =============================================================================
+
+
+@router.get("/diagnostics", response_class=HTMLResponse)
+async def diagnostics_page(request: Request) -> HTMLResponse:
+    """
+    Render the system diagnostics page.
+
+    Shows component health status, profile info, and quick tests
+    for verifying system operation.
+
+    Args:
+        request: FastAPI request object (required for templates).
+
+    Returns:
+        Rendered HTML page.
+    """
+    return templates.TemplateResponse(
+        request=request,
+        name="diagnostics.html",
+    )

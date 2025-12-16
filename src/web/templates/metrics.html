@@ -631,7 +631,7 @@
             const minutes = document.getElementById('chart-period').value;
 
             try {
-                const response = await fetch(`/api/metrics/system-history?minutes=${minutes}`);
+                const response = await fetch(`/api/v1/metrics/system-history?minutes=${minutes}`);
                 if (!response.ok) throw new Error('Failed to load system history');
                 const data = await response.json();
 
@@ -700,7 +700,7 @@
 
         async function loadStatus() {
             try {
-                const response = await fetch('/api/metrics/status');
+                const response = await fetch('/api/v1/metrics/status');
                 if (!response.ok) throw new Error('Failed to load status');
                 const status = await response.json();
 
@@ -773,7 +773,7 @@
             const container = document.getElementById('model-comparison');
 
             try {
-                const response = await fetch('/api/metrics/comparison');
+                const response = await fetch('/api/v1/metrics/comparison');
                 if (!response.ok) throw new Error('Failed to load comparison');
                 const data = await response.json();
 
@@ -835,7 +835,7 @@
                 const failuresOnly = document.getElementById('show-failures').checked;
                 const skip = (currentPage - 1) * pageSize;
 
-                let url = `/api/metrics/entries?skip=${skip}&limit=${pageSize}&sort_by=${sortBy}&sort_order=${sortOrder}`;
+                let url = `/api/v1/metrics/entries?skip=${skip}&limit=${pageSize}&sort_by=${sortBy}&sort_order=${sortOrder}`;
                 if (model) url += `&model=${encodeURIComponent(model)}`;
                 if (module) url += `&module=${encodeURIComponent(module)}`;
                 if (failuresOnly) url += `&success=false`;

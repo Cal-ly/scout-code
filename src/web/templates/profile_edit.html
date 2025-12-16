@@ -851,7 +851,7 @@ portfolio:
         async function loadExistingProfile() {
             try {
                 // Use the existing single-profile API endpoint
-                const response = await fetch('/api/profile/retrieve');
+                const response = await fetch('/api/v1/profile/retrieve');
                 if (!response.ok) throw new Error('Profile not found');
 
                 const data = await response.json();
@@ -1008,7 +1008,7 @@ portfolio:
             try {
                 // Use the existing single-profile API endpoint
                 // This creates or updates the profile and auto-indexes it
-                const response = await fetch('/api/profile/create', {
+                const response = await fetch('/api/v1/profile/create', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1107,7 +1107,7 @@ portfolio:
             const logStatus = document.getElementById('log-status');
 
             try {
-                let url = '/api/logs?limit=100';
+                let url = '/api/v1/logs?limit=100';
                 if (levelFilter) {
                     url += `&level=${levelFilter}`;
                 }
@@ -1155,7 +1155,7 @@ portfolio:
 
         async function clearLogs() {
             try {
-                await fetch('/api/logs', { method: 'DELETE' });
+                await fetch('/api/v1/logs', { method: 'DELETE' });
                 fetchLogs();
             } catch (error) {
                 console.error('Failed to clear logs:', error);
@@ -1164,7 +1164,7 @@ portfolio:
 
         async function copyLogs() {
             try {
-                const response = await fetch('/api/logs?limit=500');
+                const response = await fetch('/api/v1/logs?limit=500');
                 if (!response.ok) throw new Error('Failed to fetch logs');
 
                 const data = await response.json();

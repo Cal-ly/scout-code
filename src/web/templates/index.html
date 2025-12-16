@@ -592,7 +592,7 @@ Include:
                 }
 
                 // Check job status from API
-                const response = await fetch(`/api/status/${jobId}`);
+                const response = await fetch(`/api/v1/jobs/${jobId}`);
                 if (!response.ok) {
                     localStorage.removeItem(STORAGE_KEY);
                     return;
@@ -641,7 +641,7 @@ Include:
 
         async function checkProfileStatus() {
             try {
-                const response = await fetch('/api/profile/status');
+                const response = await fetch('/api/v1/profile/status');
                 if (!response.ok) {
                     throw new Error('Failed to check profile status');
                 }
@@ -733,7 +733,7 @@ Include:
 
             try {
                 // Submit job
-                const response = await fetch('/api/apply', {
+                const response = await fetch('/api/v1/jobs/apply', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ job_text: jobText })
@@ -779,7 +779,7 @@ Include:
 
             pollInterval = setInterval(async () => {
                 try {
-                    const response = await fetch(`/api/status/${currentJobId}`);
+                    const response = await fetch(`/api/v1/jobs/${currentJobId}`);
                     if (!response.ok) {
                         throw new Error('Failed to get status');
                     }
@@ -891,9 +891,9 @@ Include:
 
             // Download links
             document.getElementById('download-cv').href =
-                `/api/download/${currentJobId}/cv`;
+                `/api/v1/jobs/${currentJobId}/download/cv`;
             document.getElementById('download-cover').href =
-                `/api/download/${currentJobId}/cover_letter`;
+                `/api/v1/jobs/${currentJobId}/download/cover_letter`;
         }
 
         function showError(message) {
@@ -942,7 +942,7 @@ Include:
             startQuickScoreCountdown();
 
             try {
-                const response = await fetch('/api/quick-score', {
+                const response = await fetch('/api/v1/jobs/quick-score', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ job_text: jobText })

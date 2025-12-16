@@ -331,7 +331,7 @@
             const logsStatus = document.getElementById('logs-status');
 
             try {
-                let url = '/api/logs?limit=500';
+                let url = '/api/v1/logs?limit=500';
                 if (levelFilter) {
                     url += `&level=${levelFilter}`;
                 }
@@ -403,7 +403,7 @@
             if (!confirm('Clear all logs? This cannot be undone.')) return;
 
             try {
-                await fetch('/api/logs', { method: 'DELETE' });
+                await fetch('/api/v1/logs', { method: 'DELETE' });
                 allLogs = [];
                 fetchLogs();
                 showToast('success', 'Cleared', 'All logs have been cleared');

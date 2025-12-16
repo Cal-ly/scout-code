@@ -321,14 +321,14 @@
 
             try {
                 // Use existing single-profile API
-                const statusResponse = await fetch('/api/profile/status');
+                const statusResponse = await fetch('/api/v1/profile/status');
                 if (!statusResponse.ok) throw new Error('Failed to check profile status');
 
                 const status = await statusResponse.json();
 
                 if (status.exists) {
                     // Get the profile data
-                    const profileResponse = await fetch('/api/profile/retrieve');
+                    const profileResponse = await fetch('/api/v1/profile/retrieve');
                     if (profileResponse.ok) {
                         const profileData = await profileResponse.json();
 
@@ -453,7 +453,7 @@
                 showToast('info', 'Indexing', 'Re-indexing profile...');
 
                 // First get the profile ID from status
-                const statusResponse = await fetch('/api/profile/status');
+                const statusResponse = await fetch('/api/v1/profile/status');
                 if (!statusResponse.ok) throw new Error('Failed to get profile status');
                 const status = await statusResponse.json();
 
@@ -462,7 +462,7 @@
                 }
 
                 // Then reindex using the profile ID
-                const response = await fetch('/api/profile/index', {
+                const response = await fetch('/api/v1/profile/index', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ profile_id: status.profile_id })
@@ -496,7 +496,7 @@
 
         async function deleteProfile(filename) {
             try {
-                const response = await fetch(`/api/profiles/${encodeURIComponent(filename)}?confirm=true`, {
+                const response = await fetch(`/api/v1/profiles/${encodeURIComponent(filename)}?confirm=true`, {
                     method: 'DELETE'
                 });
                 if (!response.ok) throw new Error('Failed to delete profile');

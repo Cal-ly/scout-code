@@ -347,7 +347,7 @@
             pagination.classList.add('hidden');
 
             try {
-                const response = await fetch('/api/jobs');
+                const response = await fetch('/api/v1/jobs');
                 if (!response.ok) throw new Error('Failed to load applications');
 
                 const data = await response.json();
@@ -481,10 +481,10 @@
                         <div class="application-actions">
                             ${app.status === 'completed' ? `
                             <div class="download-buttons">
-                                <a href="/api/download/${app.job_id}/cv" class="btn btn-sm btn-cv" title="Download CV">
+                                <a href="/api/v1/jobs/${app.job_id}/download/cv" class="btn btn-sm btn-cv" title="Download CV">
                                     &#128196; CV
                                 </a>
-                                <a href="/api/download/${app.job_id}/cover_letter" class="btn btn-sm btn-cover" title="Download Cover Letter">
+                                <a href="/api/v1/jobs/${app.job_id}/download/cover_letter" class="btn btn-sm btn-cover" title="Download Cover Letter">
                                     &#128221; Cover
                                 </a>
                             </div>

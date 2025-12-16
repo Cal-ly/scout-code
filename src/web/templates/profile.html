@@ -327,7 +327,7 @@ I'm passionate about [interests] and looking for opportunities to [career object
 
         async function loadExistingProfile() {
             try {
-                const response = await fetch('/api/profile/retrieve');
+                const response = await fetch('/api/v1/profile/retrieve');
                 if (response.ok) {
                     const data = await response.json();
                     profileText.value = data.profile_text;
@@ -390,7 +390,7 @@ I'm passionate about [interests] and looking for opportunities to [career object
             loadingSection.classList.remove('hidden');
 
             try {
-                const response = await fetch('/api/profile/create', {
+                const response = await fetch('/api/v1/profile/create', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ profile_text: text })
