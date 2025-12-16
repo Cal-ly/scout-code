@@ -563,8 +563,9 @@ Include:
             document.getElementById('reset-btn').addEventListener('click', resetForm);
             document.getElementById('retry-btn').addEventListener('click', resetForm);
 
-            // Update profile select when profiles load
-            setTimeout(updateProfileSelect, 500);
+            // Update profile select after active profile loads
+            // Wait a bit for common.js loadActiveProfile() to complete
+            setTimeout(() => updateProfileSelect(), 800);
 
             // Check for active job (handle page refresh)
             checkActiveJob();
@@ -679,23 +680,35 @@ Include:
             }
         }
 
-        function updateProfileSelect() {
-            const profiles = window.Scout.profilesList;
-            const activeFilename = window.Scout.activeProfileFilename;
+        async function updateProfileSelect() {
+            try {
+                const response = await fetch('/api/v1/profiles');
+                if (!response.ok) {
+                    profileSelect.innerHTML = '<option value="">No profiles available</option>';
+                    return;
+                }
 
-            if (profiles.length === 0) {
+                const data = await response.json();
+                const profiles = data.profiles || [];
+                const activeProfile = window.Scout.activeProfile;
+
+                if (profiles.length === 0) {
+                    profileSelect.innerHTML = '<option value="">No profiles available</option>';
+                    return;
+                }
+
+                profileSelect.innerHTML = '<option value="">Use active profile (default)</option>' +
+                    profiles.map(profile => {
+                        const isActive = activeProfile && profile.slug === activeProfile.slug;
+                        const label = profile.name || profile.slug;
+                        return `<option value="${escapeHtml(profile.slug)}"${isActive ? ' selected' : ''}>
+                            ${escapeHtml(label)}${isActive ? ' (active)' : ''}
+                        </option>`;
+                    }).join('');
+            } catch (error) {
+                console.error('Failed to load profiles:', error);
                 profileSelect.innerHTML = '<option value="">No profiles available</option>';
-                return;
             }
-
-            profileSelect.innerHTML = '<option value="">Use active profile (default)</option>' +
-                profiles.map(profile => {
-                    const isActive = profile.filename === activeFilename;
-                    const label = profile.profile_name || profile.filename;
-                    return `<option value="${escapeHtml(profile.filename)}"${isActive ? ' selected' : ''}>
-                        ${escapeHtml(label)}${isActive ? ' (active)' : ''}
-                    </option>`;
-                }).join('');
         }
 
         // =====================================================================

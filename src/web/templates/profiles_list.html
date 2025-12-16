@@ -6,36 +6,39 @@
     <title>Scout - Manage Profiles</title>
     <link rel="stylesheet" href="/static/css/common.css">
     <style>
-        /* Profiles Page Specific Styles */
-        .controls-bar {
+        /* Page-specific styles */
+        .page-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .page-header h2 {
+            margin: 0;
+        }
+
+        /* Summary stats row */
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 1rem;
-            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
         }
-        .sort-controls {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+        .summary-stat {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        .sort-controls label {
-            font-size: 0.9rem;
+        .summary-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2563eb;
+        }
+        .summary-stat-label {
+            font-size: 0.85rem;
             color: #666;
-        }
-        .filter-controls {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .filter-controls label {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.9rem;
-            color: #666;
-            cursor: pointer;
         }
 
         /* Active profile banner */
@@ -58,7 +61,7 @@
         .active-banner-text strong {
             color: #065f46;
         }
-        .active-banner-text span {
+        .active-banner-text .subtitle {
             color: #047857;
             font-size: 0.9rem;
         }
@@ -86,10 +89,7 @@
             border-color: #10b981;
             background: linear-gradient(135deg, #fff 0%, #f0fdf4 100%);
         }
-        .profile-card.archived {
-            opacity: 0.7;
-            background: #f9fafb;
-        }
+
         .profile-indicator {
             width: 12px;
             height: 12px;
@@ -97,15 +97,9 @@
             margin-top: 0.25rem;
             flex-shrink: 0;
         }
-        .profile-indicator.active {
-            background: #10b981;
-        }
-        .profile-indicator.inactive {
-            background: #e5e7eb;
-        }
-        .profile-indicator.archived {
-            background: #9ca3af;
-        }
+        .profile-indicator.active { background: #10b981; }
+        .profile-indicator.inactive { background: #e5e7eb; }
+
         .profile-content {
             flex: 1;
             min-width: 0;
@@ -115,6 +109,7 @@
             justify-content: space-between;
             align-items: flex-start;
             margin-bottom: 0.5rem;
+            gap: 1rem;
         }
         .profile-name {
             font-size: 1.1rem;
@@ -125,11 +120,39 @@
             color: #666;
             font-size: 0.9rem;
         }
-        .profile-filename {
+        .profile-slug {
             color: #9ca3af;
             font-size: 0.8rem;
             font-family: monospace;
         }
+
+        /* Completeness indicator */
+        .completeness-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .completeness-indicator.excellent {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .completeness-indicator.good {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .completeness-indicator.fair {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .completeness-indicator.needs_work {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
         .profile-stats {
             display: flex;
             flex-wrap: wrap;
@@ -150,27 +173,27 @@
             font-weight: 600;
             color: #374151;
         }
+
         .profile-badges {
             display: flex;
             gap: 0.5rem;
             margin-top: 0.5rem;
         }
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 500;
+        }
         .badge-active {
             background: #d1fae5;
             color: #065f46;
         }
-        .badge-indexed {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-        .badge-warning {
-            background: #fef3c7;
-            color: #92400e;
-        }
-        .badge-archived {
+        .badge-demo {
             background: #e5e7eb;
             color: #6b7280;
         }
+
         .profile-actions {
             display: flex;
             flex-direction: column;
@@ -182,9 +205,52 @@
             gap: 0.5rem;
         }
 
-        /* Modal */
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .empty-state h3 {
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        .empty-state p {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Delete modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
         .modal {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1.5rem;
             max-width: 400px;
+            width: 90%;
+        }
+        .modal h3 {
+            margin: 0 0 1rem 0;
         }
         .modal p {
             color: #666;
@@ -195,6 +261,8 @@
             gap: 0.75rem;
             justify-content: flex-end;
         }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -204,12 +272,7 @@
         <!-- Page Header -->
         <div class="page-header">
             <h2>Your Profiles</h2>
-            <div style="display: flex; gap: 0.5rem;">
-                <a href="/profile/edit" class="btn btn-primary">Edit Profile</a>
-                <a href="/profiles/create" class="btn btn-secondary">
-                    <span>+</span> New (YAML)
-                </a>
-            </div>
+            <a href="/profiles/new" class="btn btn-primary">+ Create Profile</a>
         </div>
 
         <!-- Summary Stats -->
@@ -219,11 +282,11 @@
                 <div class="summary-stat-label">Total Profiles</div>
             </div>
             <div class="summary-stat">
-                <div class="summary-stat-value" id="stat-archived">0</div>
-                <div class="summary-stat-label">Archived</div>
+                <div class="summary-stat-value" id="stat-active-score">-</div>
+                <div class="summary-stat-label">Active Profile Score</div>
             </div>
             <div class="summary-stat">
-                <div class="summary-stat-value" id="stat-usage">0</div>
+                <div class="summary-stat-value" id="stat-applications">0</div>
                 <div class="summary-stat-label">Total Applications</div>
             </div>
         </div>
@@ -233,31 +296,9 @@
             <span class="active-banner-icon">&#10003;</span>
             <div class="active-banner-text">
                 <strong id="active-profile-name">No active profile</strong><br>
-                <span id="active-profile-filename">-</span>
+                <span class="subtitle" id="active-profile-title">-</span>
             </div>
-        </div>
-
-        <!-- Controls Bar -->
-        <div class="controls-bar">
-            <div class="sort-controls">
-                <label>Sort by:</label>
-                <select id="sort-select" onchange="loadProfiles()">
-                    <option value="created">Created Date</option>
-                    <option value="name">Name</option>
-                    <option value="usage">Usage Count</option>
-                    <option value="score">Avg Score</option>
-                </select>
-                <select id="sort-order" onchange="loadProfiles()">
-                    <option value="desc">Descending</option>
-                    <option value="asc">Ascending</option>
-                </select>
-            </div>
-            <div class="filter-controls">
-                <label>
-                    <input type="checkbox" id="show-archived" onchange="loadProfiles()">
-                    Show Archived
-                </label>
-            </div>
+            <a href="#" id="active-profile-edit-link" class="btn btn-sm btn-secondary">Edit</a>
         </div>
 
         <!-- Loading State -->
@@ -270,26 +311,21 @@
             <div class="empty-state-icon">&#128203;</div>
             <h3>No Profiles Yet</h3>
             <p>Create your first profile to start matching jobs and generating tailored applications.</p>
-            <a href="/profile/edit" class="btn btn-primary">Create Your First Profile</a>
+            <a href="/profiles/new" class="btn btn-primary">Create Your First Profile</a>
         </div>
 
         <!-- Profiles Grid -->
         <div class="profiles-grid hidden" id="profiles-grid">
-            <!-- Profiles will be inserted here -->
+            <!-- Profiles will be inserted here by JS -->
         </div>
     </main>
 
     <!-- Delete Confirmation Modal -->
     <div class="modal-overlay" id="delete-modal">
         <div class="modal">
-            <div class="modal-header">
-                <h3>Delete Profile?</h3>
-                <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>This will permanently delete <strong id="delete-filename"></strong>. This action cannot be undone.</p>
-            </div>
-            <div class="modal-footer">
+            <h3>Delete Profile?</h3>
+            <p>This will permanently delete <strong id="delete-profile-name"></strong> and all its data. This action cannot be undone.</p>
+            <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
                 <button class="btn btn-danger" id="confirm-delete-btn">Delete</button>
             </div>
@@ -304,7 +340,7 @@
         // State
         let profiles = [];
         let activeProfile = null;
-        let deleteTarget = null;
+        let deleteTargetSlug = null;
 
         // DOM Elements
         const loadingState = document.getElementById('loading-state');
@@ -313,9 +349,7 @@
         const activeBanner = document.getElementById('active-banner');
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            loadProfiles();
-        });
+        document.addEventListener('DOMContentLoaded', loadProfiles);
 
         async function loadProfiles() {
             loadingState.classList.remove('hidden');
@@ -323,52 +357,40 @@
             profilesGrid.classList.add('hidden');
 
             try {
-                // Use existing single-profile API
-                const statusResponse = await fetch('/api/v1/profile/status');
-                if (!statusResponse.ok) throw new Error('Failed to check profile status');
+                const response = await fetch('/api/v1/profiles');
+                if (!response.ok) throw new Error('Failed to load profiles');
 
-                const status = await statusResponse.json();
-
-                if (status.exists) {
-                    // Get the profile data
-                    const profileResponse = await fetch('/api/v1/profile/retrieve');
-                    if (profileResponse.ok) {
-                        const profileData = await profileResponse.json();
-
-                        // Create a single profile entry
-                        profiles = [{
-                            filename: 'profile.yaml',
-                            profile_name: extractName(profileData.profile_text) || 'My Profile',
-                            title: extractTitle(profileData.profile_text) || '',
-                            is_indexed: status.is_indexed,
-                            chunk_count: status.chunk_count || 0,
-                            usage_count: 0,
-                            avg_compatibility_score: null,
-                            is_archived: false,
-                            created_at: null,
-                            updated_at: null
-                        }];
-                        activeProfile = 'profile.yaml';
-                    }
-                } else {
-                    profiles = [];
-                    activeProfile = null;
-                }
+                const data = await response.json();
+                profiles = data.profiles || [];
+                activeProfile = profiles.find(p => p.is_active) || null;
 
                 // Update stats
                 document.getElementById('stat-total').textContent = profiles.length;
-                document.getElementById('stat-archived').textContent = 0;
-                document.getElementById('stat-usage').textContent = 0;
+
+                // Calculate total applications
+                const totalApps = profiles.reduce((sum, p) => sum + (p.stats?.application_count || 0), 0);
+                document.getElementById('stat-applications').textContent = totalApps;
 
                 // Update active banner
-                if (activeProfile && profiles.length > 0) {
+                if (activeProfile) {
                     activeBanner.classList.remove('hidden');
-                    document.getElementById('active-profile-name').textContent =
-                        profiles[0].profile_name || 'Profile';
-                    document.getElementById('active-profile-filename').textContent =
-                        profiles[0].filename;
+                    document.getElementById('active-profile-name').textContent = activeProfile.name;
+                    document.getElementById('active-profile-title').textContent = activeProfile.title || 'No title set';
+                    document.getElementById('active-profile-edit-link').href = `/profiles/${activeProfile.slug}/edit`;
+
+                    // Fetch completeness for active profile
+                    try {
+                        const compResponse = await fetch(`/api/v1/profiles/${activeProfile.slug}/completeness`);
+                        if (compResponse.ok) {
+                            const comp = await compResponse.json();
+                            document.getElementById('stat-active-score').textContent = `${comp.overall_score}%`;
+                        }
+                    } catch (e) {
+                        console.warn('Could not fetch completeness:', e);
+                    }
                 } else {
                     activeBanner.classList.add('hidden');
+                    document.getElementById('stat-active-score').textContent = '-';
                 }
 
                 loadingState.classList.add('hidden');
@@ -377,7 +399,7 @@
                     emptyState.classList.remove('hidden');
                 } else {
                     profilesGrid.classList.remove('hidden');
-                    renderProfiles();
+                    await renderProfiles();
                 }
 
             } catch (error) {
@@ -387,64 +409,85 @@
             }
         }
 
-        // Helper to extract name from profile text
-        function extractName(text) {
-            if (!text) return null;
-            const match = text.match(/^name:\s*["']?([^"'\n]+)["']?/mi);
-            return match ? match[1].trim() : null;
-        }
+        async function renderProfiles() {
+            // Fetch completeness for all profiles
+            const completenessMap = {};
+            await Promise.all(profiles.map(async (profile) => {
+                try {
+                    const response = await fetch(`/api/v1/profiles/${profile.slug}/completeness`);
+                    if (response.ok) {
+                        completenessMap[profile.slug] = await response.json();
+                    }
+                } catch (e) {
+                    console.warn(`Could not fetch completeness for ${profile.slug}`);
+                }
+            }));
 
-        // Helper to extract title from profile text
-        function extractTitle(text) {
-            if (!text) return null;
-            const match = text.match(/^title:\s*["']?([^"'\n]+)["']?/mi);
-            return match ? match[1].trim() : null;
-        }
-
-        function renderProfiles() {
             profilesGrid.innerHTML = profiles.map(profile => {
-                const isActive = profile.filename === activeProfile;
-                const cardClass = isActive ? 'active' : (profile.is_archived ? 'archived' : '');
-                const indicatorClass = isActive ? 'active' : (profile.is_archived ? 'archived' : 'inactive');
+                const isActive = profile.is_active;
+                const comp = completenessMap[profile.slug];
+                const stats = profile.stats || {};
 
                 return `
-                    <div class="profile-card ${cardClass}" data-filename="${escapeHtml(profile.filename)}">
-                        <div class="profile-indicator ${indicatorClass}"></div>
+                    <div class="profile-card ${isActive ? 'active' : ''}" data-slug="${escapeHtml(profile.slug)}">
+                        <div class="profile-indicator ${isActive ? 'active' : 'inactive'}"></div>
                         <div class="profile-content">
                             <div class="profile-header">
                                 <div>
-                                    <div class="profile-name">${escapeHtml(profile.profile_name || 'Unnamed Profile')}</div>
-                                    <div class="profile-title">${escapeHtml(profile.title || '')}</div>
-                                    <div class="profile-filename">${escapeHtml(profile.filename)}</div>
+                                    <div class="profile-name">${escapeHtml(profile.name)}</div>
+                                    <div class="profile-title">${escapeHtml(profile.title || 'No title')}</div>
+                                    <div class="profile-slug">${escapeHtml(profile.slug)}</div>
                                 </div>
+                                ${comp ? `
+                                    <div class="completeness-indicator ${comp.level}">
+                                        ${comp.overall_score}% ${capitalizeFirst(comp.level.replace('_', ' '))}
+                                    </div>
+                                ` : ''}
                             </div>
                             <div class="profile-stats">
                                 <div class="stat">
-                                    <span class="stat-icon">&#128200;</span>
-                                    <span><span class="stat-value">${profile.chunk_count || 0}</span> chunks</span>
+                                    <span class="stat-icon">&#128736;</span>
+                                    <span><span class="stat-value">${stats.skill_count || 0}</span> skills</span>
                                 </div>
                                 <div class="stat">
-                                    <span class="stat-icon">&#128202;</span>
-                                    <span><span class="stat-value">${profile.usage_count || 0}</span> uses</span>
+                                    <span class="stat-icon">&#128188;</span>
+                                    <span><span class="stat-value">${stats.experience_count || 0}</span> experiences</span>
                                 </div>
-                                ${profile.avg_compatibility_score ? `
                                 <div class="stat">
-                                    <span class="stat-icon">&#9734;</span>
-                                    <span><span class="stat-value">${profile.avg_compatibility_score.toFixed(1)}%</span> avg score</span>
+                                    <span class="stat-icon">&#127891;</span>
+                                    <span><span class="stat-value">${stats.education_count || 0}</span> education</span>
                                 </div>
+                                <div class="stat">
+                                    <span class="stat-icon">&#128196;</span>
+                                    <span><span class="stat-value">${stats.application_count || 0}</span> applications</span>
+                                </div>
+                                ${stats.avg_compatibility_score ? `
+                                    <div class="stat">
+                                        <span class="stat-icon">&#11088;</span>
+                                        <span><span class="stat-value">${stats.avg_compatibility_score.toFixed(0)}%</span> avg score</span>
+                                    </div>
                                 ` : ''}
                             </div>
                             <div class="profile-badges">
                                 ${isActive ? '<span class="badge badge-active">Active</span>' : ''}
-                                ${profile.is_indexed ? '<span class="badge badge-indexed">Indexed</span>' : '<span class="badge badge-warning">Needs Indexing</span>'}
-                                ${profile.is_archived ? '<span class="badge badge-archived">Archived</span>' : ''}
+                                ${profile.is_demo ? '<span class="badge badge-demo">Demo</span>' : ''}
                             </div>
                         </div>
                         <div class="profile-actions">
                             <div class="actions-row">
-                                ${isActive ? '<a href="/profile/edit" class="btn btn-sm btn-primary">Edit Profile</a>' : ''}
-                                <a href="/profiles/create" class="btn btn-sm btn-secondary">Edit YAML</a>
-                                <button class="btn btn-sm btn-secondary" onclick="reindexProfile()">Re-index</button>
+                                <a href="/profiles/${escapeHtml(profile.slug)}/edit" class="btn btn-sm btn-primary">Edit</a>
+                                ${!isActive ? `
+                                    <button class="btn btn-sm btn-secondary" onclick="activateProfile('${escapeHtml(profile.slug)}')">
+                                        Set Active
+                                    </button>
+                                ` : ''}
+                            </div>
+                            <div class="actions-row">
+                                ${!isActive ? `
+                                    <button class="btn btn-sm btn-danger-outline" onclick="showDeleteModal('${escapeHtml(profile.slug)}', '${escapeHtml(profile.name)}')">
+                                        Delete
+                                    </button>
+                                ` : ''}
                             </div>
                         </div>
                     </div>
@@ -452,64 +495,61 @@
             }).join('');
         }
 
-        async function reindexProfile() {
+        async function activateProfile(slug) {
             try {
-                showToast('info', 'Indexing', 'Re-indexing profile...');
+                showToast('info', 'Activating', 'Setting profile as active...');
 
-                // First get the profile ID from status
-                const statusResponse = await fetch('/api/v1/profile/status');
-                if (!statusResponse.ok) throw new Error('Failed to get profile status');
-                const status = await statusResponse.json();
-
-                if (!status.profile_id) {
-                    throw new Error('No profile found to reindex');
-                }
-
-                // Then reindex using the profile ID
-                const response = await fetch('/api/v1/profile/index', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ profile_id: status.profile_id })
+                const response = await fetch(`/api/v1/profiles/${encodeURIComponent(slug)}/activate`, {
+                    method: 'POST'
                 });
-                if (!response.ok) throw new Error('Failed to reindex profile');
 
-                const data = await response.json();
-                showToast('success', 'Indexed', `Created ${data.chunks_created} chunks`);
-                loadProfiles();
+                if (!response.ok) throw new Error('Failed to activate profile');
+
+                const result = await response.json();
+                showToast('success', 'Activated', result.message);
+
+                // Reload to show updated state
+                await loadProfiles();
+
             } catch (error) {
-                console.error('Error reindexing profile:', error);
-                showToast('error', 'Error', 'Failed to reindex profile');
+                console.error('Error activating profile:', error);
+                showToast('error', 'Error', 'Failed to activate profile');
             }
         }
 
-        function showDeleteModal(filename) {
-            deleteTarget = filename;
-            document.getElementById('delete-filename').textContent = filename;
+        function showDeleteModal(slug, name) {
+            deleteTargetSlug = slug;
+            document.getElementById('delete-profile-name').textContent = name;
             document.getElementById('delete-modal').classList.add('show');
 
             document.getElementById('confirm-delete-btn').onclick = async () => {
-                await deleteProfile(filename);
+                await deleteProfile(slug);
                 closeDeleteModal();
             };
         }
 
         function closeDeleteModal() {
             document.getElementById('delete-modal').classList.remove('show');
-            deleteTarget = null;
+            deleteTargetSlug = null;
         }
 
-        async function deleteProfile(filename) {
+        async function deleteProfile(slug) {
             try {
-                const response = await fetch(`/api/v1/profiles/${encodeURIComponent(filename)}?confirm=true`, {
+                const response = await fetch(`/api/v1/profiles/${encodeURIComponent(slug)}`, {
                     method: 'DELETE'
                 });
-                if (!response.ok) throw new Error('Failed to delete profile');
 
-                showToast('success', 'Deleted', `${filename} has been deleted`);
-                loadProfiles();
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to delete');
+                }
+
+                showToast('success', 'Deleted', 'Profile has been deleted');
+                await loadProfiles();
+
             } catch (error) {
                 console.error('Error deleting profile:', error);
-                showToast('error', 'Error', 'Failed to delete profile');
+                showToast('error', 'Error', error.message || 'Failed to delete profile');
             }
         }
     </script>

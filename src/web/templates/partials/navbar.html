@@ -15,22 +15,39 @@
     </div>
 
     <div class="navbar-right">
-        <!-- Profile Switcher -->
-        <div class="navbar-profile-switcher">
-            <button class="navbar-profile-btn" onclick="toggleProfileDropdown(event)">
-                <span class="profile-indicator-dot" id="navbar-profile-indicator"></span>
-                <span id="navbar-profile-name">Loading...</span>
-                <span class="navbar-profile-arrow">&#9662;</span>
+        <!-- Active Profile Indicator -->
+        <div class="navbar-active-profile" id="navbar-active-profile">
+            <span class="active-profile-dot"></span>
+            <span class="active-profile-name" id="navbar-active-name">Loading...</span>
+        </div>
+
+        <!-- User Menu -->
+        <div class="navbar-user-menu">
+            <button class="navbar-user-btn" onclick="toggleUserMenu(event)">
+                <span class="user-avatar" id="navbar-user-avatar">T</span>
+                <span class="user-name" id="navbar-user-name">Test User</span>
+                <span class="navbar-arrow">&#9662;</span>
             </button>
-            <div class="profile-dropdown" id="navbar-profile-dropdown">
-                <div class="profile-dropdown-header">Switch Profile</div>
-                <div class="profile-dropdown-list" id="navbar-profile-list">
-                    <!-- Profiles populated by JS -->
+            <div class="user-dropdown" id="navbar-user-dropdown">
+                <div class="user-dropdown-header">
+                    <div class="user-email" id="navbar-user-email">test@scout.local</div>
                 </div>
-                <div class="profile-dropdown-footer">
-                    <a href="/profiles" class="profile-dropdown-link">Manage Profiles</a>
-                    <a href="/profiles/new" class="profile-dropdown-link">+ Create Profile</a>
-                </div>
+                <div class="user-dropdown-divider"></div>
+                <a href="/profiles" class="user-dropdown-item">
+                    <span class="dropdown-icon">&#128100;</span>
+                    Manage Profiles
+                </a>
+                <button class="user-dropdown-item disabled" disabled>
+                    <span class="dropdown-icon">&#9881;</span>
+                    Settings
+                    <span class="coming-soon-badge">Soon</span>
+                </button>
+                <div class="user-dropdown-divider"></div>
+                <button class="user-dropdown-item disabled" disabled>
+                    <span class="dropdown-icon">&#128682;</span>
+                    Log Out
+                    <span class="coming-soon-badge">Soon</span>
+                </button>
             </div>
         </div>
     </div>

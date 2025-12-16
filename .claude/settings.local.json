@@ -37,7 +37,9 @@
       "Bash(git mv:*)",
       "Bash(dir:*)",
       "Bash(cat:*)",
-      "Bash(sudo systemctl restart:*)"
+      "Bash(sudo systemctl restart:*)",
+      "Bash(git checkout:*)",
+      "Bash(if exist datascout.db del datascout.db)"
     ]
   }
 }

@@ -27,32 +27,58 @@ src/web/
 │   ├── __init__.py
 │   ├── pages.py         # HTML page routes (with legacy redirects)
 │   └── api/
-│       ├── __init__.py
 │       └── v1/
 │           ├── __init__.py
 │           ├── jobs.py          # Job pipeline endpoints
-│           ├── profiles.py      # Multi-profile management (NEW)
-│           ├── profile.py       # Legacy profile endpoints
+│           ├── profiles.py      # Profile management (normalized schema)
+│           ├── user.py          # User identity endpoints
 │           ├── notifications.py # Notifications
 │           ├── logs.py          # Log retrieval
 │           ├── metrics.py       # Performance metrics
 │           └── diagnostics.py   # Component diagnostics
 ├── templates/
 │   ├── partials/
-│   │   └── navbar.html      # Navigation with profile switcher (NEW)
+│   │   └── navbar.html      # Navigation with user menu
 │   ├── index.html           # Dashboard (main page)
 │   ├── applications.html    # Applications list
-│   ├── profiles_list.html   # Profile management list
-│   ├── profile_edit.html    # Profile editor (create/edit)
+│   ├── profiles_list.html   # Profile management with completeness scores
+│   ├── profile_edit.html    # Tabbed profile editor
 │   ├── metrics.html         # Performance metrics dashboard
 │   ├── logs.html            # Application logs viewer
 │   └── diagnostics.html     # System diagnostics page
 └── static/
     ├── css/
-    │   └── common.css   # Shared styles (profile switcher styles)
+    │   └── common.css   # Shared styles (user menu, completeness badges)
     └── js/
-        └── common.js    # Shared JS (profile loading, switching)
+        └── common.js    # Shared JS (user/profile loading, notifications)
 ```
+
+---
+
+## Data Architecture
+
+The web interface uses a **normalized User/Profile schema**:
+
+| Entity | Purpose |
+|--------|---------|
+| **User** | Identity (username, email, display_name) |
+| **Profile** | Career data (skills, experience, education) |
+
+- One User can have multiple Profiles
+- One Profile is marked as "active" at a time
+- Profiles have completeness scores calculated from filled fields
+
+### Key API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/user` | GET | Get current user identity |
+| `/api/v1/profiles` | GET | List all profiles with metadata |
+| `/api/v1/profiles/active` | GET | Get active profile |
+| `/api/v1/profiles/{slug}` | GET | Get full profile data |
+| `/api/v1/profiles/{slug}/completeness` | GET | Get completeness score |
+| `/api/v1/profiles/{slug}/activate` | POST | Set as active profile |
+| `/api/v1/profiles/{slug}` | DELETE | Delete profile |
 
 ---
 
@@ -114,27 +140,39 @@ All pages include the shared navbar:
 
 ### Navbar (`partials/navbar.html`)
 Contains:
-- Scout logo/title
+- Scout logo/branding
 - Navigation links (Dashboard, Profiles, Applications, Metrics, Logs, Diagnostics)
 - Active page indicator (highlights current page)
-- **Profile Switcher (NEW)**: Dropdown showing all profiles with active indicator
+- **Active Profile Indicator**: Shows currently active profile name with green dot
+- **User Menu**: User avatar dropdown with profile management links
 
 ```html
-<!-- Profile Switcher Structure -->
-<div class="navbar-profile-switcher">
-    <button class="navbar-profile-btn" onclick="toggleProfileDropdown(event)">
-        <span class="profile-indicator-dot" id="navbar-profile-indicator"></span>
-        <span id="navbar-profile-name">Loading...</span>
-        <span class="navbar-profile-arrow">&#9662;</span>
-    </button>
-    <div class="profile-dropdown" id="navbar-profile-dropdown">
-        <div class="profile-dropdown-header">Switch Profile</div>
-        <div class="profile-dropdown-list" id="navbar-profile-list">
-            <!-- Profiles populated by JS -->
-        </div>
-        <div class="profile-dropdown-footer">
-            <a href="/profiles" class="profile-dropdown-link">Manage Profiles</a>
-            <a href="/profiles/new" class="profile-dropdown-link">+ Create Profile</a>
+<!-- Navbar Right Section -->
+<div class="navbar-right">
+    <!-- Active Profile Indicator -->
+    <div class="navbar-active-profile" id="navbar-active-profile">
+        <span class="active-profile-dot"></span>
+        <span class="active-profile-name" id="navbar-active-name">Loading...</span>
+    </div>
+
+    <!-- User Menu -->
+    <div class="navbar-user-menu">
+        <button class="navbar-user-btn" onclick="toggleUserMenu(event)">
+            <span class="user-avatar" id="navbar-user-avatar">T</span>
+            <span class="user-name" id="navbar-user-name">Test User</span>
+            <span class="navbar-arrow">&#9662;</span>
+        </button>
+        <div class="user-dropdown" id="navbar-user-dropdown">
+            <div class="user-dropdown-header">
+                <div class="user-email" id="navbar-user-email">test@scout.local</div>
+            </div>
+            <a href="/profiles" class="user-dropdown-item">Manage Profiles</a>
+            <button class="user-dropdown-item disabled" disabled>
+                Settings <span class="coming-soon-badge">Soon</span>
+            </button>
+            <button class="user-dropdown-item disabled" disabled>
+                Log Out <span class="coming-soon-badge">Soon</span>
+            </button>
         </div>
     </div>
 </div>
@@ -148,17 +186,25 @@ Contains:
 Main application page with:
 - Profile status indicator
 - Job posting text input
-- Generate button
-- Progress section (steps with status)
+- Profile override dropdown (select which profile to use)
+- Quick Score button (fast compatibility check)
+- Generate Application button
+- Progress section (4-step pipeline with status)
 - Results section (score, download buttons)
-- Error handling
+- Error handling with retry
 
 **Key JavaScript Functions:**
 ```javascript
 // Check profile status
 async function checkProfileStatus() { ... }
 
-// Submit job for processing
+// Update profile dropdown from API
+async function updateProfileSelect() { ... }
+
+// Calculate quick compatibility score
+async function calculateQuickScore() { ... }
+
+// Submit job for full processing
 async function startProcessing() { ... }
 
 // Poll for pipeline status
@@ -182,53 +228,104 @@ Lists all generated applications with:
 - Download buttons (CV, Cover Letter)
 - Pagination
 
-**Key JavaScript Functions:**
-```javascript
-async function loadApplications() { ... }
-function sortApplications(sortBy, sortOrder) { ... }
-function renderApplications() { ... }
-function updatePagination() { ... }
-```
-
 #### 3. Profiles List (`profiles_list.html`)
 **Route:** `/profiles`
 
 Profile management page with:
-- Summary stats (total profiles, active profile indicator)
-- Profile cards with stats (application count, compatibility scores)
-- Active profile badge (green indicator)
-- Demo profile badge for seeded profiles
-- Actions: Edit, Activate, Delete
+- Summary stats (total profiles, profiles with scores)
+- Profile cards showing:
+  - Profile name and slug
+  - **Completeness badge** (color-coded: excellent/good/fair/needs_work)
+  - Active profile indicator (green badge)
+  - Stats row (skills count, experience count, education count)
+- Actions: Edit, Activate, Delete (with confirmation modal)
 - Create new profile button
 
 **Key JavaScript Functions:**
 ```javascript
-async function loadProfiles() { ... }
-async function activateProfile(slug) { ... }
-async function deleteProfile(slug) { ... }
-function renderProfileCards() { ... }
+// Load profiles with completeness scores
+async function loadProfiles() {
+    const response = await fetch('/api/v1/profiles');
+    const data = await response.json();
+    // Fetch completeness for each profile
+    for (const profile of data.profiles) {
+        const compResponse = await fetch(`/api/v1/profiles/${profile.slug}/completeness`);
+        profile.completeness = await compResponse.json();
+    }
+}
+
+// Activate a profile
+async function activateProfile(slug) {
+    await fetch(`/api/v1/profiles/${slug}/activate`, { method: 'POST' });
+}
+
+// Delete with confirmation
+async function deleteProfile(slug) {
+    if (confirm('Delete this profile?')) {
+        await fetch(`/api/v1/profiles/${slug}`, { method: 'DELETE' });
+    }
+}
 ```
+
+**Completeness Levels:**
+| Level | Score Range | Color |
+|-------|-------------|-------|
+| Excellent | 80-100% | Green (#10b981) |
+| Good | 60-79% | Blue (#2563eb) |
+| Fair | 40-59% | Yellow (#f59e0b) |
+| Needs Work | 0-39% | Red (#ef4444) |
 
 #### 4. Profile Editor (`profile_edit.html`)
 **Route:** `/profiles/new`, `/profiles/{slug}/edit`
 
-Form-based profile editor (create or edit):
-- Personal info section (name, email, phone, location, title)
-- Summary textarea
-- Dynamic skills list (add/remove)
-- Dynamic experiences list (add/remove)
-- Dynamic education list (add/remove)
-- Certifications and languages
-- Save button with validation
-- Profile completeness score
+**Tabbed interface** for profile editing (5 tabs):
+
+| Tab | Contents |
+|-----|----------|
+| **Overview** | Name, title, email, phone, location, summary |
+| **Skills** | Dynamic list with proficiency levels (1-5) and years |
+| **Experience** | Job entries with company, title, dates, achievements |
+| **Education** | Degree entries with institution, field, dates, GPA |
+| **Certifications** | Certification entries with name, issuer, dates |
+
+**Key Features:**
+- Add/remove items in each list section
+- Reorder items via drag or move buttons
+- Completeness widget in sidebar (real-time score)
+- Field validation
+- Save button creates/updates profile via API
 
 **Key JavaScript Functions:**
 ```javascript
-async function loadProfile(slug) { ... }
-async function saveProfile() { ... }
-function addSkillRow() { ... }
-function addExperienceRow() { ... }
-function validateForm() { ... }
+// Load existing profile data
+async function loadProfile(slug) {
+    const response = await fetch(`/api/v1/profiles/${slug}`);
+    return await response.json();
+}
+
+// Save profile (POST for new, PUT for existing)
+async function saveProfile() {
+    const method = isNewProfile ? 'POST' : 'PUT';
+    const url = isNewProfile ? '/api/v1/profiles' : `/api/v1/profiles/${slug}`;
+    await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profileData)
+    });
+}
+
+// Add dynamic list items
+function addSkill() { ... }
+function addExperience() { ... }
+function addEducation() { ... }
+function addCertification() { ... }
+
+// Update completeness widget
+async function updateCompleteness() {
+    const response = await fetch(`/api/v1/profiles/${slug}/completeness`);
+    const data = await response.json();
+    // Update sidebar widget
+}
 ```
 
 #### 5. Metrics Dashboard (`metrics.html`)
@@ -290,20 +387,45 @@ System diagnostics page with:
 .btn-primary { background: var(--color-primary); color: #fff; }
 .btn-secondary { background: #e5e7eb; color: #374151; }
 .btn-danger { background: var(--color-error); color: #fff; }
+.btn-danger-outline { border: 1px solid var(--color-error); color: var(--color-error); }
 
 /* Forms */
 .form-control { width: 100%; padding: 0.75rem; border-radius: 6px; }
 textarea { min-height: 200px; resize: vertical; }
 
-/* Badges */
-.badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; }
-
-/* Score badges */
+/* Score/Completeness badges */
 .score-badge { padding: 0.5rem 1rem; font-size: 1.5rem; }
-.score-excellent { background: #d1fae5; color: #065f46; }
-.score-strong { background: #dbeafe; color: #1e40af; }
-.score-moderate { background: #fef3c7; color: #92400e; }
-.score-weak { background: #fee2e2; color: #991b1b; }
+.score-excellent, .completeness-excellent { background: #d1fae5; color: #065f46; }
+.score-strong, .completeness-good { background: #dbeafe; color: #1e40af; }
+.score-moderate, .completeness-fair { background: #fef3c7; color: #92400e; }
+.score-weak, .completeness-needs_work { background: #fee2e2; color: #991b1b; }
+
+/* User Menu */
+.navbar-user-menu { position: relative; }
+.navbar-user-btn { display: flex; align-items: center; gap: 0.5rem; }
+.user-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #2563eb; color: #fff;
+}
+.user-dropdown {
+    position: absolute; right: 0; top: 100%;
+    background: #fff; border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.coming-soon-badge {
+    font-size: 0.65rem;
+    background: #e5e7eb;
+    padding: 0.1rem 0.3rem;
+}
+
+/* Active Profile Indicator */
+.navbar-active-profile { display: flex; align-items: center; gap: 0.5rem; }
+.active-profile-dot {
+    width: 8px; height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+}
 
 /* Toasts */
 .toast-container { position: fixed; bottom: 1rem; right: 1rem; }
@@ -328,8 +450,8 @@ textarea { min-height: 200px; resize: vertical; }
 ### Global Namespace
 ```javascript
 window.Scout = window.Scout || {
-    profilesList: [],
-    activeProfileSlug: null,
+    currentUser: null,        // User identity from /api/v1/user
+    activeProfile: null,      // Active profile from /api/v1/profiles/active
     notificationPollInterval: null,
     seenNotifications: new Set()
 };
@@ -337,11 +459,14 @@ window.Scout = window.Scout || {
 
 ### Utility Functions
 ```javascript
-// HTML escaping
+// HTML escaping (XSS prevention)
 function escapeHtml(text) { ... }
 
 // Date formatting
 function formatRelativeDate(dateStr) { ... }  // "Today", "2 days ago", etc.
+
+// Capitalize first letter
+function capitalizeFirst(str) { ... }
 
 // Score class helper
 function getScoreClass(score) { ... }  // Returns: excellent, strong, moderate, weak
@@ -350,33 +475,43 @@ function getScoreClass(score) { ... }  // Returns: excellent, strong, moderate, 
 function showToast(type, title, message, autoDismiss, dismissSeconds) { ... }
 ```
 
-### Profile Management (NEW)
+### User & Profile Loading
 ```javascript
-// Load profiles from API and update navbar
-async function loadProfilesList() {
-    const response = await fetch('/api/v1/profiles');
-    const data = await response.json();
-    window.Scout.profilesList = data.profiles || [];
-    window.Scout.activeProfileSlug = data.active_profile_slug;
-    updateNavbarProfileSwitcher();
+// Load current user from API
+async function loadCurrentUser() {
+    const response = await fetch('/api/v1/user');
+    if (response.ok) {
+        window.Scout.currentUser = await response.json();
+        updateNavbarUser();
+    }
 }
 
-// Update navbar profile switcher UI
-function updateNavbarProfileSwitcher() {
-    // Updates navbar profile name
-    // Updates dropdown list with all profiles
-    // Shows active indicator for current profile
+// Load active profile from API
+async function loadActiveProfile() {
+    const response = await fetch('/api/v1/profiles/active');
+    if (response.ok) {
+        window.Scout.activeProfile = await response.json();
+        updateNavbarActiveProfile();
+    }
 }
 
-// Toggle profile dropdown visibility
-function toggleProfileDropdown(event) { ... }
+// Update navbar user display
+function updateNavbarUser() {
+    const user = window.Scout.currentUser;
+    // Update avatar, name, email in navbar
+}
 
-// Switch to a different profile
-async function switchToProfile(slug) {
-    await fetch(`/api/v1/profiles/${slug}/activate`, { method: 'POST' });
-    // Updates global state
-    // Shows toast notification
-    // Reloads page to reflect changes
+// Update navbar active profile indicator
+function updateNavbarActiveProfile() {
+    const profile = window.Scout.activeProfile;
+    // Update profile name and dot visibility
+}
+
+// Toggle user menu dropdown
+function toggleUserMenu(event) {
+    event.stopPropagation();
+    const dropdown = document.getElementById('navbar-user-dropdown');
+    dropdown.classList.toggle('show');
 }
 ```
 
@@ -393,22 +528,37 @@ async function fetchNotifications() { ... }
 
 // Show notification as toast
 function showNotificationToast(notification) { ... }
+
+// Mark notification as read
+async function markNotificationRead(notificationId) { ... }
 ```
 
 ### Initialization
 ```javascript
 document.addEventListener('DOMContentLoaded', () => {
-    // Load profiles for switcher
-    loadProfilesList();
+    // Load user and profile data
+    loadCurrentUser();
+    loadActiveProfile();
 
     // Start notification polling
     startNotificationPolling();
 
     // Close dropdowns when clicking outside
-    document.addEventListener('click', (e) => { ... });
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.navbar-user-menu')) {
+            const dropdown = document.getElementById('navbar-user-dropdown');
+            if (dropdown) dropdown.classList.remove('show');
+        }
+    });
 
     // Set active nav link based on current path
-    // ...
+    const currentPath = window.location.pathname;
+    document.querySelectorAll('.nav-link').forEach(link => {
+        const href = link.getAttribute('href');
+        if (href === currentPath || (href !== '/' && currentPath.startsWith(href))) {
+            link.classList.add('active');
+        }
+    });
 });
 ```
 
@@ -490,10 +640,10 @@ async def get_orchestrator() -> PipelineOrchestrator:
 ### JavaScript API
 ```javascript
 // Show toast notification
-showToast('success', 'Profile Saved', 'Your profile has been saved and indexed.');
+showToast('success', 'Profile Saved', 'Your profile has been saved.');
 showToast('error', 'Error', 'Failed to process job posting.');
 showToast('info', 'Processing', 'Your application is being generated...');
-showToast('warning', 'Warning', 'Profile needs to be re-indexed.');
+showToast('warning', 'Warning', 'Profile completeness is low.');
 ```
 
 ### Auto-dismiss
@@ -512,7 +662,7 @@ For long-running pipeline operations:
 // Start polling for status updates
 function startPolling() {
     pollInterval = setInterval(async () => {
-        const response = await fetch(`/api/status/${currentJobId}`);
+        const response = await fetch(`/api/v1/jobs/${currentJobId}`);
         const status = await response.json();
         updateProgress(status);
 
@@ -538,4 +688,4 @@ The interface is designed for desktop use primarily, but includes basic responsi
 ---
 
 *Last updated: December 16, 2025*
-*Updated: Added profile switcher, new pages (metrics, diagnostics), updated routes structure*
+*Updated: Normalized User/Profile schema, user menu, completeness scoring, tabbed profile editor*

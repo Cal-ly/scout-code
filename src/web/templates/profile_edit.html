@@ -3,25 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scout - Create Profile</title>
+    <title>Scout - Edit Profile</title>
     <link rel="stylesheet" href="/static/css/common.css">
     <style>
-        /* Profile Editor specific styles */
-        .card .description {
-            color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 1.5rem;
-            line-height: 1.5;
+        /* Profile Editor Styles */
+        .editor-container {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
-        /* Method selection */
-        .method-tabs {
+        @media (max-width: 900px) {
+            .editor-container {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                order: -1;
+            }
+        }
+
+        /* Tabs */
+        .editor-tabs {
             display: flex;
             border-bottom: 2px solid #e5e7eb;
             margin-bottom: 1.5rem;
+            overflow-x: auto;
         }
-        .method-tab {
-            padding: 0.75rem 1.5rem;
+        .editor-tab {
+            padding: 0.75rem 1.25rem;
             font-size: 0.95rem;
             font-weight: 500;
             color: #666;
@@ -31,124 +42,43 @@
             cursor: pointer;
             transition: all 0.2s;
             margin-bottom: -2px;
+            white-space: nowrap;
         }
-        .method-tab:hover {
+        .editor-tab:hover {
             color: #2563eb;
         }
-        .method-tab.active {
+        .editor-tab.active {
             color: #2563eb;
             border-bottom-color: #2563eb;
         }
+        .editor-tab .tab-count {
+            background: #e5e7eb;
+            color: #666;
+            font-size: 0.75rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 10px;
+            margin-left: 0.5rem;
+        }
+        .editor-tab.active .tab-count {
+            background: #dbeafe;
+            color: #2563eb;
+        }
 
-        /* Form sections */
-        .method-content {
+        /* Tab Content */
+        .tab-content {
             display: none;
         }
-        .method-content.active {
+        .tab-content.active {
             display: block;
         }
 
-        /* YAML Editor */
-        .yaml-editor-container {
-            position: relative;
-            margin-bottom: 1rem;
-        }
-        .yaml-editor {
-            width: 100%;
-            min-height: 400px;
-            padding: 1rem;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            font-size: 0.9rem;
-            line-height: 1.6;
-            resize: vertical;
-            background: #1a1a2e;
-            color: #e0e0e0;
-            tab-size: 2;
-        }
-        .yaml-editor:focus {
-            outline: none;
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
-        }
-        .yaml-editor::placeholder {
-            color: #6b7280;
-        }
-
-        /* File upload */
-        .upload-area {
-            border: 2px dashed #d1d5db;
-            border-radius: 8px;
-            padding: 3rem 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: #fafafa;
-        }
-        .upload-area:hover {
-            border-color: #2563eb;
-            background: #f0f7ff;
-        }
-        .upload-area.dragover {
-            border-color: #2563eb;
-            background: #e0f0ff;
-        }
-        .upload-icon {
-            font-size: 3rem;
-            color: #9ca3af;
-            margin-bottom: 1rem;
-        }
-        .upload-area h3 {
-            color: #374151;
-            margin-bottom: 0.5rem;
-        }
-        .upload-area p {
-            color: #6b7280;
-            font-size: 0.9rem;
-        }
-        .upload-area input[type="file"] {
-            display: none;
-        }
-
-        /* Templates */
-        .template-grid {
+        /* Form styles */
+        .form-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
-        .template-card {
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 1rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
-        }
-        .template-card:hover {
-            border-color: #2563eb;
-            background: #f0f7ff;
-        }
-        .template-card.selected {
-            border-color: #2563eb;
-            background: #e0f0ff;
-        }
-        .template-icon {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-        .template-name {
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 0.25rem;
-        }
-        .template-description {
-            font-size: 0.8rem;
-            color: #6b7280;
-        }
-
-        /* Form fields */
         .form-group {
             margin-bottom: 1rem;
         }
@@ -158,17 +88,25 @@
             color: #374151;
             margin-bottom: 0.5rem;
         }
-        .form-group input {
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
             width: 100%;
             padding: 0.75rem;
-            border: 1px solid #ddd;
+            border: 1px solid #d1d5db;
             border-radius: 6px;
             font-size: 0.95rem;
         }
-        .form-group input:focus {
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
             outline: none;
             border-color: #2563eb;
             box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
         }
         .form-hint {
             font-size: 0.8rem;
@@ -176,421 +114,354 @@
             margin-top: 0.25rem;
         }
 
-        /* Validation feedback */
-        .validation-status {
+        /* Item cards (for skills, experiences, etc.) */
+        .items-list {
             display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1rem;
-            border-radius: 6px;
-            margin-bottom: 1rem;
-            font-size: 0.9rem;
-        }
-        .validation-status.valid {
-            background: #d1fae5;
-            color: #065f46;
-        }
-        .validation-status.invalid {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-        .validation-status.warning {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        /* Buttons */
-        .btn-group {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
-        .btn-group .btn-primary {
-            flex: 2;
-        }
-        .btn-group .btn-secondary {
-            flex: 1;
-        }
-
-        /* Checkbox */
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            flex-direction: column;
+            gap: 0.75rem;
             margin-bottom: 1rem;
         }
-        .checkbox-group input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            accent-color: #2563eb;
+        .item-card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1rem;
         }
-        .checkbox-group label {
+        .item-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+        .item-card-title {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .item-card-subtitle {
             font-size: 0.9rem;
-            color: #374151;
+            color: #6b7280;
+        }
+        .item-card-actions {
+            display: flex;
+            gap: 0.25rem;
+        }
+        .item-card-actions button {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
             cursor: pointer;
         }
-
-        /* Loading state */
-        .loading-state {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            padding: 2rem;
+        .item-card-actions button:hover {
+            background: #f3f4f6;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .item-card-actions button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
-        .spinner {
-            width: 24px;
-            height: 24px;
-            border: 3px solid #e5e7eb;
-            border-top-color: #2563eb;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .item-card-actions button.delete:hover {
+            background: #fee2e2;
+            border-color: #fecaca;
+            color: #dc2626;
         }
 
-        /* Success state */
-        .success-state {
-            text-align: center;
-            padding: 2rem;
+        /* Expandable item card */
+        .item-card.expandable .item-card-header {
+            cursor: pointer;
         }
-        .success-icon {
-            font-size: 3rem;
-            color: #10b981;
-            margin-bottom: 1rem;
+        .item-card-body {
+            display: none;
+            padding-top: 0.75rem;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 0.75rem;
         }
-        .success-state h3 {
-            color: #065f46;
-            margin-bottom: 0.5rem;
-        }
-        .success-state p {
-            color: #047857;
-            margin-bottom: 1.5rem;
+        .item-card.expanded .item-card-body {
+            display: block;
         }
 
-        /* Error message */
-        .error-message {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #b91c1c;
-            padding: 1rem;
-            border-radius: 6px;
-            margin-bottom: 1rem;
-        }
-
-        /* Toast notifications */
-        .toast-container {
-            position: fixed;
-            bottom: 1rem;
-            right: 1rem;
-            z-index: 1000;
+        /* Achievement list */
+        .achievements-list {
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
         }
-        .toast {
-            min-width: 300px;
-            padding: 1rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        .achievement-item {
             display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            animation: slideIn 0.3s ease;
+            gap: 0.5rem;
+            align-items: center;
         }
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        .achievement-item input {
+            flex: 1;
         }
-        .toast-success { background: #10b981; color: #fff; }
-        .toast-error { background: #ef4444; color: #fff; }
-        .toast-info { background: #2563eb; color: #fff; }
-        .toast-content { flex: 1; }
-        .toast-title { font-weight: 600; }
-        .toast-message { font-size: 0.9rem; opacity: 0.9; margin-top: 0.25rem; }
-        .toast-close {
-            background: none;
-            border: none;
-            color: inherit;
-            opacity: 0.7;
+
+        /* Add item button */
+        .add-item-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: #f9fafb;
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            color: #6b7280;
             cursor: pointer;
-            font-size: 1.25rem;
-            line-height: 1;
+            transition: all 0.2s;
+            width: 100%;
+            justify-content: center;
+        }
+        .add-item-btn:hover {
+            border-color: #2563eb;
+            color: #2563eb;
+            background: #eff6ff;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: sticky;
+            top: 1rem;
+        }
+        .sidebar-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+        .sidebar-card h3 {
+            font-size: 1rem;
+            margin: 0 0 1rem 0;
+            color: #374151;
+        }
+
+        /* Completeness widget */
+        .completeness-score {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .completeness-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .completeness-circle.excellent { background: #d1fae5; color: #065f46; }
+        .completeness-circle.good { background: #dbeafe; color: #1e40af; }
+        .completeness-circle.fair { background: #fef3c7; color: #92400e; }
+        .completeness-circle.needs_work { background: #fee2e2; color: #991b1b; }
+
+        .completeness-level {
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .suggestions-list {
+            text-align: left;
+        }
+        .suggestion-item {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-start;
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+        .suggestion-icon {
+            flex-shrink: 0;
+        }
+
+        /* Action buttons */
+        .editor-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+        }
+        .editor-actions .btn-primary {
+            flex: 2;
+        }
+        .editor-actions .btn-secondary {
+            flex: 1;
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .loading-overlay.show {
+            display: flex;
         }
 
         .hidden { display: none !important; }
-
-        /* Log Panel */
-        .log-panel {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #1a1a2e;
-            color: #e0e0e0;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 12px;
-            z-index: 900;
-            transition: height 0.3s ease;
-        }
-        .log-panel.collapsed {
-            height: 36px;
-        }
-        .log-panel.expanded {
-            height: 300px;
-        }
-        .log-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 12px;
-            background: #16213e;
-            cursor: pointer;
-            user-select: none;
-        }
-        .log-header:hover {
-            background: #1a2744;
-        }
-        .log-title {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 600;
-            font-size: 13px;
-        }
-        .log-status {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #10b981;
-        }
-        .log-status.error { background: #ef4444; }
-        .log-status.warning { background: #f59e0b; }
-        .log-controls {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        .log-filter {
-            padding: 4px 8px;
-            border: 1px solid #374151;
-            border-radius: 4px;
-            background: #1a1a2e;
-            color: #e0e0e0;
-            font-size: 11px;
-        }
-        .log-btn {
-            padding: 4px 10px;
-            border: none;
-            border-radius: 4px;
-            background: #374151;
-            color: #e0e0e0;
-            cursor: pointer;
-            font-size: 11px;
-        }
-        .log-btn:hover {
-            background: #4b5563;
-        }
-        .log-content {
-            height: calc(100% - 36px);
-            overflow-y: auto;
-            padding: 8px 12px;
-        }
-        .log-entry {
-            padding: 2px 0;
-            border-bottom: 1px solid #2d2d44;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-        .log-entry:last-child {
-            border-bottom: none;
-        }
-        .log-entry.level-ERROR { color: #f87171; }
-        .log-entry.level-WARNING { color: #fbbf24; }
-        .log-entry.level-INFO { color: #60a5fa; }
-        .log-entry.level-DEBUG { color: #9ca3af; }
-        .log-empty {
-            color: #6b7280;
-            font-style: italic;
-            padding: 20px;
-            text-align: center;
-        }
-        .log-expand-icon {
-            transition: transform 0.3s ease;
-        }
-        .log-panel.expanded .log-expand-icon {
-            transform: rotate(180deg);
-        }
     </style>
 </head>
 <body>
     {% include 'partials/navbar.html' %}
 
-    <main class="container" style="max-width: 900px;">
-        <!-- Form Section -->
-        <section id="form-section" class="card">
-            <h2 id="page-title">Create New Profile</h2>
-            <p class="description">
-                Create a profile in YAML format to use for job matching and application generation.
-                You can use a template, upload an existing file, or write from scratch.
-            </p>
-
-            <!-- Method Tabs -->
-            <div class="method-tabs">
-                <button class="method-tab active" data-method="editor" onclick="switchMethod('editor')">YAML Editor</button>
-                <button class="method-tab" data-method="upload" onclick="switchMethod('upload')">Upload File</button>
-                <button class="method-tab" data-method="template" onclick="switchMethod('template')">Use Template</button>
+    <main class="container">
+        <!-- Page Header -->
+        <div class="page-header" style="margin-bottom: 1.5rem;">
+            <div>
+                <h2 id="page-title">Edit Profile</h2>
+                <p id="page-subtitle" style="color: #666; margin: 0;">Update your professional information</p>
             </div>
+            <a href="/profiles" class="btn btn-secondary">&larr; Back to Profiles</a>
+        </div>
 
-            <!-- Error Container -->
-            <div id="error-container" class="error-message hidden"></div>
-
-            <!-- YAML Editor Method -->
-            <div class="method-content active" id="method-editor">
-                <div class="form-group">
-                    <label for="filename-input">Filename</label>
-                    <input type="text" id="filename-input" placeholder="my_profile.yaml" />
-                    <p class="form-hint">Must end with .yaml. Leave blank to auto-generate.</p>
-                </div>
-
-                <div class="yaml-editor-container">
-                    <textarea id="yaml-editor" class="yaml-editor" placeholder="name: &quot;Test User&quot;
-email: &quot;test.user@example.com&quot;
-title: &quot;Your Job Title&quot;
-years_experience: 5.0
-
-skills:
-  - Python
-  - JavaScript
-  - SQL
-
-experience:
-  - title: &quot;Software Engineer&quot;
-    company: &quot;Company Name&quot;
-    start_date: &quot;2020-01&quot;
-    end_date: &quot;Present&quot;
-    description: &quot;Description of your role and achievements&quot;
-
-education:
-  - degree: &quot;Bachelor of Science&quot;
-    field: &quot;Computer Science&quot;
-    institution: &quot;University Name&quot;
-    year: 2019"></textarea>
-                </div>
-
-                <div id="validation-status" class="validation-status hidden">
-                    <span id="validation-icon"></span>
-                    <span id="validation-message"></span>
-                </div>
-            </div>
-
-            <!-- Upload Method -->
-            <div class="method-content" id="method-upload">
-                <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
-                    <div class="upload-icon">&#128196;</div>
-                    <h3>Click or drag YAML file here</h3>
-                    <p>Supports .yaml and .yml files</p>
-                    <input type="file" id="file-input" accept=".yaml,.yml" onchange="handleFileSelect(event)" />
-                </div>
-                <p id="upload-filename" class="hidden" style="margin-top: 1rem; color: #065f46; font-weight: 500;"></p>
-            </div>
-
-            <!-- Template Method -->
-            <div class="method-content" id="method-template">
-                <p style="color: #666; margin-bottom: 1rem;">Select a template as a starting point:</p>
-                <div class="template-grid">
-                    <div class="template-card" onclick="selectTemplate('junior')">
-                        <div class="template-icon">&#127793;</div>
-                        <div class="template-name">Junior Developer</div>
-                        <div class="template-description">0-2 years experience</div>
+        <div class="editor-container">
+            <!-- Main Editor -->
+            <div class="editor-main">
+                <div class="card">
+                    <!-- Tabs -->
+                    <div class="editor-tabs">
+                        <button class="editor-tab active" data-tab="overview" onclick="switchTab('overview')">
+                            Overview
+                        </button>
+                        <button class="editor-tab" data-tab="skills" onclick="switchTab('skills')">
+                            Skills <span class="tab-count" id="skills-count">0</span>
+                        </button>
+                        <button class="editor-tab" data-tab="experience" onclick="switchTab('experience')">
+                            Experience <span class="tab-count" id="experience-count">0</span>
+                        </button>
+                        <button class="editor-tab" data-tab="education" onclick="switchTab('education')">
+                            Education <span class="tab-count" id="education-count">0</span>
+                        </button>
+                        <button class="editor-tab" data-tab="certifications" onclick="switchTab('certifications')">
+                            Certifications <span class="tab-count" id="certifications-count">0</span>
+                        </button>
                     </div>
-                    <div class="template-card" onclick="selectTemplate('senior')">
-                        <div class="template-icon">&#128187;</div>
-                        <div class="template-name">Senior Developer</div>
-                        <div class="template-description">5+ years experience</div>
+
+                    <!-- Overview Tab -->
+                    <div class="tab-content active" id="tab-overview">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="profile-name">Profile Name *</label>
+                                <input type="text" id="profile-name" placeholder="e.g., Backend Focus" required>
+                                <p class="form-hint">A name to identify this profile</p>
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-title">Professional Title</label>
+                                <input type="text" id="profile-title" placeholder="e.g., Senior Software Engineer">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="profile-email">Email</label>
+                                <input type="email" id="profile-email" placeholder="your.email@example.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-phone">Phone</label>
+                                <input type="tel" id="profile-phone" placeholder="+1-555-0123">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-location">Location</label>
+                            <input type="text" id="profile-location" placeholder="e.g., San Francisco, CA">
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-summary">Professional Summary</label>
+                            <textarea id="profile-summary" rows="5" placeholder="Write a compelling summary of your professional background, key strengths, and career goals..."></textarea>
+                            <p class="form-hint">200+ characters recommended for best results</p>
+                        </div>
                     </div>
-                    <div class="template-card" onclick="selectTemplate('lead')">
-                        <div class="template-icon">&#128105;&#8205;&#128188;</div>
-                        <div class="template-name">Tech Lead</div>
-                        <div class="template-description">Leadership & management</div>
+
+                    <!-- Skills Tab -->
+                    <div class="tab-content" id="tab-skills">
+                        <div class="items-list" id="skills-list">
+                            <!-- Skills populated by JS -->
+                        </div>
+                        <button class="add-item-btn" onclick="addSkill()">
+                            + Add Skill
+                        </button>
                     </div>
-                    <div class="template-card" onclick="selectTemplate('freelancer')">
-                        <div class="template-icon">&#127968;</div>
-                        <div class="template-name">Freelancer</div>
-                        <div class="template-description">Independent contractor</div>
+
+                    <!-- Experience Tab -->
+                    <div class="tab-content" id="tab-experience">
+                        <div class="items-list" id="experience-list">
+                            <!-- Experiences populated by JS -->
+                        </div>
+                        <button class="add-item-btn" onclick="addExperience()">
+                            + Add Experience
+                        </button>
+                    </div>
+
+                    <!-- Education Tab -->
+                    <div class="tab-content" id="tab-education">
+                        <div class="items-list" id="education-list">
+                            <!-- Education populated by JS -->
+                        </div>
+                        <button class="add-item-btn" onclick="addEducation()">
+                            + Add Education
+                        </button>
+                    </div>
+
+                    <!-- Certifications Tab -->
+                    <div class="tab-content" id="tab-certifications">
+                        <div class="items-list" id="certifications-list">
+                            <!-- Certifications populated by JS -->
+                        </div>
+                        <button class="add-item-btn" onclick="addCertification()">
+                            + Add Certification
+                        </button>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="editor-actions">
+                        <button class="btn btn-primary" onclick="saveProfile()">
+                            Save Profile
+                        </button>
+                        <a href="/profiles" class="btn btn-secondary">Cancel</a>
                     </div>
                 </div>
-                <div id="template-selected" class="hidden" style="margin-top: 1rem;">
-                    <p style="color: #065f46; font-weight: 500;">
-                        Template loaded! Switch to "YAML Editor" tab to customize.
-                    </p>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Completeness Score -->
+                <div class="sidebar-card">
+                    <h3>Profile Completeness</h3>
+                    <div class="completeness-score" id="completeness-widget">
+                        <div class="completeness-circle needs_work" id="completeness-circle">
+                            <span id="completeness-score">0%</span>
+                        </div>
+                        <div class="completeness-level" id="completeness-level">Loading...</div>
+                    </div>
+                    <div class="suggestions-list" id="suggestions-list">
+                        <!-- Suggestions populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="sidebar-card">
+                    <h3>Quick Stats</h3>
+                    <div style="font-size: 0.9rem; color: #666;">
+                        <p><strong id="stat-skills">0</strong> skills</p>
+                        <p><strong id="stat-experience">0</strong> experiences</p>
+                        <p><strong id="stat-education">0</strong> education entries</p>
+                        <p><strong id="stat-certifications">0</strong> certifications</p>
+                    </div>
                 </div>
             </div>
-
-            <!-- Options -->
-            <div class="checkbox-group">
-                <input type="checkbox" id="set-active" />
-                <label for="set-active">Set as active profile</label>
-            </div>
-
-            <!-- Buttons -->
-            <div class="btn-group">
-                <button id="submit-btn" class="btn btn-primary" onclick="saveProfile()">
-                    Save &amp; Index Profile
-                </button>
-                <a href="/profiles" class="btn btn-secondary" style="text-align: center;">Cancel</a>
-            </div>
-        </section>
-
-        <!-- Loading Section -->
-        <section id="loading-section" class="card hidden">
-            <div class="loading-state">
-                <div class="spinner"></div>
-                <span>Saving and indexing your profile...</span>
-            </div>
-        </section>
-
-        <!-- Success Section -->
-        <section id="success-section" class="card hidden">
-            <div class="success-state">
-                <div class="success-icon">&#10003;</div>
-                <h3 id="success-title">Profile Created Successfully!</h3>
-                <p id="success-message">Your profile has been indexed and is ready for job matching.</p>
-                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                    <a href="#" id="view-profile-btn" class="btn btn-success">View Profile</a>
-                    <a href="/profiles" class="btn btn-secondary">View All Profiles</a>
-                    <a href="/" class="btn btn-primary">Go to Dashboard</a>
-                </div>
-            </div>
-        </section>
+        </div>
     </main>
 
-    <!-- Log Viewer Panel -->
-    <div class="log-panel collapsed" id="log-panel">
-        <div class="log-header" onclick="toggleLogPanel()">
-            <div class="log-title">
-                <span class="log-status" id="log-status"></span>
-                <span>Application Logs</span>
-                <span id="log-count">(0 entries)</span>
-            </div>
-            <div class="log-controls" onclick="event.stopPropagation()">
-                <select class="log-filter" id="log-level-filter" onchange="fetchLogs()">
-                    <option value="">All Levels</option>
-                    <option value="ERROR">Errors</option>
-                    <option value="WARNING">Warnings</option>
-                    <option value="INFO">Info</option>
-                    <option value="DEBUG">Debug</option>
-                </select>
-                <button class="log-btn" onclick="fetchLogs()">Refresh</button>
-                <button class="log-btn" onclick="copyLogs()">Copy All</button>
-                <button class="log-btn" onclick="clearLogs()">Clear</button>
-                <span class="log-expand-icon">&#9650;</span>
-            </div>
-        </div>
-        <div class="log-content" id="log-content">
-            <div class="log-empty">Loading logs...</div>
-        </div>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
     </div>
 
     <!-- Toast Container -->
@@ -598,593 +469,601 @@ education:
 
     <script src="/static/js/common.js"></script>
     <script>
-        // Get mode from URL (create or edit)
+        // Get profile slug from URL
         const pathParts = window.location.pathname.split('/');
-        const isEditMode = pathParts.includes('edit');
-        const editFilename = isEditMode ? decodeURIComponent(pathParts[pathParts.length - 2]) : null;
+        const isNewProfile = pathParts.includes('new');
+        const profileSlug = isNewProfile ? null : pathParts[pathParts.indexOf('profiles') + 1];
 
-        // State
-        let currentMethod = 'editor';
-        let yamlContent = '';
-        let validationTimeout = null;
-
-        // DOM Elements
-        const formSection = document.getElementById('form-section');
-        const loadingSection = document.getElementById('loading-section');
-        const successSection = document.getElementById('success-section');
-        const yamlEditor = document.getElementById('yaml-editor');
-        const filenameInput = document.getElementById('filename-input');
-        const errorContainer = document.getElementById('error-container');
-        const validationStatus = document.getElementById('validation-status');
-        const toastContainer = document.getElementById('toast-container');
-
-        // Templates
-        const templates = {
-            junior: `name: "Test User"
-email: "test.user@example.com"
-title: "Junior Software Developer"
-years_experience: 1.5
-
-skills:
-  - Python
-  - JavaScript
-  - HTML/CSS
-  - Git
-  - SQL
-
-experience:
-  - title: "Junior Developer"
-    company: "Tech Startup"
-    start_date: "2023-06"
-    end_date: "Present"
-    description: "Developing web applications using modern frameworks. Collaborating with senior developers on feature implementation."
-  - title: "Software Development Intern"
-    company: "Software Company"
-    start_date: "2023-01"
-    end_date: "2023-05"
-    description: "Assisted in building internal tools and testing applications."
-
-education:
-  - degree: "Bachelor of Science"
-    field: "Computer Science"
-    institution: "University Name"
-    year: 2023
-
-certifications:
-  - "AWS Cloud Practitioner"
-`,
-            senior: `name: "Test User"
-email: "test.user@example.com"
-title: "Senior Software Engineer"
-years_experience: 7.0
-
-skills:
-  - Python
-  - JavaScript/TypeScript
-  - React
-  - Node.js
-  - PostgreSQL
-  - Redis
-  - Docker
-  - Kubernetes
-  - AWS
-  - System Design
-  - Team Leadership
-
-experience:
-  - title: "Senior Software Engineer"
-    company: "Tech Company"
-    start_date: "2021-03"
-    end_date: "Present"
-    description: "Lead backend development for core platform services. Architected microservices handling 10M+ daily requests. Mentored team of 4 junior developers."
-  - title: "Software Engineer"
-    company: "Previous Company"
-    start_date: "2018-06"
-    end_date: "2021-02"
-    description: "Built and maintained REST APIs and data pipelines. Improved system performance by 40% through optimization."
-  - title: "Junior Developer"
-    company: "First Company"
-    start_date: "2017-01"
-    end_date: "2018-05"
-    description: "Full-stack development using Python and React."
-
-education:
-  - degree: "Master of Science"
-    field: "Computer Science"
-    institution: "Graduate University"
-    year: 2017
-  - degree: "Bachelor of Science"
-    field: "Software Engineering"
-    institution: "Undergraduate University"
-    year: 2015
-
-certifications:
-  - "AWS Solutions Architect Professional"
-  - "Kubernetes Administrator (CKA)"
-`,
-            lead: `name: "Test User"
-email: "test.user@example.com"
-title: "Engineering Manager / Tech Lead"
-years_experience: 10.0
-
-skills:
-  - Technical Leadership
-  - Team Management
-  - System Architecture
-  - Python
-  - Java
-  - Go
-  - Microservices
-  - Cloud Infrastructure (AWS/GCP)
-  - Agile/Scrum
-  - Strategic Planning
-  - Stakeholder Management
-  - Mentoring
-
-experience:
-  - title: "Engineering Manager"
-    company: "Large Tech Company"
-    start_date: "2022-01"
-    end_date: "Present"
-    description: "Leading team of 12 engineers across 3 squads. Drove architectural decisions for platform modernization. Established engineering best practices and improved deployment frequency by 300%."
-  - title: "Tech Lead"
-    company: "Growing Startup"
-    start_date: "2019-06"
-    end_date: "2021-12"
-    description: "Led technical direction for product engineering. Built and scaled team from 3 to 8 engineers. Designed system architecture supporting 100x growth."
-  - title: "Senior Software Engineer"
-    company: "Established Company"
-    start_date: "2016-03"
-    end_date: "2019-05"
-    description: "Core contributor to distributed systems platform. Led major refactoring initiatives and performance optimization projects."
-
-education:
-  - degree: "Master of Business Administration"
-    field: "Technology Management"
-    institution: "Business School"
-    year: 2021
-  - degree: "Bachelor of Science"
-    field: "Computer Science"
-    institution: "Technical University"
-    year: 2014
-
-certifications:
-  - "AWS Solutions Architect Professional"
-  - "Certified Scrum Master"
-  - "Engineering Management Certificate"
-`,
-            freelancer: `name: "Test User"
-email: "test.user@example.com"
-title: "Freelance Software Developer"
-years_experience: 5.0
-
-skills:
-  - Full-Stack Development
-  - Python
-  - JavaScript/TypeScript
-  - React/Vue.js
-  - Node.js
-  - PostgreSQL/MongoDB
-  - API Development
-  - DevOps
-  - Client Communication
-  - Project Management
-  - Agile Methodologies
-
-experience:
-  - title: "Freelance Software Developer"
-    company: "Self-Employed"
-    start_date: "2021-01"
-    end_date: "Present"
-    description: "Delivering custom software solutions for clients across various industries. Completed 20+ projects ranging from web applications to API integrations. Maintained 100% client satisfaction rating."
-  - title: "Contract Developer"
-    company: "Various Clients"
-    start_date: "2019-06"
-    end_date: "2020-12"
-    description: "Worked on contract basis for startups and established businesses. Specialized in rapid MVP development and legacy system modernization."
-  - title: "Software Developer"
-    company: "Software Agency"
-    start_date: "2018-01"
-    end_date: "2019-05"
-    description: "Developed client projects as part of agency team. Gained experience across diverse technology stacks and business domains."
-
-education:
-  - degree: "Bachelor of Science"
-    field: "Information Technology"
-    institution: "University Name"
-    year: 2018
-
-certifications:
-  - "AWS Certified Developer"
-  - "Google Cloud Professional"
-
-portfolio:
-  - "E-commerce platform for retail client"
-  - "Healthcare appointment booking system"
-  - "Real-time analytics dashboard"
-  - "Mobile app backend API"
-`
+        // Profile data state
+        let profileData = {
+            name: '',
+            title: '',
+            email: '',
+            phone: '',
+            location: '',
+            summary: '',
+            skills: [],
+            experiences: [],
+            education: [],
+            certifications: [],
+            languages: []
         };
 
+        // Skill levels for dropdown
+        const skillLevels = [
+            { value: '', label: 'Select level' },
+            { value: 'beginner', label: 'Beginner' },
+            { value: 'intermediate', label: 'Intermediate' },
+            { value: 'advanced', label: 'Advanced' },
+            { value: 'expert', label: 'Expert' }
+        ];
+
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            if (isEditMode) {
-                document.getElementById('page-title').textContent = 'Edit Profile';
-                document.getElementById('header-subtitle').textContent = 'Edit Profile';
-                loadExistingProfile();
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (isNewProfile) {
+                document.getElementById('page-title').textContent = 'Create New Profile';
+                document.getElementById('page-subtitle').textContent = 'Add your professional information';
+                updateTabCounts();
+                updateCompleteness();
+            } else {
+                await loadProfile();
             }
-
-            // YAML editor input handler
-            yamlEditor.addEventListener('input', () => {
-                clearTimeout(validationTimeout);
-                validationTimeout = setTimeout(validateYaml, 500);
-            });
-
-            // Tab key handling for YAML editor
-            yamlEditor.addEventListener('keydown', (e) => {
-                if (e.key === 'Tab') {
-                    e.preventDefault();
-                    const start = yamlEditor.selectionStart;
-                    const end = yamlEditor.selectionEnd;
-                    yamlEditor.value = yamlEditor.value.substring(0, start) + '  ' + yamlEditor.value.substring(end);
-                    yamlEditor.selectionStart = yamlEditor.selectionEnd = start + 2;
-                }
-            });
-
-            // Drag and drop
-            const uploadArea = document.getElementById('upload-area');
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.classList.add('dragover');
-            });
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.classList.remove('dragover');
-            });
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.classList.remove('dragover');
-                const file = e.dataTransfer.files[0];
-                if (file) handleFile(file);
-            });
         });
 
-        async function loadExistingProfile() {
+        // Tab switching
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.editor-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.tab === tabName);
+            });
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.toggle('active', content.id === `tab-${tabName}`);
+            });
+        }
+
+        // Load existing profile
+        async function loadProfile() {
+            showLoading(true);
             try {
-                // Use the existing single-profile API endpoint
-                const response = await fetch('/api/v1/profile/retrieve');
+                const response = await fetch(`/api/v1/profiles/${profileSlug}`);
                 if (!response.ok) throw new Error('Profile not found');
 
                 const data = await response.json();
-                yamlEditor.value = data.profile_text || '';
-                filenameInput.value = 'profile.yaml';
-                filenameInput.disabled = true;
+                profileData = {
+                    name: data.name || '',
+                    title: data.title || '',
+                    email: data.email || '',
+                    phone: data.phone || '',
+                    location: data.location || '',
+                    summary: data.summary || '',
+                    skills: data.skills || [],
+                    experiences: data.experiences || [],
+                    education: data.education || [],
+                    certifications: data.certifications || [],
+                    languages: data.languages || []
+                };
 
-                validateYaml();
+                // Populate form
+                document.getElementById('profile-name').value = profileData.name;
+                document.getElementById('profile-title').value = profileData.title;
+                document.getElementById('profile-email').value = profileData.email;
+                document.getElementById('profile-phone').value = profileData.phone;
+                document.getElementById('profile-location').value = profileData.location;
+                document.getElementById('profile-summary').value = profileData.summary;
+
+                // Render lists
+                renderSkills();
+                renderExperiences();
+                renderEducation();
+                renderCertifications();
+                updateTabCounts();
+
+                // Update completeness from API response
+                if (data.completeness) {
+                    displayCompleteness(data.completeness);
+                }
+
             } catch (error) {
                 console.error('Error loading profile:', error);
-                showError('Failed to load profile: ' + error.message);
+                showToast('error', 'Error', 'Failed to load profile');
+            } finally {
+                showLoading(false);
             }
         }
 
-        function switchMethod(method) {
-            currentMethod = method;
+        // Update tab counts
+        function updateTabCounts() {
+            document.getElementById('skills-count').textContent = profileData.skills.length;
+            document.getElementById('experience-count').textContent = profileData.experiences.length;
+            document.getElementById('education-count').textContent = profileData.education.length;
+            document.getElementById('certifications-count').textContent = profileData.certifications.length;
 
-            // Update tabs
-            document.querySelectorAll('.method-tab').forEach(tab => {
-                tab.classList.toggle('active', tab.dataset.method === method);
+            // Quick stats
+            document.getElementById('stat-skills').textContent = profileData.skills.length;
+            document.getElementById('stat-experience').textContent = profileData.experiences.length;
+            document.getElementById('stat-education').textContent = profileData.education.length;
+            document.getElementById('stat-certifications').textContent = profileData.certifications.length;
+        }
+
+        // =====================================================================
+        // SKILLS
+        // =====================================================================
+
+        function renderSkills() {
+            const list = document.getElementById('skills-list');
+            list.innerHTML = profileData.skills.map((skill, index) => `
+                <div class="item-card" data-index="${index}">
+                    <div class="form-row" style="margin-bottom: 0;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <input type="text" value="${escapeHtml(skill.name || '')}"
+                                   placeholder="Skill name"
+                                   onchange="updateSkill(${index}, 'name', this.value)">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <select onchange="updateSkill(${index}, 'level', this.value)">
+                                ${skillLevels.map(l => `
+                                    <option value="${l.value}" ${skill.level === l.value ? 'selected' : ''}>
+                                        ${l.label}
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0; max-width: 100px;">
+                            <input type="number" value="${skill.years || ''}"
+                                   placeholder="Years" min="0" max="50"
+                                   onchange="updateSkill(${index}, 'years', this.value ? parseInt(this.value) : null)">
+                        </div>
+                        <div class="item-card-actions">
+                            <button onclick="moveSkill(${index}, -1)" ${index === 0 ? 'disabled' : ''}>&uarr;</button>
+                            <button onclick="moveSkill(${index}, 1)" ${index === profileData.skills.length - 1 ? 'disabled' : ''}>&darr;</button>
+                            <button class="delete" onclick="removeSkill(${index})">&times;</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addSkill() {
+            profileData.skills.push({ name: '', level: null, years: null, category: null });
+            renderSkills();
+            updateTabCounts();
+        }
+
+        function updateSkill(index, field, value) {
+            profileData.skills[index][field] = value;
+        }
+
+        function moveSkill(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= profileData.skills.length) return;
+            [profileData.skills[index], profileData.skills[newIndex]] =
+            [profileData.skills[newIndex], profileData.skills[index]];
+            renderSkills();
+        }
+
+        function removeSkill(index) {
+            profileData.skills.splice(index, 1);
+            renderSkills();
+            updateTabCounts();
+        }
+
+        // =====================================================================
+        // EXPERIENCES
+        // =====================================================================
+
+        function renderExperiences() {
+            const list = document.getElementById('experience-list');
+            list.innerHTML = profileData.experiences.map((exp, index) => `
+                <div class="item-card expandable expanded" data-index="${index}">
+                    <div class="item-card-header" onclick="toggleItemCard(this)">
+                        <div>
+                            <div class="item-card-title">${escapeHtml(exp.title) || 'New Experience'}</div>
+                            <div class="item-card-subtitle">${escapeHtml(exp.company) || 'Company'} &bull; ${exp.start_date || 'Start'} - ${exp.end_date || 'Present'}</div>
+                        </div>
+                        <div class="item-card-actions" onclick="event.stopPropagation()">
+                            <button onclick="moveExperience(${index}, -1)" ${index === 0 ? 'disabled' : ''}>&uarr;</button>
+                            <button onclick="moveExperience(${index}, 1)" ${index === profileData.experiences.length - 1 ? 'disabled' : ''}>&darr;</button>
+                            <button class="delete" onclick="removeExperience(${index})">&times;</button>
+                        </div>
+                    </div>
+                    <div class="item-card-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Job Title *</label>
+                                <input type="text" value="${escapeHtml(exp.title || '')}"
+                                       placeholder="e.g., Senior Software Engineer"
+                                       onchange="updateExperience(${index}, 'title', this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label>Company *</label>
+                                <input type="text" value="${escapeHtml(exp.company || '')}"
+                                       placeholder="Company name"
+                                       onchange="updateExperience(${index}, 'company', this.value)">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Start Date</label>
+                                <input type="text" value="${escapeHtml(exp.start_date || '')}"
+                                       placeholder="YYYY-MM"
+                                       onchange="updateExperience(${index}, 'start_date', this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label>End Date</label>
+                                <input type="text" value="${escapeHtml(exp.end_date || '')}"
+                                       placeholder="YYYY-MM or leave empty for current"
+                                       onchange="updateExperience(${index}, 'end_date', this.value || null)">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea rows="3" placeholder="Describe your role and responsibilities..."
+                                      onchange="updateExperience(${index}, 'description', this.value)">${escapeHtml(exp.description || '')}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Key Achievements</label>
+                            <div class="achievements-list" id="achievements-${index}">
+                                ${(exp.achievements || []).map((ach, achIndex) => `
+                                    <div class="achievement-item">
+                                        <input type="text" value="${escapeHtml(ach)}"
+                                               placeholder="Achievement..."
+                                               onchange="updateExperienceAchievement(${index}, ${achIndex}, this.value)">
+                                        <button class="btn btn-sm" onclick="removeExperienceAchievement(${index}, ${achIndex})">&times;</button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <button class="btn btn-sm btn-secondary" style="margin-top: 0.5rem;"
+                                    onclick="addExperienceAchievement(${index})">+ Add Achievement</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addExperience() {
+            profileData.experiences.push({
+                title: '',
+                company: '',
+                start_date: '',
+                end_date: null,
+                description: '',
+                achievements: []
             });
+            renderExperiences();
+            updateTabCounts();
+        }
 
-            // Update content
-            document.querySelectorAll('.method-content').forEach(content => {
-                content.classList.toggle('active', content.id === `method-${method}`);
+        function updateExperience(index, field, value) {
+            profileData.experiences[index][field] = value;
+            // Update header display
+            renderExperiences();
+        }
+
+        function moveExperience(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= profileData.experiences.length) return;
+            [profileData.experiences[index], profileData.experiences[newIndex]] =
+            [profileData.experiences[newIndex], profileData.experiences[index]];
+            renderExperiences();
+        }
+
+        function removeExperience(index) {
+            profileData.experiences.splice(index, 1);
+            renderExperiences();
+            updateTabCounts();
+        }
+
+        function addExperienceAchievement(expIndex) {
+            if (!profileData.experiences[expIndex].achievements) {
+                profileData.experiences[expIndex].achievements = [];
+            }
+            profileData.experiences[expIndex].achievements.push('');
+            renderExperiences();
+        }
+
+        function updateExperienceAchievement(expIndex, achIndex, value) {
+            profileData.experiences[expIndex].achievements[achIndex] = value;
+        }
+
+        function removeExperienceAchievement(expIndex, achIndex) {
+            profileData.experiences[expIndex].achievements.splice(achIndex, 1);
+            renderExperiences();
+        }
+
+        function toggleItemCard(header) {
+            header.closest('.item-card').classList.toggle('expanded');
+        }
+
+        // =====================================================================
+        // EDUCATION
+        // =====================================================================
+
+        function renderEducation() {
+            const list = document.getElementById('education-list');
+            list.innerHTML = profileData.education.map((edu, index) => `
+                <div class="item-card expandable expanded" data-index="${index}">
+                    <div class="item-card-header" onclick="toggleItemCard(this)">
+                        <div>
+                            <div class="item-card-title">${escapeHtml(edu.degree) || 'Degree'} ${edu.field ? `in ${escapeHtml(edu.field)}` : ''}</div>
+                            <div class="item-card-subtitle">${escapeHtml(edu.institution) || 'Institution'}</div>
+                        </div>
+                        <div class="item-card-actions" onclick="event.stopPropagation()">
+                            <button onclick="moveEducation(${index}, -1)" ${index === 0 ? 'disabled' : ''}>&uarr;</button>
+                            <button onclick="moveEducation(${index}, 1)" ${index === profileData.education.length - 1 ? 'disabled' : ''}>&darr;</button>
+                            <button class="delete" onclick="removeEducation(${index})">&times;</button>
+                        </div>
+                    </div>
+                    <div class="item-card-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Institution *</label>
+                                <input type="text" value="${escapeHtml(edu.institution || '')}"
+                                       placeholder="University/School name"
+                                       onchange="updateEducation(${index}, 'institution', this.value)">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Degree</label>
+                                <input type="text" value="${escapeHtml(edu.degree || '')}"
+                                       placeholder="e.g., Bachelor of Science"
+                                       onchange="updateEducation(${index}, 'degree', this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label>Field of Study</label>
+                                <input type="text" value="${escapeHtml(edu.field || '')}"
+                                       placeholder="e.g., Computer Science"
+                                       onchange="updateEducation(${index}, 'field', this.value)">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Start Date</label>
+                                <input type="text" value="${escapeHtml(edu.start_date || '')}"
+                                       placeholder="YYYY-MM"
+                                       onchange="updateEducation(${index}, 'start_date', this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label>End Date</label>
+                                <input type="text" value="${escapeHtml(edu.end_date || '')}"
+                                       placeholder="YYYY-MM"
+                                       onchange="updateEducation(${index}, 'end_date', this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label>GPA</label>
+                                <input type="text" value="${escapeHtml(edu.gpa || '')}"
+                                       placeholder="e.g., 3.8"
+                                       onchange="updateEducation(${index}, 'gpa', this.value)">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addEducation() {
+            profileData.education.push({
+                institution: '',
+                degree: '',
+                field: '',
+                start_date: '',
+                end_date: '',
+                gpa: '',
+                achievements: []
             });
+            renderEducation();
+            updateTabCounts();
         }
 
-        function selectTemplate(templateName) {
-            const template = templates[templateName];
-            if (template) {
-                yamlEditor.value = template;
-                validateYaml();
-
-                // Visual feedback
-                document.querySelectorAll('.template-card').forEach(card => {
-                    card.classList.remove('selected');
-                });
-                event.currentTarget.classList.add('selected');
-                document.getElementById('template-selected').classList.remove('hidden');
-
-                // Auto-switch to editor
-                setTimeout(() => switchMethod('editor'), 500);
-            }
+        function updateEducation(index, field, value) {
+            profileData.education[index][field] = value;
+            renderEducation();
         }
 
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (file) handleFile(file);
+        function moveEducation(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= profileData.education.length) return;
+            [profileData.education[index], profileData.education[newIndex]] =
+            [profileData.education[newIndex], profileData.education[index]];
+            renderEducation();
         }
 
-        function handleFile(file) {
-            if (!file.name.endsWith('.yaml') && !file.name.endsWith('.yml')) {
-                showError('Please select a YAML file (.yaml or .yml)');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                yamlEditor.value = e.target.result;
-                if (!isEditMode && !filenameInput.value) {
-                    filenameInput.value = file.name;
-                }
-                document.getElementById('upload-filename').textContent = `Loaded: ${file.name}`;
-                document.getElementById('upload-filename').classList.remove('hidden');
-                validateYaml();
-
-                // Switch to editor
-                setTimeout(() => switchMethod('editor'), 300);
-            };
-            reader.readAsText(file);
+        function removeEducation(index) {
+            profileData.education.splice(index, 1);
+            renderEducation();
+            updateTabCounts();
         }
 
-        function validateYaml() {
-            const content = yamlEditor.value.trim();
+        // =====================================================================
+        // CERTIFICATIONS
+        // =====================================================================
 
-            if (!content) {
-                validationStatus.classList.add('hidden');
+        function renderCertifications() {
+            const list = document.getElementById('certifications-list');
+            list.innerHTML = profileData.certifications.map((cert, index) => `
+                <div class="item-card" data-index="${index}">
+                    <div class="form-row" style="margin-bottom: 0.5rem;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <input type="text" value="${escapeHtml(cert.name || '')}"
+                                   placeholder="Certification name"
+                                   onchange="updateCertification(${index}, 'name', this.value)">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <input type="text" value="${escapeHtml(cert.issuer || '')}"
+                                   placeholder="Issuing organization"
+                                   onchange="updateCertification(${index}, 'issuer', this.value)">
+                        </div>
+                        <div class="item-card-actions">
+                            <button onclick="moveCertification(${index}, -1)" ${index === 0 ? 'disabled' : ''}>&uarr;</button>
+                            <button onclick="moveCertification(${index}, 1)" ${index === profileData.certifications.length - 1 ? 'disabled' : ''}>&darr;</button>
+                            <button class="delete" onclick="removeCertification(${index})">&times;</button>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <input type="text" value="${escapeHtml(cert.date_obtained || '')}"
+                                   placeholder="Date obtained (YYYY-MM)"
+                                   onchange="updateCertification(${index}, 'date_obtained', this.value)">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <input type="text" value="${escapeHtml(cert.expiry_date || '')}"
+                                   placeholder="Expiry date (optional)"
+                                   onchange="updateCertification(${index}, 'expiry_date', this.value)">
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addCertification() {
+            profileData.certifications.push({
+                name: '',
+                issuer: '',
+                date_obtained: '',
+                expiry_date: '',
+                credential_url: ''
+            });
+            renderCertifications();
+            updateTabCounts();
+        }
+
+        function updateCertification(index, field, value) {
+            profileData.certifications[index][field] = value;
+        }
+
+        function moveCertification(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= profileData.certifications.length) return;
+            [profileData.certifications[index], profileData.certifications[newIndex]] =
+            [profileData.certifications[newIndex], profileData.certifications[index]];
+            renderCertifications();
+        }
+
+        function removeCertification(index) {
+            profileData.certifications.splice(index, 1);
+            renderCertifications();
+            updateTabCounts();
+        }
+
+        // =====================================================================
+        // COMPLETENESS
+        // =====================================================================
+
+        async function updateCompleteness() {
+            if (!profileSlug) {
+                // For new profiles, show placeholder
+                document.getElementById('completeness-score').textContent = '-';
+                document.getElementById('completeness-level').textContent = 'Save to see score';
+                document.getElementById('completeness-circle').className = 'completeness-circle needs_work';
                 return;
             }
 
             try {
-                // Basic YAML validation (check for common issues)
-                const lines = content.split('\n');
-                let hasName = false;
-                let hasEmail = false;
-                let hasSkills = false;
-
-                for (const line of lines) {
-                    if (line.match(/^name:\s*.+/)) hasName = true;
-                    if (line.match(/^email:\s*.+/)) hasEmail = true;
-                    if (line.match(/^skills:\s*$/)) hasSkills = true;
-                }
-
-                validationStatus.classList.remove('hidden');
-
-                if (!hasName || !hasEmail || !hasSkills) {
-                    validationStatus.className = 'validation-status warning';
-                    document.getElementById('validation-icon').textContent = '!';
-                    const missing = [];
-                    if (!hasName) missing.push('name');
-                    if (!hasEmail) missing.push('email');
-                    if (!hasSkills) missing.push('skills');
-                    document.getElementById('validation-message').textContent =
-                        `Missing recommended fields: ${missing.join(', ')}`;
-                } else {
-                    validationStatus.className = 'validation-status valid';
-                    document.getElementById('validation-icon').textContent = '✓';
-                    document.getElementById('validation-message').textContent = 'YAML structure looks valid';
+                const response = await fetch(`/api/v1/profiles/${profileSlug}/completeness`);
+                if (response.ok) {
+                    const data = await response.json();
+                    displayCompleteness(data);
                 }
             } catch (error) {
-                validationStatus.classList.remove('hidden');
-                validationStatus.className = 'validation-status invalid';
-                document.getElementById('validation-icon').textContent = '✕';
-                document.getElementById('validation-message').textContent = 'Invalid YAML syntax';
+                console.error('Error fetching completeness:', error);
             }
         }
 
-        function showError(message) {
-            errorContainer.textContent = message;
-            errorContainer.classList.remove('hidden');
+        function displayCompleteness(data) {
+            document.getElementById('completeness-score').textContent = `${data.overall_score}%`;
+            document.getElementById('completeness-level').textContent =
+                data.level.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            document.getElementById('completeness-circle').className =
+                `completeness-circle ${data.level}`;
+
+            const suggestionsList = document.getElementById('suggestions-list');
+            if (data.top_suggestions && data.top_suggestions.length > 0) {
+                suggestionsList.innerHTML = data.top_suggestions.map(s =>
+                    `<div class="suggestion-item"><span class="suggestion-icon">&#128161;</span>${escapeHtml(s)}</div>`
+                ).join('');
+            } else {
+                suggestionsList.innerHTML = '<div style="color: #10b981; text-align: center;">Looking great! &#10003;</div>';
+            }
         }
 
-        function hideError() {
-            errorContainer.classList.add('hidden');
-        }
+        // =====================================================================
+        // SAVE PROFILE
+        // =====================================================================
 
         async function saveProfile() {
-            const content = yamlEditor.value.trim();
-            let filename = filenameInput.value.trim();
+            // Gather form data
+            profileData.name = document.getElementById('profile-name').value.trim();
+            profileData.title = document.getElementById('profile-title').value.trim();
+            profileData.email = document.getElementById('profile-email').value.trim();
+            profileData.phone = document.getElementById('profile-phone').value.trim();
+            profileData.location = document.getElementById('profile-location').value.trim();
+            profileData.summary = document.getElementById('profile-summary').value.trim();
 
-            if (!content) {
-                showError('Please enter profile content');
+            // Validate
+            if (!profileData.name) {
+                showToast('error', 'Error', 'Profile name is required');
+                switchTab('overview');
+                document.getElementById('profile-name').focus();
                 return;
             }
 
-            // Validate minimum length
-            if (content.length < 100) {
-                showError('Profile content must be at least 100 characters');
-                return;
-            }
+            // Filter out empty items
+            profileData.skills = profileData.skills.filter(s => s.name && s.name.trim());
+            profileData.experiences = profileData.experiences.filter(e => e.title && e.company);
+            profileData.education = profileData.education.filter(e => e.institution);
+            profileData.certifications = profileData.certifications.filter(c => c.name);
 
-            // Auto-add .yaml extension if missing
-            if (filename && !filename.endsWith('.yaml') && !filename.endsWith('.yml')) {
-                filename += '.yaml';
-            }
-
-            hideError();
-
-            // Show loading
-            formSection.classList.add('hidden');
-            loadingSection.classList.remove('hidden');
+            showLoading(true);
 
             try {
-                // Use the existing single-profile API endpoint
-                // This creates or updates the profile and auto-indexes it
-                const response = await fetch('/api/v1/profile/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        profile_text: content
-                    })
-                });
+                let response;
+                if (isNewProfile) {
+                    response = await fetch('/api/v1/profiles', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...profileData,
+                            set_active: false
+                        })
+                    });
+                } else {
+                    response = await fetch(`/api/v1/profiles/${profileSlug}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(profileData)
+                    });
+                }
 
                 if (!response.ok) {
                     const error = await response.json();
                     throw new Error(error.detail || 'Failed to save profile');
                 }
 
-                const result = await response.json();
+                const savedProfile = await response.json();
 
-                // Show success
-                loadingSection.classList.add('hidden');
-                successSection.classList.remove('hidden');
+                showToast('success', 'Saved', 'Profile saved successfully');
 
-                // Hide the "View Profile" button since we're using single-profile mode
-                // and redirect to profiles list instead
-                document.getElementById('view-profile-btn').classList.add('hidden');
-
-                const action = result.status === 'created' ? 'created' : 'updated';
-                document.getElementById('success-title').textContent =
-                    `Profile ${action.charAt(0).toUpperCase() + action.slice(1)} Successfully!`;
-                document.getElementById('success-message').textContent =
-                    `Your profile has been ${action} and indexed into ${result.chunk_count} searchable chunks.`;
+                // Redirect to profiles list after short delay
+                setTimeout(() => {
+                    window.location.href = '/profiles';
+                }, 1000);
 
             } catch (error) {
-                loadingSection.classList.add('hidden');
-                formSection.classList.remove('hidden');
-                showError(error.message);
+                console.error('Error saving profile:', error);
+                showToast('error', 'Error', error.message || 'Failed to save profile');
+            } finally {
+                showLoading(false);
             }
-        }
-
-        function showToast(type, title, message) {
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.innerHTML = `
-                <div class="toast-content">
-                    <div class="toast-title">${escapeHtml(title)}</div>
-                    <div class="toast-message">${escapeHtml(message)}</div>
-                </div>
-                <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
-            `;
-            toastContainer.appendChild(toast);
-            setTimeout(() => toast.remove(), 5000);
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
         }
 
         // =====================================================================
-        // LOG VIEWER FUNCTIONS
+        // UTILITIES
         // =====================================================================
 
-        let logPollInterval = null;
-        let logPanelExpanded = false;
-
-        function toggleLogPanel() {
-            const panel = document.getElementById('log-panel');
-            logPanelExpanded = !logPanelExpanded;
-
-            if (logPanelExpanded) {
-                panel.classList.remove('collapsed');
-                panel.classList.add('expanded');
-                fetchLogs();
-                startLogPolling();
-            } else {
-                panel.classList.remove('expanded');
-                panel.classList.add('collapsed');
-                stopLogPolling();
-            }
+        function showLoading(show) {
+            document.getElementById('loading-overlay').classList.toggle('show', show);
         }
-
-        function startLogPolling() {
-            if (logPollInterval) clearInterval(logPollInterval);
-            logPollInterval = setInterval(fetchLogs, 2000);
-        }
-
-        function stopLogPolling() {
-            if (logPollInterval) {
-                clearInterval(logPollInterval);
-                logPollInterval = null;
-            }
-        }
-
-        async function fetchLogs() {
-            const levelFilter = document.getElementById('log-level-filter').value;
-            const logContent = document.getElementById('log-content');
-            const logCount = document.getElementById('log-count');
-            const logStatus = document.getElementById('log-status');
-
-            try {
-                let url = '/api/v1/logs?limit=100';
-                if (levelFilter) {
-                    url += `&level=${levelFilter}`;
-                }
-
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch logs');
-                }
-
-                const data = await response.json();
-
-                // Update count
-                logCount.textContent = `(${data.total} entries)`;
-
-                // Check for errors
-                const hasErrors = data.entries.some(e => e.level === 'ERROR');
-                const hasWarnings = data.entries.some(e => e.level === 'WARNING');
-
-                logStatus.classList.remove('error', 'warning');
-                if (hasErrors) {
-                    logStatus.classList.add('error');
-                } else if (hasWarnings) {
-                    logStatus.classList.add('warning');
-                }
-
-                // Render entries
-                if (data.entries.length === 0) {
-                    logContent.innerHTML = '<div class="log-empty">No log entries</div>';
-                } else {
-                    logContent.innerHTML = data.entries.map(entry =>
-                        `<div class="log-entry level-${entry.level}">${escapeHtml(entry.message)}</div>`
-                    ).join('');
-
-                    // Auto-scroll to bottom if near bottom
-                    if (logContent.scrollHeight - logContent.scrollTop < logContent.clientHeight + 100) {
-                        logContent.scrollTop = logContent.scrollHeight;
-                    }
-                }
-
-            } catch (error) {
-                console.error('Log fetch error:', error);
-                logContent.innerHTML = '<div class="log-empty">Error loading logs</div>';
-            }
-        }
-
-        async function clearLogs() {
-            try {
-                await fetch('/api/v1/logs', { method: 'DELETE' });
-                fetchLogs();
-            } catch (error) {
-                console.error('Failed to clear logs:', error);
-            }
-        }
-
-        async function copyLogs() {
-            try {
-                const response = await fetch('/api/v1/logs?limit=500');
-                if (!response.ok) throw new Error('Failed to fetch logs');
-
-                const data = await response.json();
-                const logText = data.entries.map(e => e.message).join('\n');
-
-                await navigator.clipboard.writeText(logText);
-
-                // Show brief feedback
-                const btn = event.target;
-                const originalText = btn.textContent;
-                btn.textContent = 'Copied!';
-                setTimeout(() => { btn.textContent = originalText; }, 1500);
-            } catch (error) {
-                console.error('Failed to copy logs:', error);
-                alert('Failed to copy logs to clipboard');
-            }
-        }
-
-        // Initial log fetch (to show status indicator even when collapsed)
-        setTimeout(fetchLogs, 1000);
     </script>
 </body>
 </html>

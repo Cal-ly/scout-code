@@ -19,15 +19,17 @@ src/web/routes/
     │   ├── common.py        # ErrorResponse, SuccessResponse
     │   ├── jobs.py          # Job pipeline schemas
     │   ├── profile.py       # Profile schemas (legacy)
-    │   ├── profiles.py      # Multi-profile schemas (NEW)
+    │   ├── profiles.py      # Multi-profile schemas
+    │   ├── user.py          # User identity schemas
     │   └── metrics.py       # Metrics schemas
     └── v1/
         ├── __init__.py      # Aggregates all v1 routes
         ├── system.py        # /health, /info
         ├── jobs.py          # Job pipeline endpoints
         ├── skills.py        # Skill normalization endpoints
+        ├── user.py          # User identity endpoint
         ├── profile.py       # Profile management (legacy)
-        ├── profiles.py      # Multi-profile management (NEW)
+        ├── profiles.py      # Multi-profile management
         ├── notifications.py # Notifications
         ├── logs.py          # Log retrieval
         ├── metrics.py       # Performance metrics
@@ -294,11 +296,31 @@ Search for skills matching a query.
 
 ---
 
-## Multi-Profile Routes (`/api/v1/profiles`) - NEW
+## User Routes (`/api/v1/user`)
+
+**Location:** `src/web/routes/api/v1/user.py`
+
+### GET `/api/v1/user`
+Get current user identity information.
+
+**Response:**
+```json
+{
+    "id": 1,
+    "username": "test_user",
+    "email": "test@scout.local",
+    "display_name": "Test User",
+    "created_at": "2025-12-16T10:00:00Z"
+}
+```
+
+---
+
+## Multi-Profile Routes (`/api/v1/profiles`)
 
 **Location:** `src/web/routes/api/v1/profiles.py`
 
-These endpoints manage multiple user profiles with SQLite persistence.
+These endpoints manage multiple user profiles with SQLite persistence and completeness scoring.
 
 ### GET `/api/v1/profiles`
 List all profiles with statistics.
@@ -406,6 +428,27 @@ Delete a profile.
 
 ---
 
+### GET `/api/v1/profiles/active`
+Get the currently active profile.
+
+**Response:**
+```json
+{
+    "id": 1,
+    "slug": "emma-chen",
+    "name": "Emma Chen",
+    "email": "emma.chen@example.com",
+    "title": "AI/ML Engineer",
+    "is_active": true,
+    "created_at": "2025-12-16T10:00:00Z"
+}
+```
+
+**Errors:**
+- `404`: No active profile set
+
+---
+
 ### POST `/api/v1/profiles/{slug}/activate`
 Set a profile as active. Triggers ChromaDB re-indexing.
 
@@ -422,6 +465,40 @@ Set a profile as active. Triggers ChromaDB re-indexing.
 - Clears previous active profile flag
 - Sets new profile as active
 - Re-indexes profile skills to ChromaDB `user_profiles` collection
+
+---
+
+### GET `/api/v1/profiles/{slug}/completeness`
+Get profile completeness score and breakdown.
+
+**Response:**
+```json
+{
+    "slug": "emma-chen",
+    "overall_score": 85,
+    "level": "excellent",
+    "sections": {
+        "contact": {"score": 100, "max": 100, "filled": 5, "total": 5},
+        "summary": {"score": 80, "max": 100, "has_content": true},
+        "skills": {"score": 90, "max": 100, "count": 12},
+        "experience": {"score": 85, "max": 100, "count": 3},
+        "education": {"score": 75, "max": 100, "count": 1},
+        "certifications": {"score": 80, "max": 100, "count": 2}
+    },
+    "suggestions": [
+        "Add more education entries",
+        "Consider adding more certifications"
+    ]
+}
+```
+
+**Completeness Levels:**
+| Level | Score Range |
+|-------|-------------|
+| excellent | 80-100% |
+| good | 60-79% |
+| fair | 40-59% |
+| needs_work | 0-39% |
 
 ---
 
@@ -1093,4 +1170,4 @@ Allowed origins for cross-origin requests:
 ---
 
 *Last updated: December 16, 2025*
-*Updated: Added multi-profile routes, legacy redirects, new page routes*
+*Updated: Added user endpoint, profile completeness endpoint, active profile endpoint*

@@ -8,8 +8,8 @@
 // =============================================================================
 
 window.Scout = window.Scout || {
-    profilesList: [],
-    activeProfileSlug: null,
+    currentUser: null,
+    activeProfile: null,
     notificationPollInterval: null,
     seenNotifications: new Set()
 };
@@ -106,122 +106,82 @@ function showToast(type, title, message, autoDismiss = true, dismissSeconds = 5)
 }
 
 // =============================================================================
-// PROFILE MANAGEMENT
+// NAVBAR - USER & PROFILE
 // =============================================================================
 
 /**
- * Load profiles list from API
+ * Load current user from API
  */
-async function loadProfilesList() {
+async function loadCurrentUser() {
     try {
-        const response = await fetch('/api/v1/profiles');
+        const response = await fetch('/api/v1/user');
         if (response.ok) {
-            const data = await response.json();
-            window.Scout.profilesList = data.profiles || [];
-            window.Scout.activeProfileSlug = data.active_profile_slug;
-            updateNavbarProfileSwitcher();
-            return;
+            window.Scout.currentUser = await response.json();
+            updateNavbarUser();
         }
     } catch (error) {
-        console.error('Error loading profiles:', error);
+        console.error('Error loading user:', error);
     }
 }
 
 /**
- * Extract name from profile YAML text
+ * Load active profile from API
  */
-function extractProfileName(text) {
-    if (!text) return null;
-    const match = text.match(/^name:\s*["']?([^"'\n]+)["']?/mi);
-    return match ? match[1].trim() : null;
+async function loadActiveProfile() {
+    try {
+        const response = await fetch('/api/v1/profiles/active');
+        if (response.ok) {
+            const data = await response.json();
+            window.Scout.activeProfile = data;
+            updateNavbarActiveProfile();
+        }
+    } catch (error) {
+        console.error('Error loading active profile:', error);
+    }
 }
 
 /**
- * Update the navbar profile switcher UI
+ * Update navbar user display
  */
-function updateNavbarProfileSwitcher() {
-    const switcherName = document.getElementById('navbar-profile-name');
-    const switcherIndicator = document.getElementById('navbar-profile-indicator');
-    const dropdownList = document.getElementById('navbar-profile-list');
+function updateNavbarUser() {
+    const user = window.Scout.currentUser;
+    if (!user) return;
 
-    if (!switcherName || !switcherIndicator || !dropdownList) return;
+    const nameEl = document.getElementById('navbar-user-name');
+    const avatarEl = document.getElementById('navbar-user-avatar');
+    const emailEl = document.getElementById('navbar-user-email');
 
-    const profiles = window.Scout.profilesList;
-    const activeSlug = window.Scout.activeProfileSlug;
+    if (nameEl) nameEl.textContent = user.display_name || user.username;
+    if (avatarEl) avatarEl.textContent = (user.display_name || user.username || 'U')[0].toUpperCase();
+    if (emailEl) emailEl.textContent = user.email || '';
+}
 
-    if (profiles.length === 0) {
-        switcherName.textContent = 'No Profiles';
-        switcherIndicator.classList.remove('active');
-        dropdownList.innerHTML = '<p style="padding: 1rem; color: #6b7280; text-align: center;">No profiles yet</p>';
+/**
+ * Update navbar active profile indicator
+ */
+function updateNavbarActiveProfile() {
+    const profile = window.Scout.activeProfile;
+    const nameEl = document.getElementById('navbar-active-name');
+    const containerEl = document.getElementById('navbar-active-profile');
+
+    if (!profile) {
+        if (nameEl) nameEl.textContent = 'No active profile';
+        if (containerEl) containerEl.classList.add('inactive');
         return;
     }
 
-    // Find active profile
-    const activeProfile = profiles.find(p => p.slug === activeSlug);
-    if (activeProfile) {
-        switcherName.textContent = activeProfile.name || activeProfile.full_name;
-        switcherIndicator.classList.add('active');
-    } else {
-        switcherName.textContent = 'Select Profile';
-        switcherIndicator.classList.remove('active');
-    }
-
-    // Populate dropdown
-    dropdownList.innerHTML = profiles.map(profile => {
-        const isActive = profile.slug === activeSlug;
-        const appCount = profile.stats?.total_applications || 0;
-        return `
-            <button class="profile-dropdown-item ${isActive ? 'active' : ''}"
-                    onclick="switchToProfile('${escapeHtml(profile.slug)}')">
-                <span class="indicator ${isActive ? 'active' : 'inactive'}"></span>
-                <div class="info">
-                    <div class="name">${escapeHtml(profile.name || profile.full_name)}</div>
-                    <div class="meta">${appCount} apps${profile.is_demo ? ' (demo)' : ''}</div>
-                </div>
-            </button>
-        `;
-    }).join('');
+    if (nameEl) nameEl.textContent = profile.name;
+    if (containerEl) containerEl.classList.remove('inactive');
 }
 
 /**
- * Toggle the profile dropdown
+ * Toggle user menu dropdown
  */
-function toggleProfileDropdown(event) {
+function toggleUserMenu(event) {
     event.stopPropagation();
-    const dropdown = document.getElementById('navbar-profile-dropdown');
+    const dropdown = document.getElementById('navbar-user-dropdown');
     if (dropdown) {
         dropdown.classList.toggle('show');
-    }
-}
-
-/**
- * Switch to a different profile
- */
-async function switchToProfile(slug) {
-    try {
-        const response = await fetch(`/api/v1/profiles/${encodeURIComponent(slug)}/activate`, {
-            method: 'POST'
-        });
-
-        if (!response.ok) throw new Error('Failed to switch profile');
-
-        const profile = await response.json();
-        window.Scout.activeProfileSlug = profile.slug;
-        updateNavbarProfileSwitcher();
-
-        // Close dropdown
-        const dropdown = document.getElementById('navbar-profile-dropdown');
-        if (dropdown) dropdown.classList.remove('show');
-
-        // Show toast
-        showToast('success', 'Profile Activated', `Now using: ${profile.name || profile.full_name}`);
-
-        // Reload page after short delay to reflect changes
-        setTimeout(() => location.reload(), 1000);
-
-    } catch (error) {
-        console.error('Error switching profile:', error);
-        showToast('error', 'Error', 'Failed to switch profile');
     }
 }
 
@@ -308,16 +268,18 @@ async function markNotificationRead(notificationId) {
 // =============================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Load profiles for switcher
-    loadProfilesList();
+    // Load navbar data
+    loadCurrentUser();
+    loadActiveProfile();
 
     // Start notification polling
     startNotificationPolling();
 
     // Close dropdowns when clicking outside
     document.addEventListener('click', (e) => {
-        if (!e.target.closest('.navbar-profile-switcher')) {
-            const dropdown = document.getElementById('navbar-profile-dropdown');
+        // Close user menu if clicking outside
+        if (!e.target.closest('.navbar-user-menu')) {
+            const dropdown = document.getElementById('navbar-user-dropdown');
             if (dropdown) dropdown.classList.remove('show');
         }
     });
