@@ -204,9 +204,12 @@
         <!-- Page Header -->
         <div class="page-header">
             <h2>Your Profiles</h2>
-            <a href="/profiles/create" class="btn btn-primary">
-                <span>+</span> New Profile
-            </a>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="/profile/edit" class="btn btn-primary">Edit Profile</a>
+                <a href="/profiles/create" class="btn btn-secondary">
+                    <span>+</span> New (YAML)
+                </a>
+            </div>
         </div>
 
         <!-- Summary Stats -->
@@ -267,7 +270,7 @@
             <div class="empty-state-icon">&#128203;</div>
             <h3>No Profiles Yet</h3>
             <p>Create your first profile to start matching jobs and generating tailored applications.</p>
-            <a href="/profiles/create" class="btn btn-primary">Create Your First Profile</a>
+            <a href="/profile/edit" class="btn btn-primary">Create Your First Profile</a>
         </div>
 
         <!-- Profiles Grid -->
@@ -439,7 +442,8 @@
                         </div>
                         <div class="profile-actions">
                             <div class="actions-row">
-                                <a href="/profiles/create" class="btn btn-sm btn-secondary">View / Edit</a>
+                                ${isActive ? '<a href="/profile/edit" class="btn btn-sm btn-primary">Edit Profile</a>' : ''}
+                                <a href="/profiles/create" class="btn btn-sm btn-secondary">Edit YAML</a>
                                 <button class="btn btn-sm btn-secondary" onclick="reindexProfile()">Re-index</button>
                             </div>
                         </div>
