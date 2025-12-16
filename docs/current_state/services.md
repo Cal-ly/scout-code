@@ -7,12 +7,13 @@ This document describes the current implementation of Scout's foundation service
 | Service | ID | Location | Test Count | Dependencies |
 |---------|------|----------|------------|--------------|
 | LLM Service | S1 | `src/services/llm_service/` | 52 | S2, S3 |
-| Cost Tracker | S2 | `src/services/cost_tracker/` | 27 | None |
+| Metrics Service | S2 | `src/services/metrics_service/` | ~41 | None |
 | Cache Service | S3 | `src/services/cache_service/` | 46 | None |
 | Vector Store | S4 | `src/services/vector_store/` | 55 | None |
-| Pipeline Orchestrator | S6 | `src/services/pipeline/` | 52 | M1-M5 |
+| Pipeline Orchestrator | S6 | `src/services/pipeline/` | 52 | M1-M5, Database |
 | Notification Service | S8 | `src/services/notification/` | 40 | None |
-| Profile Service | - | `src/services/profile/` | - | S4 |
+| **Database Service** | - | `src/services/database/` | ~50 | None |
+| Profile Service (legacy) | - | `src/services/profile/` | 45 | S4 |
 
 ---
 
@@ -104,66 +105,64 @@ class LLMResponse:
 
 ---
 
-## S2: Cost Tracker Service
+## S2: Metrics Service
 
-**Location:** `src/services/cost_tracker/`
+**Location:** `src/services/metrics_service/`
 
 ### Purpose
-Tracks API usage costs and enforces budget limits. Simplified for PoC with file-based persistence.
+Tracks LLM inference performance metrics including tokens per second, success rates, and system resource usage. Refactored from Cost Tracker for local LLM deployment.
 
 ### Key Files
 ```
-cost_tracker/
+metrics_service/
 ├── __init__.py          # Public exports
-├── service.py           # Main CostTrackerService class
-├── models.py            # CostEntry, BudgetStatus, CostSummary
-└── exceptions.py        # BudgetExceededError, etc.
+├── service.py           # Main MetricsService class
+├── models.py            # InferenceMetric, MetricsSummary, SystemMetrics
+└── exceptions.py        # MetricsError
 ```
 
-### Main Class: `CostTrackerService`
+### Main Class: `MetricsService`
 
 ```python
-class CostTrackerService:
-    """Tracks costs and enforces budget limits."""
+class MetricsService:
+    """Tracks inference performance and system metrics."""
 
     def __init__(
         self,
-        daily_limit: float = 10.0,
-        monthly_limit: float = 50.0,
-        data_file: Path | None = None,  # data/cost_tracker.json
+        data_dir: Path | None = None,  # data/metrics/
+        retention_days: int = 30,
     ): ...
 
     async def initialize(self) -> None: ...
     async def shutdown(self) -> None: ...
 
-    # Budget methods
-    async def can_proceed(self) -> bool: ...
-    async def check_budget(self, estimated_cost: float = 0.0) -> BudgetStatus: ...
-
     # Recording
-    async def record_cost(
+    async def record_inference(
         self,
         module: str,
-        operation: str,
-        cost: float,
-        input_tokens: int = 0,
-        output_tokens: int = 0,
-        model: str | None = None,
-        metadata: dict | None = None,
-    ) -> CostEntry: ...
+        model: str,
+        input_tokens: int,
+        output_tokens: int,
+        duration_ms: float,
+        success: bool = True,
+        error: str | None = None,
+        used_fallback: bool = False,
+    ) -> InferenceMetric: ...
 
     # Reporting
-    async def get_summary(self) -> CostSummary: ...
+    async def get_summary(self, days: int = 7) -> MetricsSummary: ...
+    async def get_daily_metrics(self, days: int = 7) -> list[DailyMetrics]: ...
+    async def get_system_metrics(self) -> SystemMetrics: ...
 ```
 
 ### Key Features
-- **Budget Enforcement**: Daily and monthly limits
-- **File Persistence**: JSON storage (`data/cost_tracker.json`)
-- **Automatic Reset**: Daily/monthly counters reset automatically
-- **Module-level Tracking**: Costs tagged by module name
+- **Performance Tracking**: Tokens per second, duration, success rate
+- **System Metrics**: CPU, memory, temperature (for Raspberry Pi 5)
+- **File Persistence**: JSON storage with 30-day retention
+- **Monthly Archival**: Old metrics archived for historical analysis
 
 ### Note on Local LLM
-With Ollama, costs are effectively $0.00 (local inference). The service still tracks token usage for metrics/optimization purposes.
+With Ollama, costs are $0.00 but token throughput metrics are essential for performance optimization on edge devices.
 
 ---
 
@@ -520,12 +519,98 @@ class Notification:
 
 ---
 
-## Profile Service (Helper)
+## Database Service (NEW - December 2025)
+
+**Location:** `src/services/database/`
+
+### Purpose
+SQLite persistence for profiles and applications, enabling multi-profile support with persistent storage across server restarts.
+
+### Key Files
+```
+database/
+├── __init__.py          # Public exports
+├── service.py           # Main DatabaseService class
+├── models.py            # Profile, Application, ApplicationStatus
+├── exceptions.py        # ProfileNotFoundError, ApplicationNotFoundError
+└── demo_profiles.py     # Demo profile data (Emma, Marcus, Sofia)
+```
+
+### Main Class: `DatabaseService`
+
+```python
+class DatabaseService:
+    """SQLite persistence for profiles and applications."""
+
+    def __init__(
+        self,
+        db_path: Path | None = None,  # data/scout.db
+    ): ...
+
+    async def initialize(self) -> None: ...
+    async def shutdown(self) -> None: ...
+
+    # Profile operations
+    async def list_profiles(self) -> list[Profile]: ...
+    async def get_profile_by_slug(self, slug: str) -> Profile: ...
+    async def get_active_profile(self) -> Profile | None: ...
+    async def set_active_profile(self, slug: str) -> Profile: ...
+    async def create_profile(self, data: ProfileCreate) -> Profile: ...
+    async def update_profile(self, slug: str, data: ProfileUpdate) -> Profile: ...
+    async def delete_profile(self, slug: str) -> None: ...
+
+    # Application operations
+    async def list_applications(
+        self,
+        profile_id: int | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> tuple[list[Application], int]: ...
+    async def get_application_by_job_id(self, job_id: str) -> Application | None: ...
+    async def create_application(self, data: ApplicationCreate) -> Application: ...
+    async def update_application(self, job_id: str, data: ApplicationUpdate) -> Application: ...
+```
+
+### Key Features
+- **SQLite Storage**: Single file database (`data/scout.db`)
+- **Multi-Profile Support**: 3 demo profiles auto-created on startup
+- **Profile-Scoped Applications**: Applications linked to profiles via foreign key
+- **Active Profile Pattern**: Only one profile active at a time
+- **ChromaDB Re-indexing**: Profile switch triggers vector store update
+- **Slug-Based URLs**: Human-readable profile URLs
+
+### Demo Profiles
+Auto-created on first startup:
+1. **Emma Chen** (`emma-chen`) - AI/ML engineer
+2. **Marcus Andersen** (`marcus-andersen`) - Backend/DevOps engineer
+3. **Sofia Martinez** (`sofia-martinez`) - Full-stack developer
+
+### Usage
+```python
+from src.services.database import get_database_service
+
+db = await get_database_service()
+
+# Get active profile
+profile = await db.get_active_profile()
+
+# Switch profile (triggers re-indexing)
+await db.set_active_profile("marcus-andersen")
+
+# List applications for active profile
+apps, total = await db.list_applications(profile_id=profile.id)
+```
+
+---
+
+## Profile Service (LEGACY)
 
 **Location:** `src/services/profile/`
 
 ### Purpose
-Higher-level service for profile management, combining Collector + Vector Store operations.
+Higher-level service for single-profile management, combining Collector + Vector Store operations.
+
+> **Note:** For multi-profile support, use the Database Service instead.
 
 ### Main Class: `ProfileService`
 
@@ -540,8 +625,8 @@ class ProfileService:
 ```
 
 ### Used By
-- `/api/profile/*` routes
-- Profile editor UI
+- `/api/v1/profile/*` routes (legacy)
+- Legacy profile editor
 
 ---
 
@@ -550,29 +635,29 @@ class ProfileService:
 All services use a singleton pattern for FastAPI dependency injection:
 
 ```python
-# Example from LLM Service
-_instance: LLMService | None = None
+# Example from Database Service
+_instance: DatabaseService | None = None
 
-async def get_llm_service() -> LLMService:
-    """Get singleton LLM Service instance."""
+async def get_database_service() -> DatabaseService:
+    """Get singleton Database Service instance."""
     global _instance
     if _instance is None:
-        cost_tracker = await get_cost_tracker_service()
-        cache = await get_cache_service()
-        _instance = LLMService(cost_tracker, cache)
+        _instance = DatabaseService()
         await _instance.initialize()
     return _instance
 ```
 
 Usage in FastAPI:
 ```python
-@router.post("/api/something")
-async def endpoint(
-    llm: LLMService = Depends(get_llm_service),
+@router.post("/api/v1/profiles")
+async def create_profile(
+    data: ProfileCreate,
+    db: DatabaseService = Depends(get_database_service),
 ):
-    response = await llm.generate(...)
+    return await db.create_profile(data)
 ```
 
 ---
 
-*Last updated: December 14, 2025*
+*Last updated: December 16, 2025*
+*Updated: Added Database Service, renamed Cost Tracker to Metrics Service*

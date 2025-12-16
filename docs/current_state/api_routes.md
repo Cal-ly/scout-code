@@ -11,21 +11,23 @@ Scout uses FastAPI with API versioning and domain-driven route organization. All
 ```
 src/web/routes/
 ├── __init__.py              # Exports api_router and pages_router
-├── pages.py                 # HTML page routes
+├── pages.py                 # HTML page routes (with legacy redirects)
 └── api/
     ├── __init__.py          # Main /api router
     ├── schemas/
     │   ├── __init__.py      # Schema exports
     │   ├── common.py        # ErrorResponse, SuccessResponse
     │   ├── jobs.py          # Job pipeline schemas
-    │   ├── profile.py       # Profile schemas
+    │   ├── profile.py       # Profile schemas (legacy)
+    │   ├── profiles.py      # Multi-profile schemas (NEW)
     │   └── metrics.py       # Metrics schemas
     └── v1/
         ├── __init__.py      # Aggregates all v1 routes
         ├── system.py        # /health, /info
         ├── jobs.py          # Job pipeline endpoints
         ├── skills.py        # Skill normalization endpoints
-        ├── profile.py       # Profile management
+        ├── profile.py       # Profile management (legacy)
+        ├── profiles.py      # Multi-profile management (NEW)
         ├── notifications.py # Notifications
         ├── logs.py          # Log retrieval
         ├── metrics.py       # Performance metrics
@@ -292,9 +294,142 @@ Search for skills matching a query.
 
 ---
 
-## Profile Routes (`/api/v1/profile`)
+## Multi-Profile Routes (`/api/v1/profiles`) - NEW
+
+**Location:** `src/web/routes/api/v1/profiles.py`
+
+These endpoints manage multiple user profiles with SQLite persistence.
+
+### GET `/api/v1/profiles`
+List all profiles with statistics.
+
+**Response:**
+```json
+{
+    "profiles": [
+        {
+            "id": 1,
+            "slug": "emma-chen",
+            "name": "Emma Chen",
+            "full_name": "Emma Chen",
+            "email": "emma.chen@example.com",
+            "title": "AI/ML Engineer",
+            "is_active": true,
+            "is_demo": true,
+            "created_at": "2025-12-16T10:00:00Z",
+            "updated_at": "2025-12-16T10:00:00Z",
+            "stats": {
+                "total_applications": 5,
+                "completed_applications": 4,
+                "avg_compatibility_score": 75.5
+            }
+        }
+    ],
+    "active_profile_slug": "emma-chen",
+    "total": 3
+}
+```
+
+---
+
+### POST `/api/v1/profiles`
+Create a new profile.
+
+**Request:**
+```json
+{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phone": "+1-555-0123",
+    "location": "San Francisco, CA",
+    "title": "Senior Software Engineer",
+    "summary": "Experienced engineer with 8+ years...",
+    "profile_data": {
+        "skills": [...],
+        "experiences": [...],
+        "education": [...]
+    }
+}
+```
+
+**Response:**
+```json
+{
+    "id": 4,
+    "slug": "john-doe",
+    "name": "John Doe",
+    "message": "Profile created successfully"
+}
+```
+
+---
+
+### GET `/api/v1/profiles/{slug}`
+Get a specific profile by slug.
+
+**Response:** Full profile object with `profile_data` field containing UserProfile model.
+
+**Errors:**
+- `404`: Profile not found
+
+---
+
+### PUT `/api/v1/profiles/{slug}`
+Update an existing profile.
+
+**Request:** Same as POST create
+
+**Response:**
+```json
+{
+    "slug": "john-doe",
+    "message": "Profile updated successfully"
+}
+```
+
+---
+
+### DELETE `/api/v1/profiles/{slug}`
+Delete a profile.
+
+**Response:**
+```json
+{
+    "slug": "john-doe",
+    "message": "Profile deleted successfully"
+}
+```
+
+**Errors:**
+- `404`: Profile not found
+- `400`: Cannot delete active profile
+
+---
+
+### POST `/api/v1/profiles/{slug}/activate`
+Set a profile as active. Triggers ChromaDB re-indexing.
+
+**Response:**
+```json
+{
+    "slug": "emma-chen",
+    "name": "Emma Chen",
+    "message": "Profile activated successfully"
+}
+```
+
+**Behavior:**
+- Clears previous active profile flag
+- Sets new profile as active
+- Re-indexes profile skills to ChromaDB `user_profiles` collection
+
+---
+
+## Profile Routes (`/api/v1/profile`) - LEGACY
 
 **Location:** `src/web/routes/api/v1/profile.py`
+
+> **Note:** These endpoints use the legacy ProfileService. For multi-profile support, use `/api/v1/profiles` instead.
 
 ### GET `/api/v1/profile/status`
 Check profile existence and indexing status.
@@ -746,16 +881,29 @@ Run quick component tests without full LLM processing.
 
 These routes serve HTML pages using Jinja2 templates.
 
+### Active Pages
+
 | Route | Template | Description |
 |-------|----------|-------------|
 | `GET /` | `index.html` | Dashboard (main page) |
-| `GET /profile/create` | `profile.html` | Legacy profile editor |
-| `GET /profiles` | `profiles_list.html` | Profile management |
-| `GET /profiles/create` | `profile_edit.html` | Create new profile |
-| `GET /profiles/{filename}` | `profile_detail.html` | View profile |
-| `GET /profiles/{filename}/edit` | `profile_edit.html` | Edit profile |
+| `GET /profiles` | `profiles_list.html` | Profile management list |
+| `GET /profiles/new` | `profile_edit.html` | Create new profile |
+| `GET /profiles/{slug}/edit` | `profile_edit.html` | Edit profile by slug |
 | `GET /applications` | `applications.html` | Applications list |
-| `GET /logs` | `logs.html` | Log viewer |
+| `GET /metrics` | `metrics.html` | Performance metrics dashboard |
+| `GET /logs` | `logs.html` | Application logs viewer |
+| `GET /diagnostics` | `diagnostics.html` | System diagnostics page |
+
+### Legacy Redirects (301 Permanent)
+
+For backward compatibility, these URLs redirect to new locations:
+
+| Old Route | Redirects To | Reason |
+|-----------|--------------|--------|
+| `GET /profile/create` | `/profiles/new` | URL structure change |
+| `GET /profile/edit` | `/profiles` | Needs slug selection |
+| `GET /profiles/create` | `/profiles/new` | URL naming change |
+| `GET /profiles/edit` | `/profiles` | Needs slug selection |
 
 ---
 
@@ -945,3 +1093,4 @@ Allowed origins for cross-origin requests:
 ---
 
 *Last updated: December 16, 2025*
+*Updated: Added multi-profile routes, legacy redirects, new page routes*

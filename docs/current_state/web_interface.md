@@ -25,25 +25,33 @@ src/web/
 ├── log_handler.py       # Memory-based log handler for UI
 ├── routes/
 │   ├── __init__.py
-│   ├── api.py           # /api/* endpoints
-│   ├── profile.py       # /api/profile/* endpoints
-│   ├── notifications.py # /api/notifications/* endpoints
-│   └── pages.py         # HTML page routes
+│   ├── pages.py         # HTML page routes (with legacy redirects)
+│   └── api/
+│       ├── __init__.py
+│       └── v1/
+│           ├── __init__.py
+│           ├── jobs.py          # Job pipeline endpoints
+│           ├── profiles.py      # Multi-profile management (NEW)
+│           ├── profile.py       # Legacy profile endpoints
+│           ├── notifications.py # Notifications
+│           ├── logs.py          # Log retrieval
+│           ├── metrics.py       # Performance metrics
+│           └── diagnostics.py   # Component diagnostics
 ├── templates/
 │   ├── partials/
-│   │   └── navbar.html  # Shared navigation bar
-│   ├── index.html       # Dashboard (main page)
-│   ├── applications.html # Applications list
-│   ├── profiles_list.html # Profile management
-│   ├── profile_edit.html  # Profile editor
-│   ├── profile_detail.html # Profile view
-│   ├── profile.html     # Legacy profile page
-│   └── logs.html        # Application logs viewer
+│   │   └── navbar.html      # Navigation with profile switcher (NEW)
+│   ├── index.html           # Dashboard (main page)
+│   ├── applications.html    # Applications list
+│   ├── profiles_list.html   # Profile management list
+│   ├── profile_edit.html    # Profile editor (create/edit)
+│   ├── metrics.html         # Performance metrics dashboard
+│   ├── logs.html            # Application logs viewer
+│   └── diagnostics.html     # System diagnostics page
 └── static/
     ├── css/
-    │   └── common.css   # Shared styles
+    │   └── common.css   # Shared styles (profile switcher styles)
     └── js/
-        └── common.js    # Shared JavaScript utilities
+        └── common.js    # Shared JS (profile loading, switching)
 ```
 
 ---
@@ -107,8 +115,30 @@ All pages include the shared navbar:
 ### Navbar (`partials/navbar.html`)
 Contains:
 - Scout logo/title
-- Navigation links (Dashboard, Applications, Profiles, Logs)
-- Active page indicator
+- Navigation links (Dashboard, Profiles, Applications, Metrics, Logs, Diagnostics)
+- Active page indicator (highlights current page)
+- **Profile Switcher (NEW)**: Dropdown showing all profiles with active indicator
+
+```html
+<!-- Profile Switcher Structure -->
+<div class="navbar-profile-switcher">
+    <button class="navbar-profile-btn" onclick="toggleProfileDropdown(event)">
+        <span class="profile-indicator-dot" id="navbar-profile-indicator"></span>
+        <span id="navbar-profile-name">Loading...</span>
+        <span class="navbar-profile-arrow">&#9662;</span>
+    </button>
+    <div class="profile-dropdown" id="navbar-profile-dropdown">
+        <div class="profile-dropdown-header">Switch Profile</div>
+        <div class="profile-dropdown-list" id="navbar-profile-list">
+            <!-- Profiles populated by JS -->
+        </div>
+        <div class="profile-dropdown-footer">
+            <a href="/profiles" class="profile-dropdown-link">Manage Profiles</a>
+            <a href="/profiles/new" class="profile-dropdown-link">+ Create Profile</a>
+        </div>
+    </div>
+</div>
+```
 
 ### Pages
 
@@ -164,31 +194,51 @@ function updatePagination() { ... }
 **Route:** `/profiles`
 
 Profile management page with:
-- Summary stats (total, archived, usage)
-- Active profile banner
-- Profile cards with stats
-- Re-index button
-- Delete confirmation modal
+- Summary stats (total profiles, active profile indicator)
+- Profile cards with stats (application count, compatibility scores)
+- Active profile badge (green indicator)
+- Demo profile badge for seeded profiles
+- Actions: Edit, Activate, Delete
+- Create new profile button
 
-**Note:** Currently uses single-profile API (multi-profile deferred).
+**Key JavaScript Functions:**
+```javascript
+async function loadProfiles() { ... }
+async function activateProfile(slug) { ... }
+async function deleteProfile(slug) { ... }
+function renderProfileCards() { ... }
+```
 
 #### 4. Profile Editor (`profile_edit.html`)
-**Route:** `/profiles/create`, `/profiles/{filename}/edit`
+**Route:** `/profiles/new`, `/profiles/{slug}/edit`
 
-YAML editor for profile creation/editing:
-- Syntax-highlighted textarea
-- Template insertion button
-- Save and Index button
-- Status indicators
-- Log panel (collapsible)
+Form-based profile editor (create or edit):
+- Personal info section (name, email, phone, location, title)
+- Summary textarea
+- Dynamic skills list (add/remove)
+- Dynamic experiences list (add/remove)
+- Dynamic education list (add/remove)
+- Certifications and languages
+- Save button with validation
+- Profile completeness score
 
-#### 5. Profile Detail (`profile_detail.html`)
-**Route:** `/profiles/{filename}`
+**Key JavaScript Functions:**
+```javascript
+async function loadProfile(slug) { ... }
+async function saveProfile() { ... }
+function addSkillRow() { ... }
+function addExperienceRow() { ... }
+function validateForm() { ... }
+```
 
-Read-only profile view with:
-- Formatted profile data
-- Statistics
-- Edit/Re-index actions
+#### 5. Metrics Dashboard (`metrics.html`)
+**Route:** `/metrics`
+
+Performance metrics dashboard with:
+- Summary stats (total calls, tokens, success rate)
+- Daily metrics chart
+- System metrics (CPU, memory, temperature)
+- Model comparison table
 
 #### 6. Logs (`logs.html`)
 **Route:** `/logs`
@@ -198,6 +248,15 @@ Application logs viewer with:
 - Auto-refresh toggle
 - Clear/Copy buttons
 - Color-coded log entries
+
+#### 7. Diagnostics (`diagnostics.html`)
+**Route:** `/diagnostics`
+
+System diagnostics page with:
+- Component health status (green/red indicators)
+- Active profile information
+- Quick tests (profile access, vector search, LLM connection, templates)
+- Test results with duration metrics
 
 ---
 
@@ -268,9 +327,11 @@ textarea { min-height: 200px; resize: vertical; }
 
 ### Global Namespace
 ```javascript
-window.Scout = {
+window.Scout = window.Scout || {
     profilesList: [],
-    activeProfileFilename: null,
+    activeProfileSlug: null,
+    notificationPollInterval: null,
+    seenNotifications: new Set()
 };
 ```
 
@@ -286,22 +347,69 @@ function formatRelativeDate(dateStr) { ... }  // "Today", "2 days ago", etc.
 function getScoreClass(score) { ... }  // Returns: excellent, strong, moderate, weak
 
 // Toast notifications
-function showToast(type, title, message) { ... }
-
-// API helpers
-async function fetchJson(url, options) { ... }
+function showToast(type, title, message, autoDismiss, dismissSeconds) { ... }
 ```
 
-### Profile Dropdown (Navbar)
+### Profile Management (NEW)
 ```javascript
-// Load profiles for navbar dropdown
-async function loadProfilesList() { ... }
+// Load profiles from API and update navbar
+async function loadProfilesList() {
+    const response = await fetch('/api/v1/profiles');
+    const data = await response.json();
+    window.Scout.profilesList = data.profiles || [];
+    window.Scout.activeProfileSlug = data.active_profile_slug;
+    updateNavbarProfileSwitcher();
+}
 
-// Update navbar profile display
-function updateNavbarProfile() { ... }
+// Update navbar profile switcher UI
+function updateNavbarProfileSwitcher() {
+    // Updates navbar profile name
+    // Updates dropdown list with all profiles
+    // Shows active indicator for current profile
+}
 
-// Toggle dropdown
+// Toggle profile dropdown visibility
 function toggleProfileDropdown(event) { ... }
+
+// Switch to a different profile
+async function switchToProfile(slug) {
+    await fetch(`/api/v1/profiles/${slug}/activate`, { method: 'POST' });
+    // Updates global state
+    // Shows toast notification
+    // Reloads page to reflect changes
+}
+```
+
+### Notification Polling
+```javascript
+// Start polling for notifications
+function startNotificationPolling(interval = 3000) { ... }
+
+// Stop notification polling
+function stopNotificationPolling() { ... }
+
+// Fetch and display notifications
+async function fetchNotifications() { ... }
+
+// Show notification as toast
+function showNotificationToast(notification) { ... }
+```
+
+### Initialization
+```javascript
+document.addEventListener('DOMContentLoaded', () => {
+    // Load profiles for switcher
+    loadProfilesList();
+
+    // Start notification polling
+    startNotificationPolling();
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', (e) => { ... });
+
+    // Set active nav link based on current path
+    // ...
+});
 ```
 
 ---
@@ -429,4 +537,5 @@ The interface is designed for desktop use primarily, but includes basic responsi
 
 ---
 
-*Last updated: December 14, 2025*
+*Last updated: December 16, 2025*
+*Updated: Added profile switcher, new pages (metrics, diagnostics), updated routes structure*

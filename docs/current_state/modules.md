@@ -78,11 +78,19 @@ class Collector:
     async def initialize(self) -> None: ...
     async def shutdown(self) -> None: ...
 
-    # Profile operations
+    # Profile operations (YAML-based)
     async def load_profile(self) -> UserProfile: ...
     async def save_profile(self, profile: UserProfile) -> None: ...
     async def index_profile(self, force: bool = False) -> int:
         """Index profile in vector store. Returns chunk count."""
+
+    # Profile operations (Database-based) - NEW
+    async def load_profile_from_db(self) -> UserProfile | None:
+        """Load the active profile from database.
+
+        Called on startup to initialize with active profile.
+        Returns the active UserProfile, or None if no active profile exists.
+        """
 
     # Search
     async def search_experiences(
@@ -105,6 +113,35 @@ class Collector:
     @property
     def profile(self) -> UserProfile | None: ...
 ```
+
+### Database Integration (NEW)
+
+The Collector can now load profiles from the Database Service:
+
+```python
+async def load_profile_from_db(self) -> UserProfile | None:
+    """Load the active profile from database."""
+    from src.services.database import get_database_service
+
+    db = await get_database_service()
+    active = await db.get_active_profile()
+
+    if active is None:
+        logger.warning("No active profile in database")
+        return None
+
+    # Parse profile data to UserProfile
+    self._profile = UserProfile(**active.profile_data)
+    self._profile_hash = str(active.id)
+
+    logger.info(f"Loaded profile from database: {active.name}")
+    return self._profile
+```
+
+**Usage:**
+- YAML loading (`load_profile()`) for backward compatibility
+- Database loading (`load_profile_from_db()`) for multi-profile support
+- Both methods populate the same `_profile` attribute
 
 ### User Profile Model
 ```python
@@ -430,7 +467,7 @@ class Formatter:
     def __init__(
         self,
         templates_dir: Path | None = None,  # src/templates
-        output_dir: Path | None = None,     # output/
+        output_dir: Path | None = None,     # data/outputs/ (persistent)
     ): ...
 
     async def initialize(self) -> None: ...
@@ -476,15 +513,15 @@ class FormattedDocument(BaseModel):
 
 ### Output Structure
 ```
-output/
-├── job-abc123/
-│   ├── cv.pdf
-│   └── cover_letter.pdf
-├── job-def456/
-│   ├── cv.pdf
-│   └── cover_letter.pdf
+data/outputs/
+├── cv_abc123.pdf
+├── cover_letter_abc123.pdf
+├── cv_def456.pdf
+├── cover_letter_def456.pdf
 └── ...
 ```
+
+**Note:** Output directory changed from `output/` to `data/outputs/` for persistent storage across deployments. File naming uses `{type}_{job_id}.pdf` format.
 
 ---
 
@@ -543,4 +580,5 @@ Modules raise specific exceptions, caught by Pipeline Orchestrator which wraps t
 
 ---
 
-*Last updated: December 14, 2025*
+*Last updated: December 16, 2025*
+*Updated: Added Collector database integration, updated Formatter output directory*
