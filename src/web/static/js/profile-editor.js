@@ -254,7 +254,7 @@ function removeCertification(index) {
  */
 async function loadExistingProfile() {
     try {
-        const response = await fetch('/api/profile/editor-data');
+        const response = await fetch('/api/v1/profile/editor-data');
         if (!response.ok) {
             // No existing profile, start fresh
             addSkill();  // Add one empty skill
@@ -342,7 +342,7 @@ async function saveProfile() {
     }
 
     try {
-        const response = await fetch('/api/profile/editor-save', {
+        const response = await fetch('/api/v1/profile/editor-save', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -498,7 +498,7 @@ async function exportYAML() {
     const profile = collectFormData();
 
     try {
-        const response = await fetch('/api/profile/export-yaml', {
+        const response = await fetch('/api/v1/profile/export-yaml', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -533,7 +533,7 @@ async function updateCompleteness() {
         // Assess profile without saving
         const profile = collectFormData();
 
-        const response = await fetch('/api/profile/assess', {
+        const response = await fetch('/api/v1/profile/assess', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

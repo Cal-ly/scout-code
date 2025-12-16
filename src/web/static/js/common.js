@@ -115,7 +115,7 @@ function showToast(type, title, message, autoDismiss = true, dismissSeconds = 5)
 async function loadProfilesList() {
     try {
         // Try new multi-profile API first
-        const response = await fetch('/api/profiles?include_archived=false');
+        const response = await fetch('/api/v1/profiles?include_archived=false');
         if (response.ok) {
             const data = await response.json();
             window.Scout.profilesList = data.profiles || [];
@@ -129,11 +129,11 @@ async function loadProfilesList() {
 
     // Fallback to single profile API
     try {
-        const statusResponse = await fetch('/api/profile/status');
+        const statusResponse = await fetch('/api/v1/profile/status');
         if (statusResponse.ok) {
             const status = await statusResponse.json();
             if (status.exists) {
-                const profileResponse = await fetch('/api/profile/retrieve');
+                const profileResponse = await fetch('/api/v1/profile/retrieve');
                 if (profileResponse.ok) {
                     const profileData = await profileResponse.json();
                     window.Scout.profilesList = [{
@@ -224,7 +224,7 @@ function toggleProfileDropdown(event) {
  */
 async function switchToProfile(filename) {
     try {
-        const response = await fetch(`/api/profiles/${encodeURIComponent(filename)}/activate`, {
+        const response = await fetch(`/api/v1/profiles/${encodeURIComponent(filename)}/activate`, {
             method: 'POST'
         });
 
@@ -278,7 +278,7 @@ function stopNotificationPolling() {
  */
 async function fetchNotifications() {
     try {
-        const response = await fetch('/api/notifications?unread_only=true');
+        const response = await fetch('/api/v1/notifications?unread_only=true');
         if (!response.ok) return;
 
         const data = await response.json();
@@ -317,7 +317,7 @@ function showNotificationToast(notification) {
  */
 async function markNotificationRead(notificationId) {
     try {
-        await fetch(`/api/notifications/${notificationId}/read`, {
+        await fetch(`/api/v1/notifications/${notificationId}/read`, {
             method: 'POST'
         });
     } catch (error) {

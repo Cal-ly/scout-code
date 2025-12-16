@@ -446,7 +446,7 @@ class TestNotificationRoutes:
 
     def test_get_notifications_empty(self, client: TestClient) -> None:
         """Should return empty list."""
-        response = client.get("/api/notifications")
+        response = client.get("/api/v1/notifications")
 
         assert response.status_code == 200
         data = response.json()
@@ -459,7 +459,7 @@ class TestNotificationRoutes:
         service = get_notification_service()
         service.notify_info("Test", "Message")
 
-        response = client.get("/api/notifications")
+        response = client.get("/api/v1/notifications")
 
         assert response.status_code == 200
         data = response.json()
@@ -473,7 +473,7 @@ class TestNotificationRoutes:
         service.notify_info("Unread", "Unread message")
         service.mark_read(n1.id)
 
-        response = client.get("/api/notifications?unread_only=true")
+        response = client.get("/api/v1/notifications?unread_only=true")
 
         assert response.status_code == 200
         data = response.json()
@@ -486,7 +486,7 @@ class TestNotificationRoutes:
         for i in range(5):
             service.notify_info(f"N{i}", "Message")
 
-        response = client.get("/api/notifications?limit=3")
+        response = client.get("/api/v1/notifications?limit=3")
 
         assert response.status_code == 200
         data = response.json()
@@ -498,7 +498,7 @@ class TestNotificationRoutes:
         service = get_notification_service()
         n = service.notify_info("Test", "Message")
 
-        response = client.post(f"/api/notifications/{n.id}/read")
+        response = client.post(f"/api/v1/notifications/{n.id}/read")
 
         assert response.status_code == 200
         data = response.json()
@@ -507,7 +507,7 @@ class TestNotificationRoutes:
 
     def test_mark_notification_read_not_found(self, client: TestClient) -> None:
         """Should return false for nonexistent notification."""
-        response = client.post("/api/notifications/nonexistent/read")
+        response = client.post("/api/v1/notifications/nonexistent/read")
 
         assert response.status_code == 200
         data = response.json()
@@ -519,7 +519,7 @@ class TestNotificationRoutes:
         service.notify_info("N1", "Message")
         service.notify_info("N2", "Message")
 
-        response = client.post("/api/notifications/read-all")
+        response = client.post("/api/v1/notifications/read-all")
 
         assert response.status_code == 200
         data = response.json()
@@ -532,7 +532,7 @@ class TestNotificationRoutes:
         service.notify_info("N1", "Message")
         service.notify_info("N2", "Message")
 
-        response = client.delete("/api/notifications")
+        response = client.delete("/api/v1/notifications")
 
         assert response.status_code == 200
         data = response.json()

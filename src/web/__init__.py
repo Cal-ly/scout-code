@@ -7,11 +7,11 @@ Usage:
     uvicorn src.web.main:app --reload --host 0.0.0.0 --port 8000
 
 Endpoints:
-    POST /api/apply - Start new job application
-    GET /api/status/{job_id} - Get pipeline status
-    GET /api/download/{job_id}/{file_type} - Download PDF
-    GET /api/jobs - List all jobs
-    GET /health - Health check
+    POST /api/v1/jobs/apply - Start new job application
+    GET /api/v1/jobs/{job_id} - Get pipeline status
+    GET /api/v1/jobs/{job_id}/download/{file_type} - Download PDF
+    GET /api/v1/jobs - List all jobs
+    GET /api/v1/health - Health check
 """
 
 from src.web.dependencies import (
@@ -22,12 +22,11 @@ from src.web.dependencies import (
     reset_job_store,
 )
 from src.web.main import app
-from src.web.routes import router
-from src.web.schemas import (
+from src.web.routes import api_router
+from src.web.routes.api.schemas import (
     ApplyRequest,
     ApplyResponse,
     ErrorResponse,
-    HealthResponse,
     JobListResponse,
     JobSummary,
     StatusResponse,
@@ -37,7 +36,7 @@ from src.web.schemas import (
 __all__ = [
     # Main app
     "app",
-    "router",
+    "api_router",
     # Dependencies
     "JobStore",
     "get_job_store",
@@ -52,5 +51,4 @@ __all__ = [
     "JobListResponse",
     "StepInfo",
     "ErrorResponse",
-    "HealthResponse",
 ]

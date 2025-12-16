@@ -26,11 +26,10 @@ from src.web.dependencies import (
     get_store,
     reset_job_store,
 )
-from src.web.schemas import (
+from src.web.routes.api.schemas import (
     ApplyRequest,
     ApplyResponse,
     ErrorResponse,
-    HealthResponse,
     JobListResponse,
     JobSummary,
     StatusResponse,
@@ -269,13 +268,14 @@ class TestSchemas:
         assert response.error == "NotFound"
 
     def test_health_response(self) -> None:
-        """Should create valid health response."""
-        response = HealthResponse(
-            status="healthy",
-            version="0.1.0",
-            services={"pipeline": "ok"},
-        )
-        assert response.status == "healthy"
+        """Should create valid health response dict."""
+        # Health response is now a dict, not a Pydantic model
+        response = {
+            "status": "healthy",
+            "version": "0.1.0",
+            "services": {"pipeline": "ok"},
+        }
+        assert response["status"] == "healthy"
 
 
 # =============================================================================
@@ -436,7 +436,7 @@ class TestAPIRoutes:
 
     def test_info_endpoint(self, client: TestClient) -> None:
         """Should return app info."""
-        response = client.get("/info")
+        response = client.get("/api/v1/info")
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "Scout"
@@ -444,7 +444,7 @@ class TestAPIRoutes:
 
     def test_health_endpoint(self, client: TestClient) -> None:
         """Should return health status with service checks."""
-        response = client.get("/health")
+        response = client.get("/api/v1/health")
         assert response.status_code == 200
         data = response.json()
         # Status can be "healthy" or "degraded" depending on service state
@@ -461,7 +461,7 @@ class TestAPIRoutes:
     ) -> None:
         """Should accept apply request."""
         response = client.post(
-            "/api/apply",
+            "/api/v1/jobs/apply",
             json={"job_text": sample_job_text, "source": "linkedin"},
         )
         assert response.status_code == 200
@@ -472,14 +472,14 @@ class TestAPIRoutes:
     def test_apply_endpoint_validation_error(self, client: TestClient) -> None:
         """Should reject invalid request."""
         response = client.post(
-            "/api/apply",
+            "/api/v1/jobs/apply",
             json={"job_text": "too short"},
         )
         assert response.status_code == 422
 
     def test_status_endpoint_not_found(self, client: TestClient) -> None:
         """Should return 404 for nonexistent job."""
-        response = client.get("/api/status/nonexistent")
+        response = client.get("/api/v1/jobs/nonexistent")
         assert response.status_code == 404
 
     def test_status_endpoint_success(
@@ -490,7 +490,7 @@ class TestAPIRoutes:
         store = get_job_store()
         store.store(mock_pipeline_result)
 
-        response = client.get("/api/status/job-abc")
+        response = client.get("/api/v1/jobs/job-abc")
         assert response.status_code == 200
         data = response.json()
         assert data["job_id"] == "job-abc"
@@ -500,7 +500,7 @@ class TestAPIRoutes:
 
     def test_jobs_endpoint_empty(self, client: TestClient) -> None:
         """Should return empty list."""
-        response = client.get("/api/jobs")
+        response = client.get("/api/v1/jobs")
         assert response.status_code == 200
         data = response.json()
         assert data["jobs"] == []
@@ -513,7 +513,7 @@ class TestAPIRoutes:
         store = get_job_store()
         store.store(mock_pipeline_result)
 
-        response = client.get("/api/jobs")
+        response = client.get("/api/v1/jobs")
         assert response.status_code == 200
         data = response.json()
         assert data["total"] == 1
@@ -521,7 +521,7 @@ class TestAPIRoutes:
 
     def test_download_endpoint_not_found(self, client: TestClient) -> None:
         """Should return 404 for nonexistent job."""
-        response = client.get("/api/download/nonexistent/cv")
+        response = client.get("/api/v1/jobs/nonexistent/download/cv")
         assert response.status_code == 404
 
     def test_download_endpoint_no_file_path(
@@ -531,7 +531,7 @@ class TestAPIRoutes:
         store = get_job_store()
         store.store(mock_running_result)
 
-        response = client.get("/api/download/run-job/cv")
+        response = client.get("/api/v1/jobs/run-job/download/cv")
         assert response.status_code == 404
         assert "not available" in response.json()["detail"]
 
@@ -542,7 +542,7 @@ class TestAPIRoutes:
         store = get_job_store()
         store.store(mock_pipeline_result)
 
-        response = client.get("/api/download/job-abc/cv")
+        response = client.get("/api/v1/jobs/job-abc/download/cv")
         assert response.status_code == 404
         assert "File not found" in response.json()["detail"]
 
@@ -565,7 +565,7 @@ class TestAPIRoutes:
         store = get_job_store()
         store.store(result)
 
-        response = client.get("/api/download/dl-job/cv")
+        response = client.get("/api/v1/jobs/dl-job/download/cv")
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/pdf"
 
@@ -587,7 +587,7 @@ class TestAPIRoutes:
         store = get_job_store()
         store.store(result)
 
-        response = client.get("/api/download/dl-job/cover_letter")
+        response = client.get("/api/v1/jobs/dl-job/download/cover_letter")
         assert response.status_code == 200
 
 
@@ -603,9 +603,9 @@ class TestResponseConversion:
         self, mock_pipeline_result: PipelineResult
     ) -> None:
         """Should convert pipeline result to status response."""
-        from src.web.routes.api import result_to_status_response
+        from src.web.routes.api.v1.jobs import _result_to_status_response
 
-        response = result_to_status_response(mock_pipeline_result)
+        response = _result_to_status_response(mock_pipeline_result)
 
         assert response.job_id == "job-abc"
         assert response.pipeline_id == "test-123"
@@ -619,9 +619,9 @@ class TestResponseConversion:
         self, mock_running_result: PipelineResult
     ) -> None:
         """Should include current step for running pipeline."""
-        from src.web.routes.api import result_to_status_response
+        from src.web.routes.api.v1.jobs import _result_to_status_response
 
-        response = result_to_status_response(mock_running_result)
+        response = _result_to_status_response(mock_running_result)
 
         assert response.status == "running"
         assert response.current_step == "creator"
@@ -630,9 +630,9 @@ class TestResponseConversion:
         self, mock_failed_result: PipelineResult
     ) -> None:
         """Should include error info for failed pipeline."""
-        from src.web.routes.api import result_to_status_response
+        from src.web.routes.api.v1.jobs import _result_to_status_response
 
-        response = result_to_status_response(mock_failed_result)
+        response = _result_to_status_response(mock_failed_result)
 
         assert response.status == "failed"
         assert response.error == "LLM service error"
@@ -641,9 +641,9 @@ class TestResponseConversion:
         self, mock_pipeline_result: PipelineResult
     ) -> None:
         """Should convert pipeline result to job summary."""
-        from src.web.routes.api import result_to_job_summary
+        from src.web.routes.api.v1.jobs import _result_to_summary
 
-        summary = result_to_job_summary(mock_pipeline_result)
+        summary = _result_to_summary(mock_pipeline_result)
 
         assert summary.job_id == "job-abc"
         assert summary.job_title == "Senior Python Developer"
@@ -653,7 +653,7 @@ class TestResponseConversion:
 
     def test_result_to_job_summary_uses_pipeline_id_fallback(self) -> None:
         """Should use pipeline_id if job_id is None."""
-        from src.web.routes.api import result_to_job_summary
+        from src.web.routes.api.v1.jobs import _result_to_summary
 
         result = PipelineResult(
             pipeline_id="pipe-123",
@@ -661,7 +661,7 @@ class TestResponseConversion:
             started_at=datetime.now(),
             job_id=None,
         )
-        summary = result_to_job_summary(result)
+        summary = _result_to_summary(result)
         assert summary.job_id == "pipe-123"
 
 
@@ -678,7 +678,7 @@ class TestBackgroundTasks:
         self, mock_pipeline_result: PipelineResult
     ) -> None:
         """Should store successful result."""
-        from src.web.routes.api import execute_pipeline
+        from src.web.routes.api.v1.jobs import _execute_pipeline
 
         mock_orchestrator = Mock()
         mock_orchestrator.execute = AsyncMock(return_value=mock_pipeline_result)
@@ -686,7 +686,7 @@ class TestBackgroundTasks:
         store = JobStore()
         input_data = PipelineInput(raw_job_text="x" * 100)
 
-        await execute_pipeline(mock_orchestrator, store, input_data, "test-job")
+        await _execute_pipeline(mock_orchestrator, store, input_data, "test-job")
 
         assert store.count() == 1
         result = store.get("job-abc")  # Uses job_id from result
@@ -695,7 +695,7 @@ class TestBackgroundTasks:
     @pytest.mark.asyncio
     async def test_execute_pipeline_failure(self) -> None:
         """Should store error result on failure."""
-        from src.web.routes.api import execute_pipeline
+        from src.web.routes.api.v1.jobs import _execute_pipeline
 
         mock_orchestrator = Mock()
         mock_orchestrator.execute = AsyncMock(
@@ -705,7 +705,7 @@ class TestBackgroundTasks:
         store = JobStore()
         input_data = PipelineInput(raw_job_text="x" * 100)
 
-        await execute_pipeline(mock_orchestrator, store, input_data, "fail-job")
+        await _execute_pipeline(mock_orchestrator, store, input_data, "fail-job")
 
         assert store.count() == 1
         result = store.get("fail-job")
@@ -763,7 +763,7 @@ class TestAPIIntegration:
         store.store(mock_pipeline_result)
 
         # Check status
-        response = integration_client.get("/api/status/job-abc")
+        response = integration_client.get("/api/v1/jobs/job-abc")
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "completed"
@@ -778,7 +778,7 @@ class TestAPIIntegration:
         store = get_job_store()
         store.store(mock_pipeline_result)
 
-        response = integration_client.get("/api/jobs")
+        response = integration_client.get("/api/v1/jobs")
         assert response.status_code == 200
         data = response.json()
         assert data["total"] == 1

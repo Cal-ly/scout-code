@@ -1,8 +1,6 @@
 """
 FastAPI Application Entry Point
 
-Main application configuration and setup.
-
 Usage:
     uvicorn src.web.main:app --reload --host 0.0.0.0 --port 8000
 """
@@ -14,16 +12,13 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.services.notification import get_notification_service
-from src.services.pipeline import (
-    get_pipeline_orchestrator,
-    shutdown_pipeline_orchestrator,
-)
+from src.services.pipeline import get_pipeline_orchestrator, shutdown_pipeline_orchestrator
 from src.web.dependencies import get_job_store, reset_job_store
-from src.web.routes import notifications_router, pages_router, profile_router, router
-from src.web.schemas import HealthResponse
+from src.web.routes import api_router, pages_router
 
 # Configure logging
 logging.basicConfig(
@@ -32,7 +27,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Set up memory logging for web interface
+# Memory logging for web interface
 from src.web.log_handler import setup_memory_logging
 
 setup_memory_logging(max_entries=500)
@@ -44,134 +39,72 @@ APP_VERSION = "0.1.0"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """
-    Application lifespan manager.
-
-    Handles startup and shutdown tasks.
-    """
-    # Startup
+    """Application lifespan manager."""
     logger.info(f"Starting {APP_NAME} v{APP_VERSION}")
 
-    # Initialize services
     try:
         await get_pipeline_orchestrator()
         logger.info("Pipeline orchestrator initialized")
-
-        # Initialize job store
         get_job_store()
         logger.info("Job store initialized")
-
-        # Initialize notification service
         get_notification_service()
         logger.info("Notification service initialized")
-
     except Exception as e:
         logger.error(f"Failed to initialize services: {e}")
         raise
 
-    logger.info(f"{APP_NAME} ready to accept requests")
-
+    logger.info(f"{APP_NAME} ready")
     yield
 
-    # Shutdown
     logger.info(f"Shutting down {APP_NAME}")
     await shutdown_pipeline_orchestrator()
     reset_job_store()
     logger.info("Shutdown complete")
 
 
-# Create FastAPI application
+# Create application
 app = FastAPI(
     title=APP_NAME,
     version=APP_VERSION,
     description="Intelligent Job Application System",
     lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
 )
 
-# Configure CORS
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:8000"],
+    allow_origins=[
+        "http://localhost:3000",  # Future Vue dev server
+        "http://localhost:8000",
+        "http://192.168.1.21:3000",
+        "http://192.168.1.21:8000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Mount static files
+# Static files
 STATIC_DIR = Path(__file__).parent / "static"
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 # Include routers
-app.include_router(router)
-app.include_router(notifications_router)
-app.include_router(pages_router)
-app.include_router(profile_router)
+app.include_router(api_router)  # /api/v1/*
+app.include_router(pages_router)  # HTML pages
 
 
-@app.get("/info", tags=["info"])
-async def info() -> dict[str, str]:
-    """
-    Application info endpoint.
-
-    Returns basic application info as JSON.
-    """
-    return {
-        "name": APP_NAME,
-        "version": APP_VERSION,
-        "status": "ready",
-        "docs": "/docs",
-    }
+# Legacy compatibility redirects (remove after frontend migration)
+@app.get("/health", include_in_schema=False)
+async def legacy_health() -> RedirectResponse:
+    """Legacy health endpoint - redirects to /api/v1/health."""
+    return RedirectResponse(url="/api/v1/health")
 
 
-@app.get("/health", response_model=HealthResponse, tags=["health"])
-async def health() -> HealthResponse:
-    """
-    Health check endpoint.
-
-    Returns application health status with actual service checks.
-    """
-    services: dict[str, str] = {}
-    overall_healthy = True
-
-    # Check pipeline orchestrator
-    try:
-        orchestrator = await get_pipeline_orchestrator()
-        if orchestrator._initialized:
-            services["pipeline"] = "ok"
-        else:
-            services["pipeline"] = "not_initialized"
-            overall_healthy = False
-    except Exception as e:
-        services["pipeline"] = f"error: {e}"
-        overall_healthy = False
-
-    # Check job store
-    try:
-        store = get_job_store()
-        if store is not None:
-            services["job_store"] = "ok"
-        else:
-            services["job_store"] = "not_available"
-            overall_healthy = False
-    except Exception as e:
-        services["job_store"] = f"error: {e}"
-        overall_healthy = False
-
-    # Check notification service
-    try:
-        notification_service = get_notification_service()
-        if notification_service is not None:
-            services["notifications"] = "ok"
-        else:
-            services["notifications"] = "not_available"
-            overall_healthy = False
-    except Exception as e:
-        services["notifications"] = f"error: {e}"
-        overall_healthy = False
-
-    return HealthResponse(
-        status="healthy" if overall_healthy else "degraded",
-        version=APP_VERSION,
-        services=services,
-    )
+@app.get("/info", include_in_schema=False)
+async def legacy_info() -> RedirectResponse:
+    """Legacy info endpoint - redirects to /api/v1/info."""
+    return RedirectResponse(url="/api/v1/info")

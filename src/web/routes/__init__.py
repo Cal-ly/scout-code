@@ -1,12 +1,10 @@
 """
-API Routes Package
+Routes Package
 
-Exports routers for inclusion in the main FastAPI application.
+Exports routers for the FastAPI application.
 """
 
-from src.web.routes.api import router
-from src.web.routes.notifications import router as notifications_router
+from src.web.routes.api import router as api_router
 from src.web.routes.pages import router as pages_router
-from src.web.routes.profile import router as profile_router
 
-__all__ = ["router", "notifications_router", "pages_router", "profile_router"]
+__all__ = ["api_router", "pages_router"]
