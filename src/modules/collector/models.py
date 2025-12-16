@@ -8,7 +8,7 @@ from datetime import datetime
 from enum import Enum
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class SkillLevel(str, Enum):
@@ -111,6 +111,29 @@ class Education(BaseModel):
     gpa: float | None = None
     relevant_courses: list[str] = Field(default_factory=list)
 
+    @field_validator("gpa", mode="before")
+    @classmethod
+    def parse_gpa(cls, v: str | float | None) -> float | None:
+        """Parse GPA value, handling string formats like '9.8/12'."""
+        if v is None:
+            return None
+        if isinstance(v, (int, float)):
+            return float(v)
+        if isinstance(v, str):
+            # Handle fraction format like "9.8/12"
+            if "/" in v:
+                try:
+                    numerator, _ = v.split("/", 1)
+                    return float(numerator.strip())
+                except (ValueError, IndexError):
+                    return None
+            # Try direct float conversion
+            try:
+                return float(v)
+            except ValueError:
+                return None
+        return None
+
     def to_searchable_text(self) -> str:
         """Create text representation for vector embedding."""
         text = f"{self.degree} in {self.field} from {self.institution}"
@@ -126,14 +149,14 @@ class Certification(BaseModel):
     Attributes:
         name: Certification name.
         issuer: Issuing organization.
-        date_obtained: When certification was obtained.
+        date_obtained: When certification was obtained (optional).
         expiry_date: When certification expires (None if permanent).
         credential_id: Credential/license number.
     """
 
     name: str
     issuer: str
-    date_obtained: datetime
+    date_obtained: datetime | None = None
     expiry_date: datetime | None = None
     credential_id: str | None = None
 
