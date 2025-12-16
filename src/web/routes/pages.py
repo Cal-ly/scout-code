@@ -67,6 +67,12 @@ async def profiles_create_redirect() -> RedirectResponse:
     return RedirectResponse(url="/profiles/new", status_code=301)
 
 
+@router.get("/profiles/edit", response_class=RedirectResponse)
+async def profiles_edit_redirect() -> RedirectResponse:
+    """Redirect /profiles/edit to profiles list (needs slug)."""
+    return RedirectResponse(url="/profiles", status_code=301)
+
+
 # =============================================================================
 # MULTI-PROFILE MANAGEMENT PAGES
 # =============================================================================
