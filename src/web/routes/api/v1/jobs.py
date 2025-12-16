@@ -354,7 +354,7 @@ async def get_status(
 
     # Fall back to database for persisted results
     db = await get_database_service()
-    app = await db.get_application_by_job_id(job_id)
+    app = await db.get_application(job_id)
 
     if app is None:
         raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
@@ -402,7 +402,7 @@ async def download(
     else:
         # Fall back to database
         db = await get_database_service()
-        app = await db.get_application_by_job_id(job_id)
+        app = await db.get_application(job_id)
         if app is None:
             raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
         file_path = app.cv_path if file_type == "cv" else app.cover_letter_path
