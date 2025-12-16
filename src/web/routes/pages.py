@@ -17,7 +17,7 @@ Endpoints:
 from pathlib import Path
 
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 # Template directory
@@ -44,6 +44,27 @@ async def index(request: Request) -> HTMLResponse:
     )
 
 
+# =============================================================================
+# LEGACY REDIRECTS (for backward compatibility)
+# =============================================================================
+
+
+@router.get("/profile/create", response_class=RedirectResponse)
+async def profile_create_redirect() -> RedirectResponse:
+    """Redirect legacy profile creation URL to new location."""
+    return RedirectResponse(url="/profiles/new", status_code=301)
+
+
+@router.get("/profile/edit", response_class=RedirectResponse)
+async def profile_edit_redirect() -> RedirectResponse:
+    """Redirect legacy profile edit URL to profiles list."""
+    return RedirectResponse(url="/profiles", status_code=301)
+
+
+@router.get("/profiles/create", response_class=RedirectResponse)
+async def profiles_create_redirect() -> RedirectResponse:
+    """Redirect old create URL to new location."""
+    return RedirectResponse(url="/profiles/new", status_code=301)
 
 
 # =============================================================================
