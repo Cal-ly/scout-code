@@ -573,3 +573,26 @@ output/
 test_*.py
 test_cache_temp/
 verification_report.txt
+
+# ============================================
+# Test outputs and additional patterns
+# ============================================
+
+# Test output files
+test_*.txt
+!tests/test_*.py
+!tests/test_*.txt
+
+# Ruff cache
+.ruff_cache/
+
+# IDE files
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Additional temporary files
+*.temp
+*.bak
