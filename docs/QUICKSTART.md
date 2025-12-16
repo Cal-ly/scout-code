@@ -1,153 +1,138 @@
 # Scout Quick Start Guide
 
-Get Scout running on your development machine in minutes.
+Get Scout running locally in 5 minutes.
+
+---
 
 ## Prerequisites
 
-- Python 3.12+
-- Git
-- [Ollama](https://ollama.com) installed and running
+- Python 3.11 or 3.12
+- [Ollama](https://ollama.ai/) installed and running
+- 8GB+ RAM recommended (16GB for comfortable operation)
 
-## Setup (5 minutes)
+---
 
-### 1. Clone and Setup Environment
+## Setup Steps
+
+### 1. Clone and Setup Virtual Environment
 
 ```bash
-# Clone repository
-git clone https://github.com/Cal-ly/scout-code.git
+git clone https://github.com/yourusername/scout-code.git
 cd scout-code
 
 # Create virtual environment
 python -m venv venv
 
-# Activate (Windows)
-venv\Scripts\activate
-
-# Activate (Linux/Mac)
+# Activate (Linux/macOS)
 source venv/bin/activate
 
-# Install dependencies
+# Activate (Windows PowerShell)
+.\venv\Scripts\Activate.ps1
+```
+
+### 2. Install Dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-### 2. Setup Ollama Models
+### 3. Setup Ollama Models
 
 ```bash
 # Ensure Ollama is running
-ollama serve  # Or it may already be running as a service
+ollama serve &  # or start Ollama app
 
-# Pull required models (~3.5GB total)
-ollama pull qwen2.5:3b    # Primary model
-ollama pull gemma2:2b     # Fallback model
+# Pull required models
+ollama pull qwen2.5:3b    # Primary model (~2GB)
+ollama pull gemma2:2b     # Fallback model (~1.5GB)
 
-# Verify models installed
+# Verify models
 ollama list
 ```
 
-### 3. Configure Environment
+### 4. Create Your Profile
 
 ```bash
-# Copy environment template
-cp .env.example .env
+# Copy example profile
+cp docs/test_data/my_test_profile.yaml data/profile.yaml
 
-# Edit .env if needed (defaults work for local development)
+# Edit with your information
+nano data/profile.yaml  # or your preferred editor
 ```
 
-### 4. Run Scout
+### 5. Start Scout
 
 ```bash
-# Start the server
-uvicorn src.web.main:app --host 0.0.0.0 --port 8000
-
-# Or use make
-make run
+uvicorn src.web.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 5. Access Scout
+### 6. Access the Interface
 
 Open your browser to: **http://localhost:8000**
 
-## Quick Test
+---
 
-1. Navigate to **Profiles** in the navbar
-2. Create a new profile with your work experience
-3. Go to the **Dashboard**
-4. Paste a job posting and click **Apply**
-5. Wait for pipeline completion (2-5 minutes locally)
-6. Download your tailored CV and cover letter
-
-## Development Commands
+## Verify Installation
 
 ```bash
-# Run tests
-make test
+# Check health endpoint
+curl http://localhost:8000/api/v1/health
 
-# Run with coverage
-make test-cov
+# Expected response:
+# {"status": "healthy", "version": "0.1.0", "services": {...}}
 
-# Format code
-make format
-
-# Lint code
-make lint
-
-# Type check
-make typecheck
-```
-
-## Raspberry Pi Deployment
-
-For deploying to Raspberry Pi 5, see:
-- [Raspberry Pi 5 Deployment Guide](deployment/Raspberry_Pi_5_Deployment_Guide.md)
-
-Quick deploy from Windows:
-```powershell
-.\scripts\deploy.ps1 -Message "Your commit message"
-```
-
-## Troubleshooting
-
-### Ollama Connection Failed
-```bash
-# Check if Ollama is running
-curl http://localhost:11434/api/tags
-
-# Start Ollama if not running
-ollama serve
-```
-
-### Import Errors
-```bash
-# Reinstall dependencies
-pip install -r requirements.txt --force-reinstall
-```
-
-### Slow Generation
-Local LLM inference is slower than cloud APIs:
-- Qwen 2.5 3B: 2-4 tokens/second
-- Full pipeline: 2-5 minutes (dev machine) / 15-30 minutes (Pi 5)
-
-## Documentation
-
-| Document | Purpose |
-|----------|---------|
-| [Current State](current_state/README.md) | Implementation documentation |
-| [API Routes](current_state/api_routes.md) | REST endpoint reference |
-| [PoC Scope](guides/Scout_PoC_Scope_Document.md) | Feature boundaries |
-
-## Project Structure
-
-```
-scout-code/
-├── src/
-│   ├── modules/      # M1-M5: Collector, Rinser, Analyzer, Creator, Formatter
-│   ├── services/     # S1-S4, S6, S8: LLM, Cache, VectorStore, etc.
-│   └── web/          # FastAPI app, routes, templates
-├── tests/            # 609+ tests
-├── docs/             # Documentation
-└── data/             # Runtime data (created automatically)
+# Run quick diagnostics
+curl http://localhost:8000/api/v1/diagnostics
 ```
 
 ---
 
-*For full documentation, see [docs/README.md](README.md)*
+## Quick Test
+
+1. Navigate to http://localhost:8000
+2. Paste a job posting into the text area
+3. Click "Analyze" for quick compatibility score
+4. Click "Generate Application" for full CV + cover letter
+
+---
+
+## Troubleshooting
+
+### Ollama Not Connected
+```bash
+# Check if Ollama is running
+curl http://localhost:11434/api/tags
+
+# Start Ollama if needed
+ollama serve
+```
+
+### Model Not Found
+```bash
+# List available models
+ollama list
+
+# Pull missing model
+ollama pull qwen2.5:3b
+```
+
+### Import Errors
+```bash
+# Ensure you are in the virtual environment
+which python  # Should show venv path
+
+# Reinstall dependencies
+pip install -r requirements.txt --force-reinstall
+```
+
+---
+
+## Next Steps
+
+- **Customize Profile**: Edit `data/profile.yaml` with your details
+- **API Reference**: See `docs/current_state/api_routes.md`
+- **Deployment**: See `docs/deployment/Raspberry_Pi_5_Deployment_Guide.md`
+
+---
+
+*For detailed documentation, see [docs/README.md](README.md)*
