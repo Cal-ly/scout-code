@@ -11,6 +11,36 @@ from uuid import uuid4
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
+def _parse_partial_date(v: str | datetime | None) -> datetime | None:
+    """Parse date string, handling partial dates like '2022-02'."""
+    if v is None:
+        return None
+    if isinstance(v, datetime):
+        return v
+    if isinstance(v, str):
+        v = v.strip()
+        if not v:
+            return None
+        # Try full ISO format first
+        try:
+            return datetime.fromisoformat(v)
+        except ValueError:
+            pass
+        # Handle YYYY-MM format
+        if len(v) == 7 and v[4] == "-":
+            try:
+                return datetime.fromisoformat(f"{v}-01")
+            except ValueError:
+                pass
+        # Handle YYYY format
+        if len(v) == 4 and v.isdigit():
+            try:
+                return datetime(int(v), 1, 1)
+            except ValueError:
+                pass
+    return None
+
+
 class SkillLevel(str, Enum):
     """Skill proficiency levels."""
 
@@ -72,6 +102,12 @@ class Experience(BaseModel):
     achievements: list[str] = Field(default_factory=list)
     technologies: list[str] = Field(default_factory=list)
 
+    @field_validator("start_date", "end_date", mode="before")
+    @classmethod
+    def parse_dates(cls, v: str | datetime | None) -> datetime | None:
+        """Parse date string, handling partial dates like '2022-02'."""
+        return _parse_partial_date(v)
+
     @model_validator(mode="after")
     def set_current_from_end_date(self) -> "Experience":
         """Set current=True if end_date is None."""
@@ -96,7 +132,7 @@ class Education(BaseModel):
     Attributes:
         institution: School/university name.
         degree: Degree type (e.g., "Bachelor's", "Master's").
-        field: Field of study.
+        field: Field of study (optional).
         start_date: When education started.
         end_date: When education ended (None if ongoing).
         gpa: Grade point average (optional).
@@ -105,11 +141,17 @@ class Education(BaseModel):
 
     institution: str
     degree: str
-    field: str
+    field: str = ""
     start_date: datetime
     end_date: datetime | None = None
     gpa: float | None = None
     relevant_courses: list[str] = Field(default_factory=list)
+
+    @field_validator("start_date", "end_date", mode="before")
+    @classmethod
+    def parse_dates(cls, v: str | datetime | None) -> datetime | None:
+        """Parse date string, handling partial dates like '2022-02'."""
+        return _parse_partial_date(v)
 
     @field_validator("gpa", mode="before")
     @classmethod
@@ -159,6 +201,12 @@ class Certification(BaseModel):
     date_obtained: datetime | None = None
     expiry_date: datetime | None = None
     credential_id: str | None = None
+
+    @field_validator("date_obtained", "expiry_date", mode="before")
+    @classmethod
+    def parse_dates(cls, v: str | datetime | None) -> datetime | None:
+        """Parse date string, handling partial dates like '2022-02'."""
+        return _parse_partial_date(v)
 
     def to_searchable_text(self) -> str:
         """Create text representation for vector embedding."""
