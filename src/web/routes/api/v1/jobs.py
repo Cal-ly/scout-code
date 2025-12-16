@@ -196,11 +196,15 @@ async def apply(
             detail="No active profile. Please activate a profile first."
         )
 
+    # Get current user
+    user = await db.get_current_user()
+
     logger.info(f"Apply request: job_id={job_id}, profile={active_profile.slug}, source={request.source}")
 
     # Create application record in database
     await db.create_application(ApplicationCreate(
         job_id=job_id,
+        user_id=user.id,
         profile_id=active_profile.id,
         job_text=request.job_text,
     ))
