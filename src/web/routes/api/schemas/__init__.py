@@ -34,6 +34,26 @@ from src.web.routes.api.schemas.profile import (
     ProfileSummaryResponse,
     SectionScoreResponse,
 )
+from src.web.routes.api.schemas.profiles import (
+    CertificationSchema,
+    CompletenessSection,
+    EducationSchema,
+    ExperienceSchema,
+    LanguageSchema,
+    ProfileActivateResponse,
+    ProfileCompletenessSchema,
+    ProfileDetailResponse,
+    ProfileListResponse,
+    ProfileStatsSchema,
+    ProfileUpdateRequest,
+    SkillSchema,
+)
+from src.web.routes.api.schemas.profiles import (
+    ProfileCreateRequest as ProfilesCreateRequest,
+)
+from src.web.routes.api.schemas.profiles import (
+    ProfileSummaryResponse as ProfilesSummaryResponse,
+)
 
 __all__ = [
     # Common
@@ -50,13 +70,28 @@ __all__ = [
     "StepInfo",
     "JobSummary",
     "JobListResponse",
-    # Profile
+    # Profile (legacy - single profile)
     "ProfileStatusResponse",
     "ProfileCreateRequest",
     "ProfileCreateResponse",
     "ProfileAssessmentResponse",
     "ProfileSummaryResponse",
     "SectionScoreResponse",
+    # Profiles (multi-profile CRUD)
+    "SkillSchema",
+    "ExperienceSchema",
+    "EducationSchema",
+    "CertificationSchema",
+    "LanguageSchema",
+    "ProfilesCreateRequest",
+    "ProfileUpdateRequest",
+    "ProfileStatsSchema",
+    "ProfilesSummaryResponse",
+    "ProfileDetailResponse",
+    "ProfileListResponse",
+    "ProfileActivateResponse",
+    "CompletenessSection",
+    "ProfileCompletenessSchema",
     # Metrics
     "MetricsStatusResponse",
     "MetricsSummaryResponse",

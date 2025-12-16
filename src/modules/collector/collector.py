@@ -185,7 +185,8 @@ class Collector:
         """
         Load the active profile from database.
 
-        Called on startup to initialize with active profile.
+        Converts the normalized database profile to UserProfile
+        for vector indexing and matching.
 
         Returns:
             The active UserProfile, or None if no active profile exists.
@@ -193,17 +194,49 @@ class Collector:
         from src.services.database import get_database_service
 
         db = await get_database_service()
-        active = await db.get_active_profile()
 
-        if active is None:
+        # Get active profile with all relations loaded
+        db_profile = await db.get_active_profile()
+
+        if db_profile is None:
             logger.warning("No active profile in database")
             return None
 
-        # Parse profile data to UserProfile
-        self._profile = UserProfile(**active.profile_data)
-        self._profile_hash = str(active.id)
+        # Convert to UserProfile using the bridge method
+        self._profile = UserProfile.from_db_profile(db_profile)
+        self._profile_hash = f"db_{db_profile.id}_{db_profile.updated_at.timestamp()}"
 
-        logger.info(f"Loaded profile from database: {active.name}")
+        logger.info(f"Loaded profile from database: {db_profile.name} (id={db_profile.id})")
+        return self._profile
+
+    async def load_profile_by_slug(self, slug: str) -> UserProfile:
+        """
+        Load a specific profile from database by slug.
+
+        Args:
+            slug: Profile slug to load.
+
+        Returns:
+            The loaded UserProfile.
+
+        Raises:
+            ProfileNotFoundError: If profile doesn't exist.
+        """
+        from src.services.database import get_database_service
+        from src.services.database.exceptions import ProfileNotFoundError as DBProfileNotFoundError
+
+        db = await get_database_service()
+
+        try:
+            db_profile = await db.get_profile_by_slug(slug)
+        except DBProfileNotFoundError:
+            raise ProfileNotFoundError(f"Profile '{slug}' not found in database")
+
+        # Convert to UserProfile
+        self._profile = UserProfile.from_db_profile(db_profile)
+        self._profile_hash = f"db_{db_profile.id}_{db_profile.updated_at.timestamp()}"
+
+        logger.info(f"Loaded profile: {db_profile.name} (slug={slug})")
         return self._profile
 
     def get_profile(self) -> UserProfile:
@@ -700,10 +733,10 @@ async def get_collector() -> Collector:
     Get the Collector module instance.
 
     Creates and initializes singleton on first call.
-    Use as FastAPI dependency.
+    Automatically loads active profile from database.
 
     Returns:
-        Initialized Collector instance.
+        Initialized Collector instance with active profile loaded.
     """
     from src.services.vector_store import get_vector_store_service
 
@@ -713,6 +746,21 @@ async def get_collector() -> Collector:
         vector_store = await get_vector_store_service()
         _collector_instance = Collector(vector_store)
         await _collector_instance.initialize()
+
+        # Try to load active profile from database
+        try:
+            profile = await _collector_instance.load_profile_from_db()
+            if profile:
+                # Auto-index if not already indexed
+                try:
+                    stats = await vector_store.get_collection_stats(COLLECTION_NAME)
+                    if stats.document_count == 0:
+                        await _collector_instance.index_profile()
+                except Exception:
+                    # Collection might not exist yet
+                    await _collector_instance.index_profile()
+        except Exception as e:
+            logger.warning(f"Could not load profile from database: {e}")
 
     return _collector_instance
 

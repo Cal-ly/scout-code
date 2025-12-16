@@ -1,32 +1,54 @@
 """
-Multi-Profile API Routes
+Profile API Routes (v2 - Normalized Schema)
 
-CRUD operations for user profiles.
+CRUD operations for user profiles with normalized data structure.
 
 Endpoints:
-    GET /api/v1/profiles - List all profiles
-    POST /api/v1/profiles - Create new profile
-    GET /api/v1/profiles/{slug} - Get profile by slug
-    PUT /api/v1/profiles/{slug} - Update profile
-    DELETE /api/v1/profiles/{slug} - Delete profile
-    POST /api/v1/profiles/{slug}/activate - Set as active profile
-    GET /api/v1/profiles/active - Get currently active profile
+    GET    /api/v1/profiles              - List all profiles
+    POST   /api/v1/profiles              - Create new profile
+    GET    /api/v1/profiles/active       - Get active profile
+    GET    /api/v1/profiles/{slug}       - Get profile details
+    PUT    /api/v1/profiles/{slug}       - Update profile
+    DELETE /api/v1/profiles/{slug}       - Delete profile
+    POST   /api/v1/profiles/{slug}/activate - Set as active
+    GET    /api/v1/profiles/{slug}/completeness - Get completeness score
 """
 
 import logging
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
 
 from src.services.database import (
+    CertificationCreate,
     DatabaseService,
-    Profile,
+    EducationCreate,
+    ExperienceCreate,
+    LanguageCreate,
+    LanguageProficiency,
     ProfileCreate,
     ProfileUpdate,
+    SkillCreate,
+    SkillLevel,
+    calculate_completeness,
     get_database_service,
 )
-from src.services.database.exceptions import ProfileNotFoundError, ProfileExistsError
+from src.services.database.exceptions import ProfileNotFoundError, ProfileSlugExistsError
+from src.web.routes.api.schemas.profiles import (
+    CertificationSchema,
+    CompletenessSection,
+    EducationSchema,
+    ExperienceSchema,
+    LanguageSchema,
+    ProfileActivateResponse,
+    ProfileCompletenessSchema,
+    ProfileCreateRequest,
+    ProfileDetailResponse,
+    ProfileListResponse,
+    ProfileStatsSchema,
+    ProfileSummaryResponse,
+    ProfileUpdateRequest,
+    SkillSchema,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -34,60 +56,296 @@ router = APIRouter(prefix="/profiles", tags=["profiles"])
 
 
 # =============================================================================
-# SCHEMAS
+# HELPERS
 # =============================================================================
 
 
-class ProfileCreateRequest(BaseModel):
-    """Request to create a profile."""
-    name: str = Field(..., min_length=1, max_length=200)
-    full_name: str = Field(..., min_length=1, max_length=200)
-    email: str | None = None
-    title: str | None = None
-    profile_data: dict[str, Any]
-    set_active: bool = False
+def _profile_to_summary_response(profile) -> ProfileSummaryResponse:
+    """Convert database profile to summary response."""
+    return ProfileSummaryResponse(
+        id=profile.id,
+        slug=profile.slug,
+        name=profile.name,
+        title=profile.title,
+        is_active=profile.is_active,
+        is_demo=profile.is_demo,
+        created_at=profile.created_at.isoformat(),
+        updated_at=profile.updated_at.isoformat(),
+        stats=ProfileStatsSchema(
+            skill_count=getattr(profile, "skill_count", len(getattr(profile, "skills", []))),
+            experience_count=getattr(
+                profile, "experience_count", len(getattr(profile, "experiences", []))
+            ),
+            education_count=getattr(
+                profile, "education_count", len(getattr(profile, "education", []))
+            ),
+            certification_count=getattr(
+                profile, "certification_count", len(getattr(profile, "certifications", []))
+            ),
+            language_count=getattr(
+                profile, "language_count", len(getattr(profile, "languages", []))
+            ),
+            application_count=getattr(profile, "application_count", 0),
+            completed_application_count=getattr(profile, "completed_application_count", 0),
+            avg_compatibility_score=getattr(profile, "avg_compatibility_score", None),
+        ),
+    )
 
 
-class ProfileUpdateRequest(BaseModel):
-    """Request to update a profile."""
-    name: str | None = None
-    full_name: str | None = None
-    email: str | None = None
-    title: str | None = None
-    profile_data: dict[str, Any] | None = None
+def _profile_to_detail_response(profile, completeness=None) -> ProfileDetailResponse:
+    """Convert database profile to detail response."""
+    return ProfileDetailResponse(
+        id=profile.id,
+        slug=profile.slug,
+        name=profile.name,
+        title=profile.title,
+        email=profile.email,
+        phone=profile.phone,
+        location=profile.location,
+        summary=profile.summary,
+        is_active=profile.is_active,
+        is_demo=profile.is_demo,
+        created_at=profile.created_at.isoformat(),
+        updated_at=profile.updated_at.isoformat(),
+        skills=[
+            SkillSchema(
+                name=s.name,
+                level=s.level.value if s.level else None,
+                years=s.years,
+                category=s.category,
+            )
+            for s in profile.skills
+        ],
+        experiences=[
+            ExperienceSchema(
+                title=e.title,
+                company=e.company,
+                start_date=e.start_date,
+                end_date=e.end_date,
+                description=e.description,
+                achievements=e.achievements or [],
+            )
+            for e in profile.experiences
+        ],
+        education=[
+            EducationSchema(
+                institution=ed.institution,
+                degree=ed.degree,
+                field=ed.field,
+                start_date=ed.start_date,
+                end_date=ed.end_date,
+                gpa=ed.gpa,
+                achievements=ed.achievements or [],
+            )
+            for ed in profile.education
+        ],
+        certifications=[
+            CertificationSchema(
+                name=c.name,
+                issuer=c.issuer,
+                date_obtained=c.date_obtained,
+                expiry_date=c.expiry_date,
+                credential_url=c.credential_url,
+            )
+            for c in profile.certifications
+        ],
+        languages=[
+            LanguageSchema(
+                language=lang.language,
+                proficiency=lang.proficiency.value if lang.proficiency else None,
+            )
+            for lang in profile.languages
+        ],
+        stats=ProfileStatsSchema(
+            skill_count=len(profile.skills),
+            experience_count=len(profile.experiences),
+            education_count=len(profile.education),
+            certification_count=len(profile.certifications),
+            language_count=len(profile.languages),
+        ),
+        completeness=_completeness_to_schema(completeness) if completeness else None,
+    )
 
 
-class ProfileResponse(BaseModel):
-    """Profile response with stats."""
-    id: int
-    name: str
-    slug: str
-    full_name: str
-    email: str | None
-    title: str | None
-    is_active: bool
-    is_indexed: bool
-    is_demo: bool
-    created_at: str
-    updated_at: str
-    stats: dict[str, Any] | None = None
+def _completeness_to_schema(comp) -> ProfileCompletenessSchema:
+    """Convert completeness result to schema."""
+    return ProfileCompletenessSchema(
+        overall_score=comp.overall_score,
+        level=comp.level,
+        sections=[
+            CompletenessSection(
+                name=s.name,
+                score=s.score,
+                max_score=s.max_score,
+                items_present=s.items_present,
+                items_recommended=s.items_recommended,
+                suggestions=s.suggestions,
+            )
+            for s in comp.sections
+        ],
+        top_suggestions=comp.top_suggestions,
+    )
 
 
-class ProfileListResponse(BaseModel):
-    """List of profiles."""
-    profiles: list[ProfileResponse]
-    total: int
-    active_profile_slug: str | None
+def _request_to_profile_create(request: ProfileCreateRequest) -> ProfileCreate:
+    """Convert API request to database ProfileCreate."""
+    return ProfileCreate(
+        name=request.name,
+        title=request.title,
+        email=request.email,
+        phone=request.phone,
+        location=request.location,
+        summary=request.summary,
+        skills=[
+            SkillCreate(
+                name=s.name,
+                level=SkillLevel(s.level) if s.level else None,
+                years=s.years,
+                category=s.category,
+            )
+            for s in request.skills
+        ],
+        experiences=[
+            ExperienceCreate(
+                title=e.title,
+                company=e.company,
+                start_date=e.start_date,
+                end_date=e.end_date,
+                description=e.description,
+                achievements=e.achievements,
+            )
+            for e in request.experiences
+        ],
+        education=[
+            EducationCreate(
+                institution=ed.institution,
+                degree=ed.degree,
+                field=ed.field,
+                start_date=ed.start_date,
+                end_date=ed.end_date,
+                gpa=ed.gpa,
+                achievements=ed.achievements,
+            )
+            for ed in request.education
+        ],
+        certifications=[
+            CertificationCreate(
+                name=c.name,
+                issuer=c.issuer,
+                date_obtained=c.date_obtained,
+                expiry_date=c.expiry_date,
+                credential_url=c.credential_url,
+            )
+            for c in request.certifications
+        ],
+        languages=[
+            LanguageCreate(
+                language=lang.language,
+                proficiency=LanguageProficiency(lang.proficiency) if lang.proficiency else None,
+            )
+            for lang in request.languages
+        ],
+    )
 
 
-# =============================================================================
-# DEPENDENCIES
-# =============================================================================
+def _request_to_profile_update(request: ProfileUpdateRequest) -> ProfileUpdate:
+    """Convert API request to database ProfileUpdate."""
+    update = ProfileUpdate(
+        name=request.name,
+        title=request.title,
+        email=request.email,
+        phone=request.phone,
+        location=request.location,
+        summary=request.summary,
+    )
+
+    # Only include lists if provided (None means preserve existing)
+    if request.skills is not None:
+        update.skills = [
+            SkillCreate(
+                name=s.name,
+                level=SkillLevel(s.level) if s.level else None,
+                years=s.years,
+                category=s.category,
+            )
+            for s in request.skills
+        ]
+
+    if request.experiences is not None:
+        update.experiences = [
+            ExperienceCreate(
+                title=e.title,
+                company=e.company,
+                start_date=e.start_date,
+                end_date=e.end_date,
+                description=e.description,
+                achievements=e.achievements,
+            )
+            for e in request.experiences
+        ]
+
+    if request.education is not None:
+        update.education = [
+            EducationCreate(
+                institution=ed.institution,
+                degree=ed.degree,
+                field=ed.field,
+                start_date=ed.start_date,
+                end_date=ed.end_date,
+                gpa=ed.gpa,
+                achievements=ed.achievements,
+            )
+            for ed in request.education
+        ]
+
+    if request.certifications is not None:
+        update.certifications = [
+            CertificationCreate(
+                name=c.name,
+                issuer=c.issuer,
+                date_obtained=c.date_obtained,
+                expiry_date=c.expiry_date,
+                credential_url=c.credential_url,
+            )
+            for c in request.certifications
+        ]
+
+    if request.languages is not None:
+        update.languages = [
+            LanguageCreate(
+                language=lang.language,
+                proficiency=LanguageProficiency(lang.proficiency) if lang.proficiency else None,
+            )
+            for lang in request.languages
+        ]
+
+    return update
 
 
-async def get_db() -> DatabaseService:
-    """Get database service."""
-    return await get_database_service()
+async def _reindex_active_profile() -> tuple[bool, int]:
+    """Re-index the active profile in vector store.
+
+    Returns:
+        Tuple of (success, document_count).
+    """
+    try:
+        from src.modules.collector import get_collector
+
+        collector = await get_collector()
+
+        # Reload from database
+        profile = await collector.load_profile_from_db()
+        if profile is None:
+            return False, 0
+
+        # Clear and re-index
+        await collector.clear_index()
+        count = await collector.index_profile()
+
+        return True, count
+    except Exception as e:
+        logger.error(f"Failed to re-index profile: {e}")
+        return False, 0
 
 
 # =============================================================================
@@ -97,190 +355,105 @@ async def get_db() -> DatabaseService:
 
 @router.get("", response_model=ProfileListResponse)
 async def list_profiles(
-    include_demo: bool = True,
-    db: DatabaseService = Depends(get_db),
+    db: DatabaseService = Depends(get_database_service),
 ) -> ProfileListResponse:
-    """List all profiles."""
-    profiles = await db.list_profiles(include_demo=include_demo)
+    """List all profiles with summary stats."""
+    profiles = await db.list_profiles()
 
     # Get active profile
     active = await db.get_active_profile()
     active_slug = active.slug if active else None
 
-    # Build response with stats
-    profile_responses = []
-    for p in profiles:
-        stats = await db.get_profile_stats(p.id)
-        profile_responses.append(ProfileResponse(
-            id=p.id,
-            name=p.name,
-            slug=p.slug,
-            full_name=p.full_name,
-            email=p.email,
-            title=p.title,
-            is_active=p.is_active,
-            is_indexed=p.is_indexed,
-            is_demo=p.is_demo,
-            created_at=p.created_at.isoformat(),
-            updated_at=p.updated_at.isoformat(),
-            stats=stats,
-        ))
-
     return ProfileListResponse(
-        profiles=profile_responses,
+        profiles=[_profile_to_summary_response(p) for p in profiles],
         total=len(profiles),
         active_profile_slug=active_slug,
     )
 
 
-@router.post("", response_model=ProfileResponse)
+@router.post("", response_model=ProfileDetailResponse, status_code=201)
 async def create_profile(
     request: ProfileCreateRequest,
-    db: DatabaseService = Depends(get_db),
-) -> ProfileResponse:
+    db: DatabaseService = Depends(get_database_service),
+) -> ProfileDetailResponse:
     """Create a new profile."""
     try:
-        profile = await db.create_profile(ProfileCreate(
-            name=request.name,
-            full_name=request.full_name,
-            email=request.email,
-            title=request.title,
-            profile_data=request.profile_data,
-            is_active=request.set_active,
-            is_demo=False,
-        ))
+        # Get current user
+        user = await db.get_current_user()
 
-        # If set as active, re-index
+        # Create profile
+        profile_create = _request_to_profile_create(request)
+        profile = await db.create_profile(user.id, profile_create)
+
+        # Activate and index if requested
         if request.set_active:
-            await _reindex_profile(profile, db)
+            profile = await db.activate_profile(profile.slug)
+            await _reindex_active_profile()
 
-        stats = await db.get_profile_stats(profile.id)
+        # Get completeness
+        completeness = calculate_completeness(profile)
 
-        return ProfileResponse(
-            id=profile.id,
-            name=profile.name,
-            slug=profile.slug,
-            full_name=profile.full_name,
-            email=profile.email,
-            title=profile.title,
-            is_active=profile.is_active,
-            is_indexed=profile.is_indexed,
-            is_demo=profile.is_demo,
-            created_at=profile.created_at.isoformat(),
-            updated_at=profile.updated_at.isoformat(),
-            stats=stats,
-        )
+        return _profile_to_detail_response(profile, completeness)
 
-    except ProfileExistsError as e:
+    except ProfileSlugExistsError as e:
         raise HTTPException(status_code=409, detail=str(e))
 
 
-@router.get("/active", response_model=ProfileResponse | None)
-async def get_active_profile(db: DatabaseService = Depends(get_db)):
+@router.get("/active", response_model=ProfileDetailResponse | None)
+async def get_active_profile(
+    db: DatabaseService = Depends(get_database_service),
+) -> ProfileDetailResponse | None:
     """Get the currently active profile."""
     profile = await db.get_active_profile()
     if profile is None:
         return None
 
-    stats = await db.get_profile_stats(profile.id)
-
-    return ProfileResponse(
-        id=profile.id,
-        name=profile.name,
-        slug=profile.slug,
-        full_name=profile.full_name,
-        email=profile.email,
-        title=profile.title,
-        is_active=profile.is_active,
-        is_indexed=profile.is_indexed,
-        is_demo=profile.is_demo,
-        created_at=profile.created_at.isoformat(),
-        updated_at=profile.updated_at.isoformat(),
-        stats=stats,
-    )
+    completeness = calculate_completeness(profile)
+    return _profile_to_detail_response(profile, completeness)
 
 
-@router.get("/{slug}", response_model=ProfileResponse)
-async def get_profile(slug: str, db: DatabaseService = Depends(get_db)) -> ProfileResponse:
-    """Get profile by slug."""
+@router.get("/{slug}", response_model=ProfileDetailResponse)
+async def get_profile(
+    slug: str,
+    db: DatabaseService = Depends(get_database_service),
+) -> ProfileDetailResponse:
+    """Get profile by slug with full details."""
     try:
         profile = await db.get_profile_by_slug(slug)
-        stats = await db.get_profile_stats(profile.id)
-
-        return ProfileResponse(
-            id=profile.id,
-            name=profile.name,
-            slug=profile.slug,
-            full_name=profile.full_name,
-            email=profile.email,
-            title=profile.title,
-            is_active=profile.is_active,
-            is_indexed=profile.is_indexed,
-            is_demo=profile.is_demo,
-            created_at=profile.created_at.isoformat(),
-            updated_at=profile.updated_at.isoformat(),
-            stats=stats,
-        )
-
+        completeness = calculate_completeness(profile)
+        return _profile_to_detail_response(profile, completeness)
     except ProfileNotFoundError:
         raise HTTPException(status_code=404, detail=f"Profile '{slug}' not found")
 
 
-@router.get("/{slug}/data")
-async def get_profile_data(slug: str, db: DatabaseService = Depends(get_db)) -> dict:
-    """Get full profile data (for editing)."""
-    try:
-        profile = await db.get_profile_by_slug(slug)
-        return profile.profile_data
-    except ProfileNotFoundError:
-        raise HTTPException(status_code=404, detail=f"Profile '{slug}' not found")
-
-
-@router.put("/{slug}", response_model=ProfileResponse)
+@router.put("/{slug}", response_model=ProfileDetailResponse)
 async def update_profile(
     slug: str,
     request: ProfileUpdateRequest,
-    db: DatabaseService = Depends(get_db),
-) -> ProfileResponse:
+    db: DatabaseService = Depends(get_database_service),
+) -> ProfileDetailResponse:
     """Update a profile."""
     try:
-        profile = await db.get_profile_by_slug(slug)
+        # Update profile
+        profile_update = _request_to_profile_update(request)
+        profile = await db.update_profile(slug, profile_update)
 
-        updated = await db.update_profile(profile.id, ProfileUpdate(
-            name=request.name,
-            full_name=request.full_name,
-            email=request.email,
-            title=request.title,
-            profile_data=request.profile_data,
-        ))
+        # Re-index if active profile was updated
+        if profile.is_active:
+            await _reindex_active_profile()
 
-        # If active profile was updated, re-index
-        if updated.is_active and request.profile_data is not None:
-            await _reindex_profile(updated, db)
-
-        stats = await db.get_profile_stats(updated.id)
-
-        return ProfileResponse(
-            id=updated.id,
-            name=updated.name,
-            slug=updated.slug,
-            full_name=updated.full_name,
-            email=updated.email,
-            title=updated.title,
-            is_active=updated.is_active,
-            is_indexed=updated.is_indexed,
-            is_demo=updated.is_demo,
-            created_at=updated.created_at.isoformat(),
-            updated_at=updated.updated_at.isoformat(),
-            stats=stats,
-        )
+        completeness = calculate_completeness(profile)
+        return _profile_to_detail_response(profile, completeness)
 
     except ProfileNotFoundError:
         raise HTTPException(status_code=404, detail=f"Profile '{slug}' not found")
 
 
 @router.delete("/{slug}")
-async def delete_profile(slug: str, db: DatabaseService = Depends(get_db)) -> dict:
+async def delete_profile(
+    slug: str,
+    db: DatabaseService = Depends(get_database_service),
+) -> dict:
     """Delete a profile."""
     try:
         profile = await db.get_profile_by_slug(slug)
@@ -288,74 +461,50 @@ async def delete_profile(slug: str, db: DatabaseService = Depends(get_db)) -> di
         if profile.is_active:
             raise HTTPException(
                 status_code=400,
-                detail="Cannot delete active profile. Activate another profile first."
+                detail="Cannot delete active profile. Activate another profile first.",
             )
 
-        await db.delete_profile(profile.id)
+        await db.delete_profile(slug)
         return {"status": "deleted", "slug": slug}
 
     except ProfileNotFoundError:
         raise HTTPException(status_code=404, detail=f"Profile '{slug}' not found")
 
 
-@router.post("/{slug}/activate", response_model=ProfileResponse)
-async def activate_profile(slug: str, db: DatabaseService = Depends(get_db)) -> ProfileResponse:
+@router.post("/{slug}/activate", response_model=ProfileActivateResponse)
+async def activate_profile(
+    slug: str,
+    db: DatabaseService = Depends(get_database_service),
+) -> ProfileActivateResponse:
     """Set a profile as active and re-index for matching."""
     try:
-        profile = await db.get_profile_by_slug(slug)
-
         # Activate in database
-        activated = await db.activate_profile(profile.id)
+        profile = await db.activate_profile(slug)
 
         # Re-index in vector store
-        await _reindex_profile(activated, db)
+        indexed, count = await _reindex_active_profile()
 
-        stats = await db.get_profile_stats(activated.id)
-
-        return ProfileResponse(
-            id=activated.id,
-            name=activated.name,
-            slug=activated.slug,
-            full_name=activated.full_name,
-            email=activated.email,
-            title=activated.title,
-            is_active=activated.is_active,
-            is_indexed=activated.is_indexed,
-            is_demo=activated.is_demo,
-            created_at=activated.created_at.isoformat(),
-            updated_at=activated.updated_at.isoformat(),
-            stats=stats,
+        return ProfileActivateResponse(
+            profile=_profile_to_summary_response(profile),
+            indexed=indexed,
+            index_count=count if indexed else None,
+            message=f"Profile '{profile.name}' is now active"
+            + (f" ({count} items indexed)" if indexed else ""),
         )
 
     except ProfileNotFoundError:
         raise HTTPException(status_code=404, detail=f"Profile '{slug}' not found")
 
 
-async def _reindex_profile(profile: Profile, db: DatabaseService) -> None:
-    """Re-index profile in vector store."""
+@router.get("/{slug}/completeness", response_model=ProfileCompletenessSchema)
+async def get_profile_completeness(
+    slug: str,
+    db: DatabaseService = Depends(get_database_service),
+) -> ProfileCompletenessSchema:
+    """Get profile completeness score with suggestions."""
     try:
-        from src.modules.collector.models import UserProfile
-        from src.modules.collector import get_collector
-
-        collector = await get_collector()
-
-        # Parse profile data to UserProfile
-        user_profile = UserProfile(**profile.profile_data)
-
-        # Set in collector (this clears and re-indexes)
-        collector._profile = user_profile
-        collector._profile_loaded = True
-
-        # Clear and re-index
-        await collector.clear_index()
-        chunk_count = await collector.index_profile()
-
-        # Mark as indexed in database
-        await db.set_profile_indexed(profile.id, True)
-
-        logger.info(f"Re-indexed profile {profile.slug}: {chunk_count} chunks")
-
-    except Exception as e:
-        logger.error(f"Failed to re-index profile {profile.slug}: {e}")
-        await db.set_profile_indexed(profile.id, False)
-        raise
+        profile = await db.get_profile_by_slug(slug)
+        completeness = calculate_completeness(profile)
+        return _completeness_to_schema(completeness)
+    except ProfileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Profile '{slug}' not found")

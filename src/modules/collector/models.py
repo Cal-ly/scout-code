@@ -4,11 +4,17 @@ M1 Collector Data Models
 Pydantic models for user profile management and semantic search.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
 from enum import Enum
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from pydantic import BaseModel, Field, field_validator, model_validator
+
+if TYPE_CHECKING:
+    from src.services.database.models import Profile as DBProfile
 
 
 def _parse_partial_date(v: str | datetime | None) -> datetime | None:
@@ -39,6 +45,39 @@ def _parse_partial_date(v: str | datetime | None) -> datetime | None:
             except ValueError:
                 pass
     return None
+
+
+def _parse_gpa_string(gpa_str: str | None) -> float | None:
+    """Parse GPA string to float."""
+    if not gpa_str:
+        return None
+    try:
+        return float(gpa_str)
+    except ValueError:
+        return None
+
+
+def _calculate_years_experience(experiences: list) -> float:
+    """Calculate total years of professional experience from experience list."""
+    if not experiences:
+        return 0.0
+
+    total_months = 0
+    now = datetime.now()
+
+    for exp in experiences:
+        start = exp.start_date if hasattr(exp, "start_date") else None
+        end = exp.end_date if hasattr(exp, "end_date") else None
+
+        if start is None:
+            continue
+
+        end_date = end or now
+
+        months = (end_date.year - start.year) * 12 + (end_date.month - start.month)
+        total_months += max(0, months)
+
+    return round(total_months / 12, 1)
 
 
 class SkillLevel(str, Enum):
@@ -109,7 +148,7 @@ class Experience(BaseModel):
         return _parse_partial_date(v)
 
     @model_validator(mode="after")
-    def set_current_from_end_date(self) -> "Experience":
+    def set_current_from_end_date(self) -> Experience:
         """Set current=True if end_date is None."""
         if self.end_date is None:
             object.__setattr__(self, "current", True)
@@ -313,6 +352,92 @@ class UserProfile(BaseModel):
             data["skills"] = flat_skills
 
         return data
+
+    @classmethod
+    def from_db_profile(cls, db_profile: DBProfile) -> UserProfile:
+        """
+        Construct UserProfile from database Profile.
+
+        Converts normalized database data to the flat structure
+        expected by the Collector for indexing.
+
+        Args:
+            db_profile: Profile from database with loaded relations.
+
+        Returns:
+            UserProfile ready for vector indexing.
+        """
+        # Convert skills
+        skills = [
+            Skill(
+                name=s.name,
+                level=SkillLevel(s.level.value) if s.level else SkillLevel.INTERMEDIATE,
+                years=float(s.years) if s.years else None,
+                keywords=[s.category] if s.category else [],
+            )
+            for s in db_profile.skills
+        ]
+
+        # Convert experiences
+        experiences = [
+            Experience(
+                id=str(exp.id),
+                company=exp.company,
+                role=exp.title,  # DB uses 'title', collector uses 'role'
+                start_date=_parse_partial_date(exp.start_date) or datetime.now(),
+                end_date=_parse_partial_date(exp.end_date),
+                current=exp.end_date is None,
+                description=exp.description or "",
+                achievements=exp.achievements or [],
+                technologies=[],  # Could be extracted from description
+            )
+            for exp in db_profile.experiences
+        ]
+
+        # Convert education
+        education = [
+            Education(
+                institution=edu.institution,
+                degree=edu.degree or "",
+                field=edu.field or "",
+                start_date=_parse_partial_date(edu.start_date) or datetime.now(),
+                end_date=_parse_partial_date(edu.end_date),
+                gpa=_parse_gpa_string(edu.gpa),
+                relevant_courses=[],
+            )
+            for edu in db_profile.education
+        ]
+
+        # Convert certifications
+        certifications = [
+            Certification(
+                name=cert.name,
+                issuer=cert.issuer or "",
+                date_obtained=_parse_partial_date(cert.date_obtained),
+                expiry_date=_parse_partial_date(cert.expiry_date),
+                credential_id=None,
+            )
+            for cert in db_profile.certifications
+        ]
+
+        # Calculate years of experience from experiences
+        years_exp = _calculate_years_experience(experiences)
+
+        return cls(
+            full_name=db_profile.name,
+            email=db_profile.email or "",
+            phone=db_profile.phone,
+            location=db_profile.location or "",
+            linkedin_url=None,
+            github_url=None,
+            title=db_profile.title or "",
+            years_experience=years_exp,
+            summary=db_profile.summary or "",
+            skills=skills,
+            experiences=experiences,
+            education=education,
+            certifications=certifications,
+        )
 
 
 class ProfileSummary(BaseModel):

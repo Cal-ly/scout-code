@@ -16,7 +16,6 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.services.database import get_database_service
-from src.services.database.demo_data import ensure_demo_data
 from src.services.notification import get_notification_service
 from src.services.pipeline import get_pipeline_orchestrator, shutdown_pipeline_orchestrator
 from src.web.dependencies import get_job_store, reset_job_store
@@ -45,10 +44,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(f"Starting {APP_NAME} v{APP_VERSION}")
 
     try:
-        # Initialize database and load demo data
-        db = await get_database_service()
-        await ensure_demo_data(db)
-        logger.info("Database initialized with demo data")
+        # Initialize database (demo data is auto-seeded by DatabaseService)
+        await get_database_service()
+        logger.info("Database initialized")
 
         await get_pipeline_orchestrator()
         logger.info("Pipeline orchestrator initialized")

@@ -15,6 +15,7 @@ from src.web.routes.api.v1.profile import router as profile_router
 from src.web.routes.api.v1.profiles import router as profiles_router
 from src.web.routes.api.v1.skills import router as skills_router
 from src.web.routes.api.v1.system import router as system_router
+from src.web.routes.api.v1.user import router as user_router
 
 # Create v1 router
 router = APIRouter(prefix="/v1")
@@ -25,6 +26,7 @@ router.include_router(jobs_router)
 router.include_router(skills_router)
 router.include_router(profile_router)
 router.include_router(profiles_router)
+router.include_router(user_router)
 router.include_router(notifications_router)
 router.include_router(logs_router)
 router.include_router(metrics_router)
