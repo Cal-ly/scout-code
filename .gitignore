@@ -596,3 +596,9 @@ Thumbs.db
 # Additional temporary files
 *.temp
 *.bak
+
+# Runtime data
+data/metrics/
+data/vectors/
+data/cache/
+

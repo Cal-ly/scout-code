@@ -480,6 +480,7 @@ Expect slower inference on Raspberry Pi 5:
 
 ---
 
+## Code DocumentationThe source code includes README files for navigation:- `src/README.md` - Source overview and architecture- `src/modules/README.md` - Module documentation with flow diagrams- `src/services/README.md` - Service documentation with usage examples- `src/web/README.md` - Web layer and API structureFor full documentation, see `docs/README.md`.---
 ## Quick Reference
 
 ### File Locations
