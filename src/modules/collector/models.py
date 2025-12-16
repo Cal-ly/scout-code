@@ -264,6 +264,56 @@ class UserProfile(BaseModel):
     profile_version: str = "1.0"
     last_updated: datetime = Field(default_factory=datetime.now)
 
+    @model_validator(mode="before")
+    @classmethod
+    def transform_legacy_format(cls, data: dict) -> dict:
+        """Transform legacy profile formats to the expected schema."""
+        if not isinstance(data, dict):
+            return data
+
+        # Handle 'name' -> 'full_name' mapping
+        if "name" in data and "full_name" not in data:
+            data["full_name"] = data.pop("name")
+
+        # Handle 'linkedin' -> 'linkedin_url' mapping
+        if "linkedin" in data and "linkedin_url" not in data:
+            data["linkedin_url"] = data.pop("linkedin")
+
+        # Handle 'github' -> 'github_url' mapping
+        if "github" in data and "github_url" not in data:
+            data["github_url"] = data.pop("github")
+
+        # Handle categorized skills format (dict -> list)
+        if "skills" in data and isinstance(data["skills"], dict):
+            flat_skills = []
+            level_map = {
+                "expert": SkillLevel.EXPERT,
+                "proficient": SkillLevel.ADVANCED,
+                "advanced": SkillLevel.ADVANCED,
+                "intermediate": SkillLevel.INTERMEDIATE,
+                "familiar": SkillLevel.BEGINNER,
+                "beginner": SkillLevel.BEGINNER,
+            }
+            for category, skills_list in data["skills"].items():
+                level = level_map.get(category.lower(), SkillLevel.INTERMEDIATE)
+                if isinstance(skills_list, list):
+                    for skill in skills_list:
+                        if isinstance(skill, dict):
+                            flat_skills.append({
+                                "name": skill.get("name", ""),
+                                "level": level.value,
+                                "years": skill.get("years", 0),
+                                "context": skill.get("context", ""),
+                            })
+                        elif isinstance(skill, str):
+                            flat_skills.append({
+                                "name": skill,
+                                "level": level.value,
+                            })
+            data["skills"] = flat_skills
+
+        return data
+
 
 class ProfileSummary(BaseModel):
     """
