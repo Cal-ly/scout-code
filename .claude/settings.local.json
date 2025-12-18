@@ -65,7 +65,8 @@
       "Bash(sh:*)",
       "Bash(pacman:*)",
       "Bash(yay -Qs:*)",
-      "Bash(source:*)"
+      "Bash(source:*)",
+      "Bash(pkill:*)"
     ]
   }
 }

@@ -1,0 +1,22 @@
+{
+  "system_info": {
+    "hostname": "calmain",
+    "platform": "Linux",
+    "platform_release": "6.18.1-arch1-2",
+    "architecture": "x86_64",
+    "processor": "",
+    "python_version": "3.13.11",
+    "timestamp": "2025-12-18T10:19:25.653744",
+    "cpu_model": "AMD Ryzen 9 9950X 16-Core Processor",
+    "cpu_count": 32,
+    "memory_gb": 30.9,
+    "gpu": "NVIDIA GeForce RTX 5070 Ti, 16303 MiB, 580.119.02"
+  },
+  "ollama_info": {
+    "available_models": "unknown"
+  },
+  "scout_url": "http://localhost:8000",
+  "runs_per_job": 3,
+  "started_at": "2025-12-18T10:19:25.696127",
+  "job_results": []
+}
