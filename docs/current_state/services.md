@@ -12,7 +12,7 @@ This document describes the current implementation of Scout's foundation service
 | Vector Store | S4 | `src/services/vector_store/` | 55 | None |
 | Pipeline Orchestrator | S6 | `src/services/pipeline/` | 52 | M1-M5, Database |
 | Notification Service | S8 | `src/services/notification/` | 40 | None |
-| **Database Service** | - | `src/services/database/` | ~50 | None |
+| **Database Service** | - | `src/services/database/` | ~45 | None |
 | Profile Service (legacy) | - | `src/services/profile/` | 45 | S4 |
 
 ---
@@ -659,5 +659,5 @@ async def create_profile(
 
 ---
 
-*Last updated: December 16, 2025*
-*Updated: Added Database Service, renamed Cost Tracker to Metrics Service*
+*Last updated: December 17, 2025*
+*Updated: Database Service test count correction*

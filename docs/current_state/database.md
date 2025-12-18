@@ -190,8 +190,16 @@ src/services/database/
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `key` | TEXT | PRIMARY KEY | Setting key |
-| `value` | TEXT | NOT NULL | Setting value |
+| `value` | TEXT | NOT NULL | Setting value (JSON-serialized) |
 | `updated_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Last update |
+
+**Known Setting Keys:**
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `active_profile_id` | int | ID of the currently active profile |
+| `schema_version` | int | Current database schema version (2) |
+| `demo_data_loaded` | bool | Whether demo profiles have been seeded |
 
 ---
 
@@ -592,5 +600,6 @@ Key test areas:
 
 ---
 
-*Last updated: December 16, 2025*
+*Last updated: December 17, 2025*
 *Schema Version: 2 (User/Profile architecture)*
+*Updated: Added known settings keys documentation*

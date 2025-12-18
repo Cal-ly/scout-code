@@ -251,11 +251,21 @@ class Requirement(BaseModel):
     years_experience: int | None = None
 
 class CompanyInfo(BaseModel):
-    name: str
+    name: str = "Unknown Company"  # Default for postings without company
     industry: str | None = None
     size: str | None = None
     description: str | None = None
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def name_not_null(cls, v: str | None) -> str:
+        """Convert null/empty name to default."""
+        if v is None or v == "" or v.lower() == "null":
+            return "Unknown Company"
+        return v
 ```
+
+**Note:** The `name` field has a validator to handle null/empty company names gracefully, preventing pipeline failures when job postings don't include explicit company information.
 
 ### LLM Extraction Prompt
 Located in `prompts.py`:
@@ -580,5 +590,5 @@ Modules raise specific exceptions, caught by Pipeline Orchestrator which wraps t
 
 ---
 
-*Last updated: December 16, 2025*
-*Updated: Added Collector database integration, updated Formatter output directory*
+*Last updated: December 17, 2025*
+*Updated: Added CompanyInfo null handling validator, Collector database integration, Formatter output directory*

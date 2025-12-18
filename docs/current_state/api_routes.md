@@ -160,11 +160,12 @@ Get pipeline execution status.
 ---
 
 ### GET `/api/v1/jobs`
-List all job applications with pagination.
+List all job applications with pagination and filtering.
 
 **Query Parameters:**
 - `skip`: Offset (default 0)
 - `limit`: Max results (default 20)
+- `profile_slug`: Filter by profile slug (optional)
 
 **Response:**
 ```json
@@ -177,7 +178,9 @@ List all job applications with pagination.
             "status": "completed",
             "compatibility_score": 78.5,
             "submitted_at": "2025-12-14T10:00:00Z",
-            "completed_at": "2025-12-14T10:05:00Z"
+            "completed_at": "2025-12-14T10:05:00Z",
+            "profile_name": "Backend Focus",
+            "profile_slug": "backend-focus"
         }
     ],
     "total": 15,
@@ -199,6 +202,40 @@ Download generated PDF files.
 
 **Errors:**
 - `404`: Job not found or file not available
+
+---
+
+### POST `/api/v1/jobs/quick-score`
+Calculate quick compatibility score without full pipeline execution.
+
+**Request:**
+```json
+{
+    "job_text": "string (100+ chars, required)"
+}
+```
+
+**Response:**
+```json
+{
+    "score": 78.5,
+    "level": "strong",
+    "job_title": "Software Engineer",
+    "company_name": "Example Corp",
+    "key_matches": ["Python", "FastAPI", "PostgreSQL"],
+    "key_gaps": ["Kubernetes", "AWS"]
+}
+```
+
+**Behavior:**
+- Runs only Rinser and Analyzer modules (no content generation)
+- 5-minute timeout (faster than full pipeline)
+- Does not create database record
+
+**Errors:**
+- `400`: Job text too short
+- `408`: Analysis timeout
+- `500`: Analysis failed
 
 ---
 
@@ -1169,5 +1206,5 @@ Allowed origins for cross-origin requests:
 
 ---
 
-*Last updated: December 16, 2025*
-*Updated: Added user endpoint, profile completeness endpoint, active profile endpoint*
+*Last updated: December 17, 2025*
+*Updated: Added quick-score endpoint, profile_slug filter on jobs list, profile fields in job response*
