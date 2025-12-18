@@ -1,0 +1,201 @@
+{
+  "system_info": {
+    "hostname": "calmain",
+    "platform": "Linux",
+    "platform_release": "6.18.1-arch1-2",
+    "architecture": "x86_64",
+    "processor": "",
+    "python_version": "3.13.11",
+    "timestamp": "2025-12-17T10:31:29.461509",
+    "cpu_model": "AMD Ryzen 9 9950X 16-Core Processor",
+    "cpu_count": 32,
+    "memory_gb": 30.9,
+    "gpu": "NVIDIA GeForce RTX 5070 Ti, 16303 MiB, 580.119.02"
+  },
+  "ollama_info": {
+    "available_models": [
+      "qwen2.5:3b",
+      "qwen2.5:14b"
+    ]
+  },
+  "scout_url": "http://localhost:8000",
+  "runs_per_job": 3,
+  "started_at": "2025-12-17T10:31:29.491211",
+  "job_results": [
+    {
+      "job_key": "senior_python",
+      "job_name": "Senior Python Developer",
+      "run_number": 1,
+      "status": "completed",
+      "error": null,
+      "timings": {
+        "submit_ms": 22,
+        "total_seconds": 52.16,
+        "rinser_ms": 17739,
+        "analyzer_ms": 7538,
+        "creator_ms": 26082,
+        "formatter_ms": 37
+      },
+      "job_id": "9459c3d2",
+      "compatibility_score": 100.0
+    },
+    {
+      "job_key": "senior_python",
+      "job_name": "Senior Python Developer",
+      "run_number": 2,
+      "status": "completed",
+      "error": null,
+      "timings": {
+        "submit_ms": 226,
+        "total_seconds": 2.23,
+        "rinser_ms": 156,
+        "analyzer_ms": 21,
+        "creator_ms": 0,
+        "formatter_ms": 28
+      },
+      "job_id": "464a8593",
+      "compatibility_score": 100.0
+    },
+    {
+      "job_key": "senior_python",
+      "job_name": "Senior Python Developer",
+      "run_number": 3,
+      "status": "completed",
+      "error": null,
+      "timings": {
+        "submit_ms": 221,
+        "total_seconds": 2.22,
+        "rinser_ms": 149,
+        "analyzer_ms": 21,
+        "creator_ms": 0,
+        "formatter_ms": 27
+      },
+      "job_id": "f2f21759",
+      "compatibility_score": 100.0
+    },
+    {
+      "job_key": "fullstack_react",
+      "job_name": "Full Stack React Developer",
+      "run_number": 1,
+      "status": "completed",
+      "error": null,
+      "timings": {
+        "submit_ms": 16,
+        "total_seconds": 50.13,
+        "rinser_ms": 19338,
+        "analyzer_ms": 6651,
+        "creator_ms": 22710,
+        "formatter_ms": 29
+      },
+      "job_id": "8bfeca8d",
+      "compatibility_score": 100.0
+    },
+    {
+      "job_key": "fullstack_react",
+      "job_name": "Full Stack React Developer",
+      "run_number": 2,
+      "status": "completed",
+      "error": null,
+      "timings": {
+        "submit_ms": 224,
+        "total_seconds": 2.23,
+        "rinser_ms": 155,
+        "analyzer_ms": 21,
+        "creator_ms": 0,
+        "formatter_ms": 27
+      },
+      "job_id": "64e28284",
+      "compatibility_score": 100.0
+    },
+    {
+      "job_key": "fullstack_react",
+      "job_name": "Full Stack React Developer",
+      "run_number": 3,
+      "status": "completed",
+      "error": null,
+      "timings": {
+        "submit_ms": 218,
+        "total_seconds": 2.22,
+        "rinser_ms": 146,
+        "analyzer_ms": 21,
+        "creator_ms": 0,
+        "formatter_ms": 28
+      },
+      "job_id": "c2963f1b",
+      "compatibility_score": 100.0
+    },
+    {
+      "job_key": "devops_engineer",
+      "job_name": "DevOps Engineer",
+      "run_number": 1,
+      "status": "completed",
+      "error": null,
+      "timings": {
+        "submit_ms": 17,
+        "total_seconds": 52.15,
+        "rinser_ms": 17876,
+        "analyzer_ms": 7194,
+        "creator_ms": 25339,
+        "formatter_ms": 30
+      },
+      "job_id": "fc91be56",
+      "compatibility_score": 100.0
+    },
+    {
+      "job_key": "devops_engineer",
+      "job_name": "DevOps Engineer",
+      "run_number": 2,
+      "status": "completed",
+      "error": null,
+      "timings": {
+        "submit_ms": 247,
+        "total_seconds": 2.25,
+        "rinser_ms": 171,
+        "analyzer_ms": 24,
+        "creator_ms": 0,
+        "formatter_ms": 28
+      },
+      "job_id": "3d18fcd9",
+      "compatibility_score": 100.0
+    },
+    {
+      "job_key": "devops_engineer",
+      "job_name": "DevOps Engineer",
+      "run_number": 3,
+      "status": "completed",
+      "error": null,
+      "timings": {
+        "submit_ms": 241,
+        "total_seconds": 2.24,
+        "rinser_ms": 165,
+        "analyzer_ms": 24,
+        "creator_ms": 0,
+        "formatter_ms": 28
+      },
+      "job_id": "c2e12e44",
+      "compatibility_score": 100.0
+    }
+  ],
+  "scout_health": {
+    "status": "healthy",
+    "version": "0.1.0",
+    "services": {
+      "pipeline": "ok",
+      "job_store": "ok",
+      "notifications": "ok"
+    }
+  },
+  "completed_at": "2025-12-17T10:34:17.338406",
+  "summary": {
+    "total_runs": 9,
+    "successful_runs": 9,
+    "success_rate": 1.0,
+    "avg_total_seconds": 18.647777777777776,
+    "min_total_seconds": 2.22,
+    "max_total_seconds": 52.16,
+    "avg_rinser_ms": 6210.555555555556,
+    "avg_analyzer_ms": 2390.5555555555557,
+    "avg_creator_ms": 24710.333333333332,
+    "avg_formatter_ms": 29.11111111111111
+  }
+}
