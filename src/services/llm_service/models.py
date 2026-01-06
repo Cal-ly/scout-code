@@ -6,6 +6,7 @@ Pydantic models for Ollama-based local LLM integration.
 
 import hashlib
 import json
+import os
 from datetime import datetime
 from enum import Enum
 
@@ -142,9 +143,13 @@ class LLMConfig(BaseModel):
     # Provider selection
     provider: str = "ollama"  # Currently only "ollama" supported
 
-    # Ollama settings
-    ollama_host: str = "http://localhost:11434"
-    model: str = "qwen2.5:3b"  # Primary model
+    # Ollama settings (read from env vars with defaults)
+    ollama_host: str = Field(
+        default_factory=lambda: os.getenv("OLLAMA_HOST", "http://localhost:11434")
+    )
+    model: str = Field(
+        default_factory=lambda: os.getenv("OLLAMA_MODEL", "qwen2.5:3b")
+    )
     fallback_model: str = "gemma2:2b"  # Fallback model
 
     # Generation parameters
