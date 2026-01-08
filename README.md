@@ -93,6 +93,64 @@ Job Text → Rinser → Analyzer → Creator → Formatter → PDF Output
 6. **Access the web interface**
    Open http://localhost:8000 in your browser
 
+## Docker Quick Start
+
+The fastest way to get Scout running is with Docker. No Python or Ollama installation required!
+
+### Prerequisites
+
+- Docker and Docker Compose installed
+- At least 8GB RAM (16GB recommended for better performance)
+
+### Using Docker
+
+1. **Clone and start with one command**
+   ```bash
+   git clone <repository-url>
+   cd scout-code
+   make docker-up
+   ```
+
+   This will:
+   - Build the Scout application container
+   - Pull and start Ollama container (CPU mode)
+   - Set up persistent volumes for data
+
+2. **Pull the required AI models**
+   ```bash
+   make docker-pull-models
+   ```
+
+3. **Access Scout**
+   Open http://localhost:8000 in your browser
+
+### Docker Commands
+
+```bash
+make docker-up          # Start Scout + Ollama
+make docker-down        # Stop containers
+make docker-logs        # View Scout logs
+make docker-pull-models # Download AI models
+make docker-clean       # Remove containers and volumes
+```
+
+### Advanced Docker Usage
+
+```bash
+# GPU acceleration (requires NVIDIA Container Toolkit)
+docker compose --profile ollama-gpu up -d
+
+# Scout only (use existing Ollama on host)
+docker compose up -d scout
+
+# Custom configuration
+cp .env.example .env
+# Edit .env, then:
+docker compose up -d
+```
+
+See [Deploy README](deploy/README.md) for more deployment options.
+
 ## Project Structure
 
 ```
@@ -158,11 +216,16 @@ All code follows:
 
 ### Supported Platforms
 
-1. **Local Development**: Full feature access, fast iteration
-2. **Raspberry Pi 5**: Edge deployment target (8GB RAM recommended)
-3. **Docker**: Portable containerized deployment
+1. **Docker** (Recommended): Portable containerized deployment - see [Docker Quick Start](#docker-quick-start)
+2. **Local Development**: Full feature access, fast iteration - see [Quick Start](#quick-start)
+3. **Raspberry Pi 5**: Edge deployment target (8GB RAM recommended)
 
-See [Deployment Guide](docs/deployment/Raspberry_Pi_5_Deployment_Guide.md) for detailed instructions.
+### Deployment Resources
+
+- **[Docker Quick Start](#docker-quick-start)** - Get running in minutes with Docker
+- **[Deploy README](deploy/README.md)** - Platform-specific setup scripts and configs
+- **[Raspberry Pi Guide](docs/deployment/Raspberry_Pi_5_Deployment_Guide.md)** - Detailed Pi deployment instructions
+- **[User Guide](docs/deployment/User_Guide.md)** - End-user instructions
 
 ## Documentation
 

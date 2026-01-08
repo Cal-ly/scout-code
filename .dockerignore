@@ -1,0 +1,71 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+
+# Git
+.git/
+.gitignore
+
+# Documentation source (keep generated docs)
+docs/
+
+# Development files
+.env.example
+Makefile
+requirements-dev.txt
+*.md
+!README.md
+
+# Test files
+tests/
+
+# Deployment configs (already in /deploy)
+deploy/
+
+# Scripts
+scripts/
+
+# TODO tracking
+todo/
+
+# Project management
+.claude/
+CLAUDE.md
+HANDOVER.md
+LL-LI.md
+
+# Temporary files
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Runtime data folders (will be mounted as volumes)
+data/
+outputs/
