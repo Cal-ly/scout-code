@@ -1,13 +1,13 @@
 # Documentation TODOs
 
 ## Overview
-Scout has comprehensive documentation across root files, guides, specifications, and deployment docs. This document tracks documentation maintenance tasks.
+Scout has comprehensive documentation that has been cleaned up and consolidated. This document tracks remaining documentation tasks.
 
-**Status**: Well-maintained, minor cleanup needed
+**Status**: Cleanup completed January 2026
 
 ---
 
-## Documentation Structure Summary
+## Documentation Structure (Post-Cleanup)
 
 ### Critical (Read First)
 - `CLAUDE.md` - Primary context for Claude Code
@@ -15,76 +15,67 @@ Scout has comprehensive documentation across root files, guides, specifications,
 - `docs/guides/Scout_PoC_Scope_Document.md` - Authoritative scope
 - `docs/guides/Local_LLM_Transition_Guide.md` - Ollama architecture
 
-### Implementation
-- `docs/guides/Scout_Implementation_Checklist.md`
-- `docs/services/S*_*.md` (8 service specs)
-- `docs/modules/Module*_*.md` (6 module specs)
+### Current Implementation
+- `docs/current_state/` - **Primary implementation reference**
+  - `README.md` - Overview
+  - `api_routes.md` - REST API
+  - `services.md` - S1-S8 services
+  - `modules.md` - M1-M5 modules
+  - `database.md` - SQLite schema
+  - `web_interface.md` - Web layer
 
 ### Deployment
-- `docs/deployment/Raspberry_Pi_5_Deployment_Guide.md`
-- `docs/deployment/Deployment_PreFlight_Verification.md`
-- `docs/deployment/User_Guide.md`
+- `docs/deployment/Raspberry_Pi_5_Deployment_Guide.md` - Primary guide
+- `docs/deployment/User_Guide.md` - End-user docs
+- `docs/deployment/Performance_Benchmarks.md` - Performance data
 
-### Reference
-- `HANDOVER.md`, `REVIEW.md`
-- `docs/architecture/*.md`
+### Development Guides
+- `docs/guides/Scout_Claude_Code_Development_Guide.md` - RAVE workflow
+- `docs/guides/Scout_PoC_Scope_Document.md` - Scope constraints
+- `docs/guides/Local_LLM_Transition_Guide.md` - Ollama integration
+
+### Archives
+- `docs/archive/deployment/` - Historical deployment checklists
+- `docs/archive/tasks/` - Completed work packages (WP1-WP5)
+- `docs/archive/specifications/` - Superseded specs
 
 ---
 
-## Outstanding Tasks
+## Completed Cleanup Tasks (January 2026)
 
-### High Priority
+- [x] **Root README.md Updated**: Now reflects Ollama/local LLM stack
+- [x] **Deployment Docs Consolidated**: 8 files archived, 3 kept
+- [x] **Task Docs Archived**: WP1-WP5 moved to archive
+- [x] **S2 Service Doc Updated**: Added redirect to current Metrics Service
+- [x] **Spec Files Cleaned**: Duplicates removed, profile spec renamed
+- [x] **docs/README.md Updated**: Reflects new structure
 
-- [ ] **Update SPECIFICATIONS.md**: Add references to new profile specs and todo folder
-  - **Location**: `docs/SPECIFICATIONS.md`
-  - **Issue**: Missing profile_poc_spec.md reference
+---
 
-- [ ] **Mark Historical Docs**: Add "HISTORICAL - Reference Only" header to:
-  - `FOUNDATION_COMPLETE.md`
-  - `docs/architecture/Raspberry Pi Instructions.md`
-
-### Medium Priority
-
-- [ ] **Consolidate CLAUDE.md**: Two versions exist:
-  - Root `/CLAUDE.md` (18K, Dec 13) - PRIMARY
-  - `docs/guides/CLAUDE.md` (13K, Dec 9) - SECONDARY
-  - **Suggestion**: Add note to guides version pointing to root
-
-- [ ] **File Naming Consistency**: Document naming patterns
-  - Modules: Mixed ("Module 1 Collector" vs "Module_2_Rinser")
-  - Services: Mixed ("S2 Cost Tracker" vs "S3_Cache_Service")
-  - **Impact**: Glob patterns need to account for both
-  - **Suggestion**: Add naming note to SPECIFICATIONS.md
-
-- [ ] **Path References**: Some guides reference old paths
-  - "app/" should be "src/" in some examples
-  - `/mnt/project/` references are for knowledge base
-  - **Impact**: Minor, not critical
+## Remaining Tasks
 
 ### Low Priority
-
-- [ ] **README.md Refresh**: Update with post-PoC status
-  - **Current**: Basic project overview
-  - **Suggestion**: Add screenshot, deployment status
 
 - [ ] **API Documentation**: Consider auto-generating from FastAPI
   - **Note**: `/docs` endpoint exists via FastAPI OpenAPI
   - **Enhancement**: Export as static markdown
 
+- [ ] **Path References**: Some original specs reference old paths
+  - "app/" should be "src/" in some examples
+  - **Impact**: Minor - original specs are reference only
+
 ---
 
-## Documentation Health Metrics
+## Documentation Health
 
 | Category | Files | Status |
 |----------|-------|--------|
-| Root Documentation | 8 | Excellent |
-| Service Specs | 8 | Complete (S7 deferred) |
-| Module Specs | 6 | Complete |
-| Deployment Docs | 10 | Very Recent (Dec 14) |
-| Guides | 8 | Current |
-| Architecture | 2 | Current |
-
-**Overall Score**: 95/100
+| Root Documentation | 6 | Current |
+| Current State Docs | 6 | Current |
+| Deployment Docs | 3 | Current |
+| Development Guides | 4 | Current |
+| Original Specs | 14 | Reference only |
+| Archives | 16 | Historical |
 
 ---
 
@@ -93,31 +84,18 @@ Scout has comprehensive documentation across root files, guides, specifications,
 ### For New Developers
 1. `README.md` - Project overview
 2. `CLAUDE.md` - Development context
-3. `docs/guides/Scout_Claude_Code_Development_Guide.md`
+3. `docs/current_state/README.md` - What's implemented
 
-### For Understanding Architecture
-1. `docs/guides/Scout_PoC_Scope_Document.md`
-2. `docs/guides/Local_LLM_Transition_Guide.md`
-3. `docs/architecture/Scout PoC - Complete Project Structure.md`
+### For Understanding the System
+1. `docs/current_state/api_routes.md` - API reference
+2. `docs/current_state/services.md` - Service implementations
+3. `docs/current_state/modules.md` - Processing pipeline
 
 ### For Deployment
 1. `docs/deployment/Raspberry_Pi_5_Deployment_Guide.md`
-2. `docs/deployment/Deployment_PreFlight_Verification.md`
-3. `docs/deployment/User_Guide.md`
-
-### For Session Continuity
-1. `LL-LI.md` - Lessons learned
-2. `HANDOVER.md` - Session context
-3. `todo/*.md` - Tracked tasks
+2. `docs/deployment/User_Guide.md`
+3. `docs/deployment/Performance_Benchmarks.md`
 
 ---
 
-## Deferred Documentation Tasks
-
-- [-] **Video Walkthrough**: Screen recording of workflow
-- [-] **Architecture Diagrams**: Visual system design (plantuml)
-- [-] **User Manual PDF**: Printable documentation
-
----
-
-*Last updated: December 14, 2025*
+*Last updated: January 2026*

@@ -70,7 +70,11 @@
       "Bash(ls:*)",
       "Bash(sudo pacman:*)",
       "Bash(docker-compose:*)",
-      "Bash(sg docker:*)"
+      "Bash(sg docker:*)",
+      "Bash(xargs:*)",
+      "Bash(wc:*)",
+      "Bash(cd:*)",
+      "Bash(test:*)"
     ]
   }
 }

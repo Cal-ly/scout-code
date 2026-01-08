@@ -1,8 +1,23 @@
 ---
 updated: 2025-10-04, 19:30
+status: ARCHIVED - Original Specification
 ---
 
-## Cost Tracker Service - Claude Code Instructions
+> **NOTE**: This is the **original specification** from October 2025. The actual implementation
+> was renamed to **Metrics Service** and refactored for local LLM inference (Ollama) instead
+> of cloud API cost tracking.
+>
+> **For current implementation details, see**: [docs/current_state/services.md](../current_state/services.md#s2-metrics-service)
+>
+> The Metrics Service tracks:
+> - Inference performance (duration, tokens/second)
+> - Reliability metrics (success rate, errors, retries, fallbacks)
+> - System metrics (CPU, memory, temperature for Pi 5)
+> - 30-day retention with JSON file archival
+
+---
+
+## Cost Tracker Service - Claude Code Instructions (ORIGINAL SPEC)
 
 ## Context & Objective
 

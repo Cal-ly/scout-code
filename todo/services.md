@@ -1,24 +1,25 @@
 # Services TODOs
 
 ## Overview
-Scout has 4 core services implemented for the PoC. This document tracks service-level improvements.
+Scout has 6 core services implemented for the PoC. This document tracks service-level improvements.
 
-**Status**: All services complete and tested (180 tests passing)
+**Status**: All services complete and tested (~270 tests passing)
 
 ---
 
 ## Service Status
 
-| Service | Tests | Status | Spec |
-|---------|-------|--------|------|
-| S1 LLM Service | 52 | Complete | `docs/services/S1_LLM_Service_*.md` |
-| S2 Cost Tracker | 27 | Complete | `docs/services/S2 Cost Tracker*.md` |
-| S3 Cache Service | 46 | Complete | `docs/services/S3_Cache_Service_*.md` |
-| S4 Vector Store | 55 | Complete | `docs/services/S4 Vector Store*.md` |
-| S6 Pipeline | 52 | Complete | `docs/services/S6_Pipeline_*.md` |
-| S8 Notifications | 40 | Complete | `docs/services/S8_Notification_*.md` |
+| Service | Tests | Status | Implementation |
+|---------|-------|--------|----------------|
+| S1 LLM Service | ~52 | Complete | `src/services/llm_service/` |
+| S2 Metrics Service | ~41 | Complete | `src/services/metrics_service/` |
+| S3 Cache Service | ~46 | Complete | `src/services/cache_service/` |
+| S4 Vector Store | ~55 | Complete | `src/services/vector_store/` |
+| S6 Pipeline | ~52 | Complete | `src/services/pipeline/` |
+| S8 Notifications | ~40 | Complete | `src/services/notification/` |
 
 **Note**: S5 (API Routes) covered by web tests. S7 (Content Optimizer) deferred.
+**Docs**: See `docs/current_state/services.md` for implementation details.
 
 ---
 
@@ -34,11 +35,13 @@ Scout has 4 core services implemented for the PoC. This document tracks service-
   - **Location**: `token_counter.py`
   - **Impact**: Cost tracking slightly inaccurate
 
-### S2 Cost Tracker (`src/services/cost_tracker/`)
+### S2 Metrics Service (`src/services/metrics_service/`)
 
-- [ ] **Local Model Costs**: Add cost profiles for Ollama models
-  - **Current**: Uses Anthropic pricing (doesn't apply to local)
-  - **Priority**: Low - informational only for PoC
+- [x] **Refactored for Local LLM**: Tracks performance instead of costs
+  - Inference duration, tokens/second
+  - Success rate, errors, retries, fallbacks
+  - System metrics (CPU, memory, temperature)
+  - 30-day retention with JSON archival
 
 ### S3 Cache Service (`src/services/cache_service/`)
 
@@ -129,4 +132,4 @@ pytest tests/test_*.py -v --ignore=tests/test_integration.py
 
 ---
 
-*Last updated: December 14, 2025*
+*Last updated: January 2026*

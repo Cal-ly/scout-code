@@ -480,7 +480,18 @@ Expect slower inference on Raspberry Pi 5:
 
 ---
 
-## Code DocumentationThe source code includes README files for navigation:- `src/README.md` - Source overview and architecture- `src/modules/README.md` - Module documentation with flow diagrams- `src/services/README.md` - Service documentation with usage examples- `src/web/README.md` - Web layer and API structureFor full documentation, see `docs/README.md`.---
+## Code Documentation
+
+The source code includes README files for navigation:
+- `src/README.md` - Source overview and architecture
+- `src/modules/README.md` - Module documentation with flow diagrams
+- `src/services/README.md` - Service documentation with usage examples
+- `src/web/README.md` - Web layer and API structure
+
+For full documentation, see `docs/README.md`.
+
+---
+
 ## Quick Reference
 
 ### File Locations
@@ -490,21 +501,23 @@ Expect slower inference on Raspberry Pi 5:
 | **Lessons Learned** | `LL-LI.md` (read first!) |
 | **Session Handover** | `HANDOVER.md` |
 | **PoC Scope** | `docs/guides/Scout_PoC_Scope_Document.md` |
+| **Current Implementation** | `docs/current_state/` (primary reference) |
 | **Local LLM Transition** | `docs/guides/Local_LLM_Transition_Guide.md` |
-| Module Specifications | `docs/modules/` (mixed naming: spaces or underscores) |
-| Service Specifications | `docs/services/` (mixed naming: spaces or underscores) |
-| Architecture Docs | `docs/architecture/` |
 | Development Guides | `docs/guides/` |
-| Specification Index | `docs/SPECIFICATIONS.md` |
+| Deployment Guides | `docs/deployment/` (3 files: Pi guide, User guide, Benchmarks) |
+| Original Module Specs | `docs/modules/` (reference only) |
+| Original Service Specs | `docs/services/` (reference only) |
+| Archives | `docs/archive/` (deployment checklists, tasks, old specs) |
 | Services | `src/services/[service_name]/` |
 | Core Modules | `src/modules/[module_name]/` |
 | Web Interface | `src/web/` |
-| Tests | `tests/test_[service].py` (flat structure for PoC) |
+| Tests | `tests/test_[service].py` (flat structure, ~650 tests) |
+| TODO Tracking | `todo/*.md` (web-interface, services, modules, deployment, docs) |
 | Project Config | `pyproject.toml`, `.env.example` |
-| Dependencies | `requirements.txt`, `requirements-dev.txt` |
 | **Deployment Scripts** | `scripts/deploy.ps1` (Windows), `scripts/deploy.sh` (Bash) |
 
-> **Note on Spec Filenames:** Specification files use mixed naming (some with spaces, some with underscores). Use glob patterns like `docs/services/S4*` to find files reliably.
+> **Note**: Original specs in `docs/modules/` and `docs/services/` are reference only.
+> For current implementation details, see `docs/current_state/`.
 
 ### Service Dependencies
 
@@ -588,4 +601,4 @@ Vector Store Service ─────────────┤
 
 ---
 
-*Last updated: December 15, 2025*
+*Last updated: January 2026*
