@@ -481,10 +481,13 @@ No URL fetching, no file upload, no scraping.
 
 | Feature | Implementation |
 |---------|----------------|
-| PDF generation | WeasyPrint |
-| HTML to PDF | Jinja2 templates → WeasyPrint |
+| PDF generation | xhtml2pdf (pure Python, no GTK deps) |
+| HTML to PDF | Jinja2 templates → xhtml2pdf |
 | Template application | 1-2 predefined templates |
 | Professional styling | Clean, ATS-friendly design |
+
+> **Implementation Note:** Changed from WeasyPrint to xhtml2pdf to avoid GTK
+> dependencies, enabling portable deployment across platforms.
 
 #### Out of Scope (Deferred)
 
@@ -634,13 +637,7 @@ mypy = "^1.8.0"
 ### System Dependencies
 
 ```bash
-# For WeasyPrint PDF generation
-apt-get install -y \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libgdk-pixbuf2.0-0 \
-    libffi-dev \
-    shared-mime-info
+# PDF generation uses xhtml2pdf (pure Python) - no system deps needed
 
 # For Ollama local LLM (required)
 curl -fsSL https://ollama.com/install.sh | sh
@@ -771,10 +768,9 @@ These features should be considered for the next phase:
 ### Pre-Implementation Checklist
 
 - [ ] Development environment configured (Pi 5 or dev machine)
-- [ ] Python 3.11+ installed
-- [ ] Poetry installed and configured
-- [ ] System dependencies installed (WeasyPrint)
-- [ ] Anthropic API key obtained
+- [ ] Python 3.12+ installed
+- [ ] Virtual environment created
+- [ ] Ollama installed and models pulled
 - [ ] Project structure created
 - [ ] Git repository initialized
 

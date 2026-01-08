@@ -16,7 +16,7 @@ Scout is deployed on Raspberry Pi 5 with local Ollama LLM inference. This docume
 | Qwen 2.5 3B | Loaded | Primary model |
 | Gemma 2 2B | Available | Fallback model |
 | ChromaDB | Operational | Vector storage |
-| WeasyPrint | Operational | PDF generation |
+| xhtml2pdf | Operational | PDF generation |
 
 ### Access Points
 - **Web Interface**: `http://<pi-ip>:8000`
@@ -91,9 +91,8 @@ Scout is deployed on Raspberry Pi 5 with local Ollama LLM inference. This docume
 ## Deployment Documentation
 
 ### Key Files
-- `docs/deployment/Raspberry_Pi_5_Deployment_Guide.md` - Step-by-step
-- `docs/deployment/Deployment_PreFlight_Verification.md` - Checklist
-- `docs/deployment/Performance_Benchmarks.md` - Metrics
+- `docs/deployment/Raspberry_Pi_5_Deployment_Guide.md` - Step-by-step guide
+- `docs/deployment/Performance_Benchmarks.md` - Performance metrics
 - `docs/deployment/User_Guide.md` - End-user docs
 
 ### Quick Commands
@@ -125,7 +124,7 @@ curl http://localhost:8000/health
 |-------|-------|----------|
 | LLM timeout | Model loading | Wait 30-60s on first request |
 | OOM kill | Large job + full memory | Restart, use smaller model |
-| PDF blank | WeasyPrint dependency | Check cairo/pango libs |
+| PDF blank | xhtml2pdf dependency | Check reportlab libs |
 | ChromaDB lock | Previous crash | Remove `.lock` file |
 | Slow performance | Thermal throttling | Improve cooling |
 
@@ -148,4 +147,4 @@ curl http://localhost:8000/health
 
 ---
 
-*Last updated: December 14, 2025*
+*Last updated: January 2026*

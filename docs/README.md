@@ -93,6 +93,10 @@ docs/
     ├── deployment/           # Historical deployment checklists
     ├── tasks/                # Completed work packages
     ├── specifications/       # Superseded specs
+    ├── root_tasks/           # Archived root-level task docs
+    ├── CLEANUP_PLAN.md       # Completed cleanup plan
+    ├── REVIEW.md             # Code review (Dec 2025)
+    ├── REVIEW-GUIDE.md       # Review methodology
     └── S7_Content_Optimizer_Service_DEFERRED.md
 ```
 

@@ -504,23 +504,24 @@ Step 7: Integration with Adjacent Modules
 
 ```bash
 # Clone repository
-git clone <repo-url> scout
-cd scout
+git clone <repo-url> scout-code
+cd scout-code
 
-# Install Poetry (if not installed)
-curl -sSL https://install.python-poetry.org | python3 -
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate
 
 # Install dependencies
-poetry install
-
-# Activate virtual environment
-poetry shell
+pip install -r requirements-dev.txt
 
 # Verify GPU available for sentence-transformers (optional)
 python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')"
 
+# Ensure Ollama is running with required models
+curl http://localhost:11434/api/tags
+ollama pull qwen2.5:3b  # If not already pulled
+
 # Run initial checks
-make check-llm  # Test Anthropic connection
 make test       # Run test suite
 ```
 

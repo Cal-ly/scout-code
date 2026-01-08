@@ -74,7 +74,9 @@
       "Bash(xargs:*)",
       "Bash(wc:*)",
       "Bash(cd:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(tree:*)",
+      "Bash(mv:*)"
     ]
   }
 }

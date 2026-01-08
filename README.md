@@ -6,7 +6,7 @@ Scout is a self-hosted AI-powered system that automates job discovery, semantic 
 
 ## Project Overview
 
-Part of a bachelor's thesis exploring generative AI with edge computing on Raspberry Pi 5, Scout demonstrates practical AI applications in job search automation and validates edge deployment capabilities.
+Part of a project exploring generative AI with edge computing on Raspberry Pi 5, Scout demonstrates practical AI applications in job search automation and validates edge deployment capabilities.
 
 ### Key Features
 
@@ -130,7 +130,7 @@ All code follows:
 - Type hints with mypy validation
 - Ruff linting
 - Black formatting
-- ~650 passing tests
+- ~770 passing tests
 
 ## Current Status
 
@@ -177,4 +177,4 @@ MIT License - See LICENSE file for details
 
 ## Author
 
-Carsten - Bachelor's Thesis Project (2025)
+Carsten Lydeking

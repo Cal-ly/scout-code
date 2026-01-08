@@ -116,4 +116,4 @@ src/web/
 
 ---
 
-*Last updated: December 14, 2025*
+*Last updated: January 2026*

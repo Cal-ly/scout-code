@@ -202,7 +202,7 @@ Implement under `/api/profile` route group:
 **Example Message**:
 > ⚠️ **Profile Required**: Create your professional profile to start matching jobs and generating applications.
 
-**Visual Treatment**:
+**Visual Treatment**: 
 - Prominent but not alarming (info/warning level, not error)
 - Sticky position if dashboard scrolls
 - Cannot be dismissed (hard requirement)
@@ -214,7 +214,7 @@ Implement under `/api/profile` route group:
 **UI Elements**:
 1. **Header**: "Create Your Professional Profile"
 2. **Instructions**: Brief explanation (2-3 sentences) about what to include
-3. **Text Area**:
+3. **Text Area**: 
    - Placeholder with example structure
    - Character counter (current / max 10,000)
    - Min 100 char validation indicator

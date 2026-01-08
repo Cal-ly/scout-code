@@ -96,7 +96,7 @@ Job Posting Text
 
 ### M5 Formatter (`src/modules/formatter/`)
 
-- [x] PDF generation complete (WeasyPrint)
+- [x] PDF generation complete (xhtml2pdf)
 - [x] Template rendering complete
 - [ ] **Template Customization**: User-selectable CV templates
   - **Priority**: Low
@@ -183,4 +183,4 @@ From `docs/deployment/Performance_Benchmarks.md`:
 
 ---
 
-*Last updated: December 14, 2025*
+*Last updated: January 2026*
