@@ -173,7 +173,7 @@ See [Deployment Guide](docs/deployment/Raspberry_Pi_5_Deployment_Guide.md) for d
 
 ## License
 
-MIT License - See LICENSE file for details
+AGPL 3.0 License - See LICENSE file for details
 
 ## Author
 
